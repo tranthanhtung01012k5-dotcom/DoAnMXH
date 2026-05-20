@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    item_compose_header.xml
+    Header của RecyclerView feed — thanh đăng bài nhanh
+    Dùng như ViewType đầu tiên trong PostAdapter (VIEW_TYPE_HEADER)
+    hoặc thêm trực tiếp vào fragment_home.xml nếu dùng addHeaderView
+-->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layoutComposeHeader"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="?attr/selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingTop="14dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="14dp">
+
+    <!-- Avatar của user hiện tại -->
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/ivCurrentUserAvatar"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:background="@color/placeholder_bg"
+        android:scaleType="centerCrop"
+        app:shapeAppearanceOverlay="@style/ShapeCircle"
+        tools:src="@drawable/ic_placeholder_avatar" />
+
+    <!-- Placeholder text "Có gì mới?" -->
+    <TextView
+        android:id="@+id/tvComposePlaceholder"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:fontFamily="@font/inter_regular"
+        android:text="@string/compose_placeholder"
+        android:textColor="@color/text_hint"
+        android:textSize="15sp" />
+
+    <!-- Nút Đăng (mờ) -->
+    <Button
+        android:id="@+id/btnPostNow"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="wrap_content"
+        android:layout_height="36dp"
+        android:alpha="0.45"
+        android:fontFamily="@font/inter_semibold"
+        android:text="@string/btn_post"
+        android:textSize="13sp" />
+
+</LinearLayout>

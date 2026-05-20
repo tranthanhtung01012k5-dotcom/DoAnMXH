@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "518615569232",
+    "project_id": "qlmxh-75ede",
+    "storage_bucket": "qlmxh-75ede.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518615569232:android:b6ddc32a4465af5e331255",
+        "android_client_info": {
+          "package_name": "com.example.doanmxh"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHrCQSe70oOFP8OG8y_qnhlHMv2__AiqA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
