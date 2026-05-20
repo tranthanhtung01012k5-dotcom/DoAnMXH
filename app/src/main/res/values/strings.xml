@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    res/values/strings.xml
+-->
+<resources>
+    <string name="app_name">Threads</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_create">Create</string>
+    <string name="nav_notifications">Notifications</string>
+    <string name="nav_profile">Profile</string>
+
+    <!-- Compose bar -->
+    <string name="compose_placeholder">Có gì mới?</string>
+    <string name="btn_post">Đăng</string>
+
+    <!-- Content descriptions (accessibility) -->
+    <string name="cd_toolbar_left">Nút trái toolbar</string>
+    <string name="cd_threads_logo">Logo Threads</string>
+    <string name="cd_direct_message">Tin nhắn trực tiếp</string>
+    <string name="cd_more_options">Tùy chọn thêm</string>
+    <string name="cd_like">Thích</string>
+    <string name="cd_comment">Bình luận</string>
+    <string name="cd_repost">Đăng lại</string>
+    <string name="cd_share">Chia sẻ</string>
+
+    <!-- Stats format -->
+    <string name="stats_format">%1$d lượt trả lời · %2$d lượt thích</string>
+    <string name="stats_likes_only">%1$d lượt thích</string>
+</resources>

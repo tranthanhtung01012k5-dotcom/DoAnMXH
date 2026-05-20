@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#000000"
+    android:paddingEnd="16dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="4dp">
+
+    <!-- ✅ Đường thẳng từ avatar cha xuống (chỉ hiện khi có reply) -->
+    <View
+        android:id="@+id/viewParentLine"
+        android:layout_width="2dp"
+        android:layout_height="0dp"
+        android:background="#333333"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/ivAvatar"
+        app:layout_constraintStart_toStartOf="@id/ivAvatar"
+        app:layout_constraintEnd_toEndOf="@id/ivAvatar"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Avatar -->
+    <!-- Avatar -->
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/ivAvatar"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="16dp"
+        android:background="#222222"
+        android:scaleType="centerCrop"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:shapeAppearanceOverlay="@style/ShapeCircle"
+        tools:src="@drawable/ic_placeholder_avatar" />
+
+    <!-- Badge add friend (thread style) -->
+    <ImageView
+        android:id="@+id/ivAddFriend"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:padding="2dp"
+        android:src="@drawable/ic_add_circle"
+        android:background="@drawable/bg_input_comment"
+        app:tint="#FFFFFF"
+
+        app:layout_constraintBottom_toBottomOf="@id/ivAvatar"
+        app:layout_constraintEnd_toEndOf="@id/ivAvatar"
+
+        android:translationX="4dp"
+        android:translationY="4dp"/>
+    <!-- ✅ Đường thẳng từ avatar xuống dưới (hiện khi comment có reply) -->
+    <View
+        android:id="@+id/viewThreadLine"
+        android:layout_width="2dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginBottom="4dp"
+        android:background="#333333"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/ivAvatar"
+        app:layout_constraintStart_toStartOf="@id/ivAvatar"
+        app:layout_constraintTop_toBottomOf="@id/ivAvatar" />
+
+    <!-- Tên -->
+    <TextView
+        android:id="@+id/tvAuthorName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:fontFamily="@font/inter_semibold"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        app:layout_constraintStart_toEndOf="@id/ivAvatar"
+        app:layout_constraintTop_toTopOf="@id/ivAvatar"
+        tools:text="Trần Phương Linh" />
+
+    <!-- Verified -->
+    <ImageView
+        android:id="@+id/ivVerified"
+        android:layout_width="12dp"
+        android:layout_height="12dp"
+        android:layout_marginStart="4dp"
+        android:src="@drawable/ic_verified_blue"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/tvAuthorName"
+        app:layout_constraintStart_toEndOf="@id/tvAuthorName"
+        app:layout_constraintTop_toTopOf="@id/tvAuthorName" />
+
+    <!-- Thời gian -->
+    <TextView
+        android:id="@+id/tvTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:fontFamily="@font/inter_regular"
+        android:textColor="#888888"
+        android:textSize="12sp"
+        app:layout_constraintBaseline_toBaselineOf="@id/tvAuthorName"
+        app:layout_constraintEnd_toStartOf="@id/btnMore"
+        app:layout_constraintStart_toEndOf="@id/ivVerified"
+        tools:text="2 phút" />
+
+    <!-- Nút 3 chấm -->
+    <ImageButton
+        android:id="@+id/btnMore"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_more_horiz_24"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/ivAvatar"
+        app:tint="#888888" />
+
+    <!-- Nội dung -->
+    <TextView
+        android:id="@+id/tvContent"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="4dp"
+        android:fontFamily="@font/inter_regular"
+        android:lineSpacingExtra="2dp"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/ivAvatar"
+        app:layout_constraintTop_toBottomOf="@id/tvAuthorName"
+        tools:text="Bình luận hay quá!" />
+
+    <!-- Actions -->
+    <LinearLayout
+        android:id="@+id/layoutActions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="2dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintStart_toEndOf="@id/ivAvatar"
+        app:layout_constraintTop_toBottomOf="@id/tvContent">
+
+        <TextView
+            android:id="@+id/tvReply"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:fontFamily="@font/inter_regular"
+            android:gravity="center_vertical"
+            android:text="Trả lời"
+            android:textColor="#888888"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+    <!-- Like + số like -->
+    <LinearLayout
+        android:id="@+id/layoutLike"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="@id/layoutActions"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/layoutActions">
+
+        <TextView
+            android:id="@+id/tvLikeCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/inter_regular"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            tools:text="5" />
+
+        <ImageButton
+            android:id="@+id/btnLike"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_heart_outline_24"
+            app:tint="#888888" />
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="0dp"
+        android:layout_height="0.5dp"
+        android:layout_marginTop="4dp"
+        android:background="#1A1A1A"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layoutActions" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
