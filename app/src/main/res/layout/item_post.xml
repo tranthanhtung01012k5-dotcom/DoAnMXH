@@ -245,6 +245,7 @@
         app:layout_constraintStart_toEndOf="@id/avatarContainer"
         app:layout_constraintTop_toBottomOf="@id/layoutActions"
         tools:text="12 lượt trả lời · 342 lượt thích" />
+<<<<<<< HEAD
     <!-- TOP COMMENT CONTAINER -->
 
     <LinearLayout
@@ -317,6 +318,9 @@
         </LinearLayout>
 
     </LinearLayout>
+=======
+
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
     <!-- DIVIDER -->
 
     <View
@@ -327,6 +331,10 @@
         android:background="#1A1A1A"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+<<<<<<< HEAD
         app:layout_constraintTop_toBottomOf="@id/layoutTopComment" />
+=======
+        app:layout_constraintTop_toBottomOf="@id/tvStats" />
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 
 </androidx.constraintlayout.widget.ConstraintLayout>

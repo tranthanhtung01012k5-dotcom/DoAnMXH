@@ -29,7 +29,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+<<<<<<< HEAD
 import com.google.firebase.firestore.DocumentSnapshot;
+=======
+
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 public class HomeFragment extends Fragment {
 
     private RecyclerView rvFeed;
@@ -46,7 +50,11 @@ public class HomeFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
+<<<<<<< HEAD
         rvFeed = view.findViewById(R.id.rvFeed);
+=======
+        rvFeed       = view.findViewById(R.id.rvFeed);
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
         swipeRefresh = view.findViewById(R.id.swipeRefresh);
 
         if (rvFeed == null || swipeRefresh == null) {
@@ -130,7 +138,10 @@ public class HomeFragment extends Fragment {
                                 Log.e("HomeFragment", "Lỗi like: " + e.getMessage())
                         );
             }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
             @Override
             public void onAvatarClick(PostModel post, int position) {
 
@@ -145,7 +156,10 @@ public class HomeFragment extends Fragment {
 
                 startActivity(intent);
             }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
             @Override
             public void onAddFriendClick(PostModel post, int position) {
                 if (getContext() == null) return;
@@ -221,7 +235,10 @@ public class HomeFragment extends Fragment {
                                     Toast.LENGTH_SHORT).show();
                         });
             }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
             @Override
             public void onCommentClick(PostModel post, int position) {
                 Intent intent = new Intent(getActivity(), PostDetailActivity.class);
@@ -246,6 +263,7 @@ public class HomeFragment extends Fragment {
                 if (getContext() != null)
                     Toast.makeText(getContext(), "Tùy chọn", Toast.LENGTH_SHORT).show();
             }
+<<<<<<< HEAD
             @Override
             public void onCommentAvatarClick(CommentModel comment, int position) {
 
@@ -260,6 +278,9 @@ public class HomeFragment extends Fragment {
 
                 startActivity(intent);
             }
+=======
+
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 //            @Override
 //            public void onAvatarClick(PostModel post, int position) {
 //                if (getContext() != null)
@@ -285,19 +306,27 @@ public class HomeFragment extends Fragment {
     }
 
     private void loadFromFirestore() {
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
         listenerRegistration = db.collection("bai_viet")
                 .whereEqualTo("da_xoa", false)
                 .addSnapshotListener((snapshots, error) -> {
 
                     if (error != null) {
+<<<<<<< HEAD
                         Log.e("HomeFragment",
                                 "Lỗi load feed: " + error.getMessage());
+=======
+                        Log.e("HomeFragment", "Lỗi load feed: " + error.getMessage());
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                         return;
                     }
 
                     if (snapshots == null) return;
 
+<<<<<<< HEAD
                     String myUid =
                             FirebaseAuth.getInstance().getCurrentUser() != null
                                     ? FirebaseAuth.getInstance()
@@ -355,10 +384,30 @@ public class HomeFragment extends Fragment {
                             if (nguoiDungId != null
                                     && !nguoiDungId.isEmpty()) {
 
+=======
+                    String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
+                            ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+
+                    // ── Lần đầu load toàn bộ ──
+                    if (postList.isEmpty()) {
+                        List<PostModel> tempList = new ArrayList<>();
+                        int[] pendingCount = {0};
+
+                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                            if (dc.getType() != DocumentChange.Type.ADDED) continue;
+
+                            PostModel post = dc.getDocument().toObject(PostModel.class);
+                            post.setDocumentId(dc.getDocument().getId());
+                            String nguoiDungId = dc.getDocument().getString("nguoi_dung_id");
+
+                            if (nguoiDungId != null && !nguoiDungId.isEmpty()) {
+                                pendingCount[0]++;
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                                 db.collection("nguoi_dung")
                                         .document(nguoiDungId)
                                         .get()
                                         .addOnSuccessListener(userDoc -> {
+<<<<<<< HEAD
 
                                             if (userDoc.exists()) {
 
@@ -385,12 +434,25 @@ public class HomeFragment extends Fragment {
                                             // check like
                                             if (myUid != null) {
 
+=======
+                                            if (userDoc.exists()) {
+                                                post.setHoVaTen(userDoc.getString("ho_va_ten"));
+                                                post.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
+                                                post.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+                                                post.setVerified(Boolean.TRUE.equals(
+                                                        userDoc.getBoolean("verified")));
+                                            }
+
+                                            if (myUid != null) {
+                                                // ── Check like ──
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                                                 db.collection("bai_viet")
                                                         .document(post.getDocumentId())
                                                         .collection("luot_thich")
                                                         .document(myUid)
                                                         .get()
                                                         .addOnSuccessListener(likeDoc -> {
+<<<<<<< HEAD
 
                                                             post.setLikedByMe(
                                                                     likeDoc.exists());
@@ -493,10 +555,88 @@ public class HomeFragment extends Fragment {
                                     if (nguoiDungId != null
                                             && !nguoiDungId.isEmpty()) {
 
+=======
+                                                            post.setLikedByMe(likeDoc.exists());
+
+                                                            // ── Check follow (cache) ──
+                                                            String authorUid = post.getNguoiDungId();
+                                                            if (authorUid != null && !authorUid.equals(myUid)) {
+                                                                db.collection("theo_doi")
+                                                                        .document(myUid + "_" + authorUid)
+                                                                        .get()
+                                                                        .addOnSuccessListener(followDoc -> {
+                                                                            post.setFollowing(followDoc.exists());
+                                                                            tempList.add(post);
+                                                                            pendingCount[0]--;
+                                                                            if (pendingCount[0] == 0)
+                                                                                sortAndRefresh(tempList);
+                                                                        })
+                                                                        .addOnFailureListener(e -> {
+                                                                            post.setFollowing(false);
+                                                                            tempList.add(post);
+                                                                            pendingCount[0]--;
+                                                                            if (pendingCount[0] == 0)
+                                                                                sortAndRefresh(tempList);
+                                                                        });
+                                                            } else {
+                                                                // Bài của chính mình
+                                                                post.setFollowing(false);
+                                                                tempList.add(post);
+                                                                pendingCount[0]--;
+                                                                if (pendingCount[0] == 0)
+                                                                    sortAndRefresh(tempList);
+                                                            }
+                                                        })
+                                                        .addOnFailureListener(e -> {
+                                                            post.setFollowing(false);
+                                                            tempList.add(post);
+                                                            pendingCount[0]--;
+                                                            if (pendingCount[0] == 0)
+                                                                sortAndRefresh(tempList);
+                                                        });
+                                            } else {
+                                                // Chưa đăng nhập
+                                                post.setFollowing(false);
+                                                tempList.add(post);
+                                                pendingCount[0]--;
+                                                if (pendingCount[0] == 0)
+                                                    sortAndRefresh(tempList);
+                                            }
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            post.setFollowing(false);
+                                            tempList.add(post);
+                                            pendingCount[0]--;
+                                            if (pendingCount[0] == 0)
+                                                sortAndRefresh(tempList);
+                                            Log.e("HomeFragment", "Lỗi load user: " + e.getMessage());
+                                        });
+                            } else {
+                                post.setFollowing(false);
+                                tempList.add(post);
+                            }
+                        }
+
+                        if (pendingCount[0] == 0 && !tempList.isEmpty()) {
+                            sortAndRefresh(tempList);
+                        }
+
+                    } else {
+                        // ── Cập nhật realtime sau lần đầu ──
+                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
+                            PostModel post = dc.getDocument().toObject(PostModel.class);
+                            post.setDocumentId(dc.getDocument().getId());
+                            String nguoiDungId = dc.getDocument().getString("nguoi_dung_id");
+
+                            switch (dc.getType()) {
+                                case ADDED:
+                                    if (nguoiDungId != null && !nguoiDungId.isEmpty()) {
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                                         db.collection("nguoi_dung")
                                                 .document(nguoiDungId)
                                                 .get()
                                                 .addOnSuccessListener(userDoc -> {
+<<<<<<< HEAD
 
                                                     if (userDoc.exists()) {
 
@@ -602,15 +742,105 @@ public class HomeFragment extends Fragment {
                                         }
                                     }
 
+=======
+                                                    if (userDoc.exists()) {
+                                                        post.setHoVaTen(userDoc.getString("ho_va_ten"));
+                                                        post.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
+                                                        post.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+                                                        post.setVerified(Boolean.TRUE.equals(
+                                                                userDoc.getBoolean("verified")));
+                                                    }
+
+                                                    if (myUid != null) {
+                                                        // Check like
+                                                        db.collection("bai_viet")
+                                                                .document(post.getDocumentId())
+                                                                .collection("luot_thich")
+                                                                .document(myUid)
+                                                                .get()
+                                                                .addOnSuccessListener(likeDoc -> {
+                                                                    post.setLikedByMe(likeDoc.exists());
+
+                                                                    // Check follow
+                                                                    String authorUid = post.getNguoiDungId();
+                                                                    if (authorUid != null && !authorUid.equals(myUid)) {
+                                                                        db.collection("theo_doi")
+                                                                                .document(myUid + "_" + authorUid)
+                                                                                .get()
+                                                                                .addOnSuccessListener(followDoc -> {
+                                                                                    post.setFollowing(followDoc.exists());
+                                                                                    postList.add(0, post);
+                                                                                    adapter.notifyItemInserted(0);
+                                                                                    rvFeed.scrollToPosition(0);
+                                                                                })
+                                                                                .addOnFailureListener(e -> {
+                                                                                    post.setFollowing(false);
+                                                                                    postList.add(0, post);
+                                                                                    adapter.notifyItemInserted(0);
+                                                                                    rvFeed.scrollToPosition(0);
+                                                                                });
+                                                                    } else {
+                                                                        post.setFollowing(false);
+                                                                        postList.add(0, post);
+                                                                        adapter.notifyItemInserted(0);
+                                                                        rvFeed.scrollToPosition(0);
+                                                                    }
+                                                                });
+                                                    } else {
+                                                        post.setFollowing(false);
+                                                        postList.add(0, post);
+                                                        adapter.notifyItemInserted(0);
+                                                        rvFeed.scrollToPosition(0);
+                                                    }
+                                                });
+                                    } else {
+                                        post.setFollowing(false);
+                                        postList.add(0, post);
+                                        adapter.notifyItemInserted(0);
+                                        rvFeed.scrollToPosition(0);
+                                    }
+                                    break;
+
+                                case MODIFIED:
+                                    for (int i = 0; i < postList.size(); i++) {
+                                        if (postList.get(i).getDocumentId()
+                                                .equals(post.getDocumentId())) {
+                                            // Giữ lại các trạng thái cache
+                                            post.setLikedByMe(postList.get(i).isLikedByMe());
+                                            post.setFollowing(postList.get(i).isFollowing());
+                                            post.setHoVaTen(postList.get(i).getHoVaTen());
+                                            post.setTenDangNhap(postList.get(i).getTenDangNhap());
+                                            post.setAnhDaiDien(postList.get(i).getAnhDaiDien());
+                                            postList.set(i, post);
+                                            adapter.notifyItemChanged(i);
+                                            break;
+                                        }
+                                    }
+                                    break;
+
+                                case REMOVED:
+                                    for (int i = 0; i < postList.size(); i++) {
+                                        if (postList.get(i).getDocumentId()
+                                                .equals(post.getDocumentId())) {
+                                            postList.remove(i);
+                                            adapter.notifyItemRemoved(i);
+                                            break;
+                                        }
+                                    }
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                                     break;
                             }
                         }
                     }
 
+<<<<<<< HEAD
                     Log.d("HomeFragment",
                             "Feed: "
                                     + postList.size()
                                     + " bài");
+=======
+                    Log.d("HomeFragment", "Feed: " + postList.size() + " bài");
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                 });
     }
 
@@ -657,6 +887,7 @@ public class HomeFragment extends Fragment {
             listenerRegistration = null;
         }
     }
+<<<<<<< HEAD
 
     private void loadTopComment(@NonNull PostModel post, Runnable onDone) {
         Log.d("TEST", "loadTopComment called");
@@ -881,4 +1112,6 @@ public class HomeFragment extends Fragment {
 
         onDone.run();
     }
+=======
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 }

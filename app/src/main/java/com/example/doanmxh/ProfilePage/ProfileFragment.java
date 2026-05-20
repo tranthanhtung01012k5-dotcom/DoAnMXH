@@ -1,8 +1,12 @@
 package com.example.doanmxh.ProfilePage;
 
+<<<<<<< HEAD
 import android.app.Dialog;
 import android.content.Intent;
 import android.graphics.Color;
+=======
+import android.content.Intent;
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -29,6 +33,7 @@ import java.util.List;
 
 public class ProfileFragment extends Fragment {
 
+<<<<<<< HEAD
     private TextView txtName, txtUsername,
             txtTitle, txtSoNguoiTheoDoi;
 
@@ -46,12 +51,24 @@ public class ProfileFragment extends Fragment {
 
     private String currentAvatarUrl = "";
 
+=======
+    private TextView txtName, txtUsername, txtTitle,txtSoNguoiTheoDoi;
+    private ImageView imgProfile;
+
+    private ImageView btnLanguage, btnMenu;
+    private Button editProfile, shareProfile;
+    private FirebaseAuth auth;
+    private FirebaseFirestore db;
+    private LinearLayout layoutFollowingAvatars;
+
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
+<<<<<<< HEAD
         View view = inflater.inflate(
                 R.layout.fragment_profile,
                 container,
@@ -64,6 +81,17 @@ public class ProfileFragment extends Fragment {
 
         db = FirebaseFirestore.getInstance();
 
+=======
+        View view = inflater.inflate(R.layout.fragment_profile, container, false);
+
+        // init view
+        txtName = view.findViewById(R.id.txtName);
+        txtUsername = view.findViewById(R.id.txtUsername);
+        imgProfile = view.findViewById(R.id.imgProfile);
+        editProfile = view.findViewById(R.id.btnEditProfile);
+        txtTitle = view.findViewById(R.id.txtTitle);
+        txtSoNguoiTheoDoi = view.findViewById(R.id.txtSoNguoiTheoDoi);
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
         editProfile.setOnClickListener(v -> {
 
             Intent intent =
@@ -71,6 +99,7 @@ public class ProfileFragment extends Fragment {
                             EditProfileActivity.class);
 
             startActivity(intent);
+<<<<<<< HEAD
         });
 
         btnMenu.setOnClickListener(v -> logout());
@@ -84,12 +113,22 @@ public class ProfileFragment extends Fragment {
                 showFullAvatar(currentAvatarUrl);
             }
         });
+=======
+        });        editProfile = view.findViewById(R.id.btnEditProfile);
+        btnLanguage = view.findViewById(R.id.btnLanguage);
+        btnMenu = view.findViewById(R.id.btnMenu);
+        btnMenu.setOnClickListener(v -> logout());
+        auth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
+        layoutFollowingAvatars = view.findViewById(R.id.layoutFollowingAvatars);
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 
         loadUserInfo();
 
         return view;
     }
 
+<<<<<<< HEAD
     private void anhXa(View view) {
 
         txtName = view.findViewById(R.id.txtName);
@@ -123,6 +162,12 @@ public class ProfileFragment extends Fragment {
                     Toast.LENGTH_SHORT
             ).show();
 
+=======
+    private void loadUserInfo() {
+
+        if (auth.getCurrentUser() == null) {
+            Toast.makeText(getContext(), "Chưa đăng nhập", Toast.LENGTH_SHORT).show();
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
             return;
         }
 
@@ -135,6 +180,7 @@ public class ProfileFragment extends Fragment {
 
                     if (!documentSnapshot.exists()) return;
 
+<<<<<<< HEAD
                     String name =
                             documentSnapshot.getString("ho_va_ten");
 
@@ -185,10 +231,39 @@ public class ProfileFragment extends Fragment {
                                 "Lỗi tải dữ liệu user",
                                 Toast.LENGTH_SHORT
                         ).show()
+=======
+                    String name     = documentSnapshot.getString("ho_va_ten");
+                    String username = documentSnapshot.getString("ten_dang_nhap");
+                    String avatar   = documentSnapshot.getString("anh_dai_dien");
+                    String title    = documentSnapshot.getString("tieu_su");
+                    Long theodoi    = documentSnapshot.getLong("so_nguoi_theo_doi");
+
+                    txtName.setText(name != null ? name : "No Name");
+                    txtUsername.setText(username != null ? username : "user");
+
+                    if (avatar != null && !avatar.isEmpty()) {
+                        Glide.with(requireContext())
+                                .load(avatar)
+                                .placeholder(R.drawable.ic_placeholder_avatar)
+                                .into(imgProfile);
+                    }
+
+                    txtTitle.setText(title != null ? title : "No Title");
+                    txtSoNguoiTheoDoi.setText(
+                            (theodoi != null ? theodoi : 0) + " người theo dõi");
+
+                    // ── Load avatar những người mình đang follow ──
+                    loadFollowingAvatars(uid);
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(getContext(), "Lỗi tải dữ liệu user",
+                                Toast.LENGTH_SHORT).show()
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                 );
     }
 
     private void loadFollowingAvatars(String uid) {
+<<<<<<< HEAD
 
         db.collection("nguoi_dung")
                 .document(uid)
@@ -214,6 +289,24 @@ public class ProfileFragment extends Fragment {
                         }
                     }
 
+=======
+        db.collection("nguoi_dung")
+                .document(uid)
+                .collection("nguoi_theo_doi")
+                .limit(5) // Chỉ lấy tối đa 5 avatar hiển thị
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) return;
+
+                    // Lấy danh sách uid của những người đang follow
+                    List<String> followingUids = new ArrayList<>();
+                    for (var doc : querySnapshot.getDocuments()) {
+                        String followingUid = doc.getString("nguoi_dung_id");
+                        if (followingUid != null) followingUids.add(followingUid);
+                    }
+
+                    // Fetch avatar từng người rồi load vào layoutFollowingAvatars
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                     loadAvatarsIntoLayout(followingUids);
                 });
     }
@@ -223,6 +316,7 @@ public class ProfileFragment extends Fragment {
         layoutFollowingAvatars.removeAllViews();
 
         int sizeDp = 28;
+<<<<<<< HEAD
 
         int overlapDp = -8;
 
@@ -236,6 +330,17 @@ public class ProfileFragment extends Fragment {
                         * getResources()
                         .getDisplayMetrics().density);
 
+=======
+        int overlapDp = -8;
+
+        int sizePx =
+                (int) (sizeDp * getResources().getDisplayMetrics().density);
+
+        int overlapPx =
+                (int) (overlapDp * getResources().getDisplayMetrics().density);
+
+        // Chỉ hiện tối đa 3 avatar
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
         int maxShow = Math.min(uids.size(), 3);
 
         for (int i = 0; i < maxShow; i++) {
@@ -245,6 +350,10 @@ public class ProfileFragment extends Fragment {
             ShapeableImageView ivAvatar =
                     new ShapeableImageView(requireContext());
 
+<<<<<<< HEAD
+=======
+            // Bo tròn
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
             ivAvatar.setShapeAppearanceModel(
                     ivAvatar.getShapeAppearanceModel()
                             .toBuilder()
@@ -252,15 +361,24 @@ public class ProfileFragment extends Fragment {
                             .build()
             );
 
+<<<<<<< HEAD
+=======
+            // Border trắng
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
             ivAvatar.setStrokeWidth(2f);
 
             ivAvatar.setStrokeColor(
                     android.content.res.ColorStateList.valueOf(
+<<<<<<< HEAD
                             Color.WHITE
+=======
+                            android.graphics.Color.WHITE
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                     )
             );
 
             LinearLayout.LayoutParams params =
+<<<<<<< HEAD
                     new LinearLayout.LayoutParams(
                             sizePx,
                             sizePx
@@ -268,11 +386,20 @@ public class ProfileFragment extends Fragment {
 
             if (i > 0) {
 
+=======
+                    new LinearLayout.LayoutParams(sizePx, sizePx);
+
+            if (i > 0) {
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                 params.setMarginStart(overlapPx);
             }
 
             ivAvatar.setLayoutParams(params);
 
+<<<<<<< HEAD
+=======
+            // Load avatar
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
             db.collection("nguoi_dung")
                     .document(targetUid)
                     .get()
@@ -287,6 +414,7 @@ public class ProfileFragment extends Fragment {
                                 .error(R.drawable.ic_placeholder_avatar)
                                 .circleCrop()
                                 .into(ivAvatar);
+<<<<<<< HEAD
 
                         // Click avatar
                         ivAvatar.setOnClickListener(v -> {
@@ -297,11 +425,14 @@ public class ProfileFragment extends Fragment {
                                 showFullAvatar(avatarUrl);
                             }
                         });
+=======
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
                     });
 
             layoutFollowingAvatars.addView(ivAvatar);
         }
 
+<<<<<<< HEAD
         // Nếu > 3 người
         if (uids.size() > 3) {
 
@@ -313,11 +444,21 @@ public class ProfileFragment extends Fragment {
                             sizePx,
                             sizePx
                     );
+=======
+        // Nếu > 3 người → hiện icon ...
+        if (uids.size() > 3) {
+
+            ImageView ivMore = new ImageView(requireContext());
+
+            LinearLayout.LayoutParams moreParams =
+                    new LinearLayout.LayoutParams(sizePx, sizePx);
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 
             moreParams.setMarginStart(overlapPx);
 
             ivMore.setLayoutParams(moreParams);
 
+<<<<<<< HEAD
             ivMore.setImageResource(
                     R.drawable.ic_more_horiz_24
             );
@@ -325,6 +466,11 @@ public class ProfileFragment extends Fragment {
             ivMore.setBackgroundResource(
                     R.drawable.bg_circle_dark
             );
+=======
+            ivMore.setImageResource(R.drawable.ic_more_horiz_24);
+
+            ivMore.setBackgroundResource(R.drawable.bg_circle_dark);
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 
             ivMore.setPadding(8, 8, 8, 8);
 
@@ -335,11 +481,18 @@ public class ProfileFragment extends Fragment {
                         "Danh sách người theo dõi",
                         Toast.LENGTH_SHORT
                 ).show();
+<<<<<<< HEAD
+=======
+
+                // TODO:
+                // mở Activity / BottomSheet danh sách following
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
             });
 
             layoutFollowingAvatars.addView(ivMore);
         }
     }
+<<<<<<< HEAD
 
     private void showFullAvatar(String imageUrl) {
 
@@ -382,10 +535,15 @@ public class ProfileFragment extends Fragment {
     @Override
     public void onResume() {
 
+=======
+    @Override
+    public void onResume() {
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
         super.onResume();
 
         loadUserInfo();
     }
+<<<<<<< HEAD
 
     private void logout() {
 
@@ -408,6 +566,24 @@ public class ProfileFragment extends Fragment {
 
         startActivity(intent);
 
+=======
+    private void logout() {
+
+        // 1. Đăng xuất Firebase Auth
+        auth.signOut();
+
+        // 2. Thông báo
+        Toast.makeText(getContext(),
+                "Đăng xuất thành công",
+                Toast.LENGTH_SHORT).show();
+
+        // 3. Chuyển về Login và xóa toàn bộ back stack
+        Intent intent = new Intent(getActivity(), LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+
+        // 4. Kết thúc Activity hiện tại
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
         requireActivity().finish();
     }
 }

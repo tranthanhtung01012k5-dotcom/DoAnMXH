@@ -23,7 +23,10 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <!-- Avatar -->
+<<<<<<< HEAD
     <!-- Avatar -->
+=======
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivAvatar"
         android:layout_width="36dp"
@@ -36,6 +39,7 @@
         app:shapeAppearanceOverlay="@style/ShapeCircle"
         tools:src="@drawable/ic_placeholder_avatar" />
 
+<<<<<<< HEAD
     <!-- Badge add friend (thread style) -->
     <ImageView
         android:id="@+id/ivAddFriend"
@@ -51,6 +55,8 @@
 
         android:translationX="4dp"
         android:translationY="4dp"/>
+=======
+>>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
     <!-- ✅ Đường thẳng từ avatar xuống dưới (hiện khi comment có reply) -->
     <View
         android:id="@+id/viewThreadLine"
