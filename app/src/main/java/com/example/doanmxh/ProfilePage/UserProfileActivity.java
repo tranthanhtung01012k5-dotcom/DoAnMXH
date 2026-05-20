@@ -1,14 +1,10 @@
 package com.example.doanmxh.ProfilePage;
 
-<<<<<<< HEAD
 import android.app.Dialog;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ViewGroup;
-=======
-import android.os.Bundle;
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -27,16 +23,11 @@ public class UserProfileActivity extends AppCompatActivity {
     private TextView txtUsername;
     private TextView txtBio;
     private TextView txtSoLuongTheoDoi;
-<<<<<<< HEAD
 
     private FirebaseFirestore db;
 
     private String avatarUrl = "";
 
-=======
-    private FirebaseFirestore db;
-
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,15 +35,11 @@ public class UserProfileActivity extends AppCompatActivity {
         setContentView(R.layout.activity_user_profile);
 
         imgProfile = findViewById(R.id.imgProfile);
-<<<<<<< HEAD
 
-=======
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
         txtName = findViewById(R.id.txtName);
         txtUsername = findViewById(R.id.txtUsername);
         txtBio = findViewById(R.id.txtTitle);
         txtSoLuongTheoDoi = findViewById(R.id.txtSoNguoiTheoDoi);
-<<<<<<< HEAD
 
         db = FirebaseFirestore.getInstance();
 
@@ -72,12 +59,6 @@ public class UserProfileActivity extends AppCompatActivity {
         });
 
         String uid = getIntent().getStringExtra("user_uid");
-=======
-        db = FirebaseFirestore.getInstance();
-
-        String uid =
-                getIntent().getStringExtra("user_uid");
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 
         if (uid != null) {
             loadUser(uid);
@@ -104,7 +85,6 @@ public class UserProfileActivity extends AppCompatActivity {
 
                     String bio =
                             document.getString("tieu_su");
-<<<<<<< HEAD
 
                     Long theodoi =
                             document.getLong("so_nguoi_theo_doi");
@@ -173,18 +153,5 @@ public class UserProfileActivity extends AppCompatActivity {
 
         dialog.show();
     }
-=======
-                    Long theodoi = document.getLong("so_nguoi_theo_doi");
 
-                    txtName.setText(name);
-                    txtUsername.setText(username);
-                    txtBio.setText(bio);
-                    txtSoLuongTheoDoi.setText(String.valueOf(theodoi) + " người theo dõi");
-                    Glide.with(this)
-                            .load(avatar)
-                            .placeholder(R.drawable.ic_placeholder_avatar)
-                            .into(imgProfile);
-                });
-    }
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 }

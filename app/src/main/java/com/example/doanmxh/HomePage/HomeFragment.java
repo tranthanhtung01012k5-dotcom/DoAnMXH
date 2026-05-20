@@ -246,26 +246,14 @@ public class HomeFragment extends Fragment {
                 if (getContext() != null)
                     Toast.makeText(getContext(), "Tùy chọn", Toast.LENGTH_SHORT).show();
             }
+
             @Override
-            public void onCommentAvatarClick(CommentModel comment, int position) {
-
-                Intent intent =
-                        new Intent(HomeFragment.this,
-                                UserProfileActivity.class);
-
-                intent.putExtra(
-                        "user_id",
-                        comment.getNguoiDungId()
-                );
-
+            public void onCommentAvataClick(CommentModel comment, int position)
+            {
+                Intent intent = new Intent(getActivity(),UserProfileActivity.class)
+                        .putExtra("user_uid",comment.getNguoiDungId());
                 startActivity(intent);
             }
-//            @Override
-//            public void onAvatarClick(PostModel post, int position) {
-//                if (getContext() != null)
-//                    Toast.makeText(getContext(), "@" + post.getTenDangNhap(),
-//                            Toast.LENGTH_SHORT).show();
-//            }
         });
 
         rvFeed.setAdapter(adapter);
@@ -472,26 +460,34 @@ public class HomeFragment extends Fragment {
 
                     else {
 
-                        for (DocumentChange dc
-                                : snapshots.getDocumentChanges()) {
+                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
 
-                            PostModel post =
-                                    dc.getDocument()
-                                            .toObject(PostModel.class);
-
-                            post.setDocumentId(
-                                    dc.getDocument().getId());
-
-                            String nguoiDungId =
-                                    dc.getDocument()
-                                            .getString("nguoi_dung_id");
+                            String docId = dc.getDocument().getId();
 
                             switch (dc.getType()) {
 
-                                case ADDED:
+                                // ─────────────── ADDED ───────────────
+                                case ADDED: {
 
-                                    if (nguoiDungId != null
-                                            && !nguoiDungId.isEmpty()) {
+                                    PostModel post =
+                                            dc.getDocument().toObject(PostModel.class);
+
+                                    post.setDocumentId(docId);
+
+                                    String nguoiDungId =
+                                            dc.getDocument().getString("nguoi_dung_id");
+
+                                    Runnable insertTask = () -> {
+
+                                        loadTopComment(post, () -> {
+
+                                            postList.add(0, post);
+                                            adapter.notifyItemInserted(0);
+                                            rvFeed.scrollToPosition(0);
+                                        });
+                                    };
+
+                                    if (nguoiDungId != null && !nguoiDungId.isEmpty()) {
 
                                         db.collection("nguoi_dung")
                                                 .document(nguoiDungId)
@@ -499,110 +495,68 @@ public class HomeFragment extends Fragment {
                                                 .addOnSuccessListener(userDoc -> {
 
                                                     if (userDoc.exists()) {
-
-                                                        post.setHoVaTen(
-                                                                userDoc.getString(
-                                                                        "ho_va_ten"));
-
-                                                        post.setTenDangNhap(
-                                                                userDoc.getString(
-                                                                        "ten_dang_nhap"));
-
-                                                        post.setAnhDaiDien(
-                                                                userDoc.getString(
-                                                                        "anh_dai_dien"));
-
-                                                        post.setVerified(
-                                                                Boolean.TRUE.equals(
-                                                                        userDoc.getBoolean(
-                                                                                "verified")
-                                                                )
-                                                        );
+                                                        post.setHoVaTen(userDoc.getString("ho_va_ten"));
+                                                        post.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
+                                                        post.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+                                                        post.setVerified(Boolean.TRUE.equals(userDoc.getBoolean("verified")));
                                                     }
 
-                                                    loadTopComment(post, () -> {
-
-                                                        postList.add(0, post);
-
-                                                        adapter.notifyItemInserted(0);
-
-                                                        rvFeed.scrollToPosition(0);
-                                                    });
+                                                    insertTask.run();
                                                 });
 
                                     } else {
-
-                                        loadTopComment(post, () -> {
-
-                                            postList.add(0, post);
-
-                                            adapter.notifyItemInserted(0);
-
-                                            rvFeed.scrollToPosition(0);
-                                        });
+                                        insertTask.run();
                                     }
 
                                     break;
+                                }
 
-                                case MODIFIED:
+                                // ─────────────── MODIFIED ───────────────
+                                case MODIFIED: {
 
-                                    for (int i = 0;
-                                         i < postList.size();
-                                         i++) {
+                                    PostModel newPost =
+                                            dc.getDocument().toObject(PostModel.class);
 
-                                        if (postList.get(i)
-                                                .getDocumentId()
-                                                .equals(post.getDocumentId())) {
+                                    newPost.setDocumentId(docId);
 
-                                            post.setLikedByMe(
-                                                    postList.get(i)
-                                                            .isLikedByMe());
+                                    for (int i = 0; i < postList.size(); i++) {
 
-                                            post.setFollowing(
-                                                    postList.get(i)
-                                                            .isFollowing());
+                                        PostModel old = postList.get(i);
 
-                                            post.setHoVaTen(
-                                                    postList.get(i)
-                                                            .getHoVaTen());
+                                        if (old.getDocumentId().equals(docId)) {
 
-                                            post.setTenDangNhap(
-                                                    postList.get(i)
-                                                            .getTenDangNhap());
+                                            // 🔥 GIỮ STATE UI QUAN TRỌNG
+                                            newPost.setTopComment(old.getTopComment());
+                                            newPost.setTopReplies(old.getTopReplies());
+                                            newPost.setLikedByMe(old.isLikedByMe());
+                                            newPost.setFollowing(old.isFollowing());
 
-                                            post.setAnhDaiDien(
-                                                    postList.get(i)
-                                                            .getAnhDaiDien());
-
-                                            postList.set(i, post);
-
+                                            postList.set(i, newPost);
                                             adapter.notifyItemChanged(i);
-
                                             break;
                                         }
                                     }
 
-                                    break;
+                                    break; // ❗ CỰC QUAN TRỌNG
+                                }
 
-                                case REMOVED:
+                                // ─────────────── REMOVED ───────────────
+                                case REMOVED: {
 
-                                    for (int i = 0;
-                                         i < postList.size();
-                                         i++) {
+                                    String removedId = docId;
 
-                                        if (postList.get(i)
-                                                .getDocumentId()
-                                                .equals(post.getDocumentId())) {
+                                    for (int i = 0; i < postList.size(); i++) {
+
+                                        if (postList.get(i).getDocumentId().equals(removedId)) {
 
                                             postList.remove(i);
-
                                             adapter.notifyItemRemoved(i);
-
                                             break;
                                         }
                                     }
 
                                     break;
+                                }
                             }
                         }
                     }

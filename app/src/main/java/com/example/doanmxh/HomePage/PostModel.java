@@ -169,7 +169,6 @@ public class PostModel {
         this.danhSachVideo = danhSachVideo;
     }
     private boolean isFollowing; // mình đã follow tác giả chưa
-<<<<<<< HEAD
     private CommentModel topComment;
     private List<CommentModel> topReplies;
     public CommentModel getTopComment() {
@@ -187,9 +186,6 @@ public class PostModel {
     public void setTopReplies(List<CommentModel> topReplies) {
         this.topReplies = topReplies;
     }
-=======
-
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
     public boolean isFollowing() { return isFollowing; }
     public void setFollowing(boolean following) { isFollowing = following; }
     // =========================
