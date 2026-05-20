@@ -6,10 +6,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-<<<<<<< HEAD
+
 import android.widget.LinearLayout;
-=======
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -28,17 +26,16 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private List<PostModel> postList;
     private OnPostActionListener listener;
 
-    public interface OnPostActionListener {
-<<<<<<< HEAD
+    public PostAdapter(List<PostModel> postList, OnPostActionListener onPostActionListener) {
+    }
 
-=======
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
+    public interface OnPostActionListener {
+
         void onLikeClick(PostModel post, int position);
         void onCommentClick(PostModel post, int position);
         void onRepostClick(PostModel post, int position);
         void onShareClick(PostModel post, int position);
         void onMoreOptionsClick(PostModel post, int position);
-<<<<<<< HEAD
 
         // POST PROFILE
         void onAvatarClick(PostModel post, int position);
@@ -52,31 +49,26 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     public PostAdapter(List<PostModel> postList,
                        OnPostActionListener listener) {
 
-=======
         void onAvatarClick(PostModel post, int position);
         void onAddFriendClick(PostModel post, int position);
     }
 
     public PostAdapter(List<PostModel> postList, OnPostActionListener listener) {
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
         this.postList = postList;
         this.listener = listener;
     }
 
     @NonNull
     @Override
-<<<<<<< HEAD
     public PostViewHolder onCreateViewHolder(@NonNull ViewGroup parent,
                                              int viewType) {
 
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_post, parent, false);
 
-=======
     public PostViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_post, parent, false);
->>>>>>> 8ef7ad65cdddf626cdcdb3b97ef342fec36f9900
         return new PostViewHolder(view);
     }
 
