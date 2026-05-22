@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:background="#000000"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/imgAvatar"
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:scaleType="centerCrop"
+        android:src="@mipmap/ic_launcher"
+        android:background="@drawable/bg_circle_dark"/>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/txtUsername"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="username"
+            android:textColor="#FFFFFF"
+            android:textSize="15sp"
+            android:textStyle="bold"/>
+
+        <TextView
+            android:id="@+id/txtName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tên người dùng"
+            android:textColor="#808080"
+            android:textSize="13sp"/>
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnFollow"
+        android:layout_width="100dp"
+        android:layout_height="40dp"
+        android:text="Following"
+        android:textAllCaps="false"
+        android:textColor="#000000"
+        android:backgroundTint="#FFFFFF"/>
+
+</LinearLayout>

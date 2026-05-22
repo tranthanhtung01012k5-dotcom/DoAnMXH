@@ -153,53 +153,118 @@ public class RegisterActivity extends AppCompatActivity {
                                 if (task.isSuccessful()) {
 
                                     FirebaseUser user = auth.getCurrentUser();
+
+                                    if (user == null) {
+                                        Toast.makeText(
+                                                RegisterActivity.this,
+                                                "Không lấy được thông tin user",
+                                                Toast.LENGTH_SHORT
+                                        ).show();
+                                        return;
+                                    }
+
                                     String uid = user.getUid();
 
-                                    // ── Lưu vào collection nguoi_dung ──
-                                    // Khớp với cấu trúc bảng nguoi_dung trong SQL
-                                    Map<String, Object> nguoiDung = new HashMap<>();
-                                    nguoiDung.put("ho_va_ten",    hoVaTen);
-                                    nguoiDung.put("ten_dang_nhap", tenDangNhap);
-                                    nguoiDung.put("email",         email);
-                                    nguoiDung.put("mat_khau",      matKhau);        // Firebase Auth quản lý, không lưu plaintext
-                                    nguoiDung.put("anh_dai_dien",  "");        // Cập nhật sau khi upload ảnh
-                                    nguoiDung.put("tieu_su",       "");        // Cập nhật ở trang profile
-                                    nguoiDung.put("ngay_tao",      new Date()); // DATETIME DEFAULT CURRENT_TIMESTAMP
-                                    nguoiDung.put("verified",      false);
-                                    nguoiDung.put("private",      false);
-                                    nguoiDung.put("uid",           uid);
-                                    nguoiDung.put("so_nguoi_theo_doi",0);
-                                    nguoiDung.put("so_nguoi_dang_theo_doi",0);
-
-                                    db.collection("nguoi_dung")
-                                            .document(uid)
-                                            .set(nguoiDung)
+                                    // ── Gửi email xác minh ──
+                                    user.sendEmailVerification()
                                             .addOnSuccessListener(unused -> {
+
                                                 Toast.makeText(
                                                         RegisterActivity.this,
-                                                        "Đăng ký thành công",
-                                                        Toast.LENGTH_SHORT
-                                                ).show();
-                                                startActivity(new Intent(
-                                                        RegisterActivity.this,
-                                                        LoginActivity.class
-                                                ));
-                                                finish();
-                                            })
-                                            .addOnFailureListener(e -> {
-                                                Toast.makeText(
-                                                        RegisterActivity.this,
-                                                        "Lỗi lưu dữ liệu: " + e.getMessage(),
+                                                        "ĐÃ GỬI MAIL THÀNH CÔNG",
                                                         Toast.LENGTH_LONG
                                                 ).show();
+
+                                            })
+                                            .addOnFailureListener(e -> {
+
+                                                Toast.makeText(
+                                                        RegisterActivity.this,
+                                                        "LỖI: " + e.getMessage(),
+                                                        Toast.LENGTH_LONG
+                                                ).show();
+
+                                            })
+                                            .addOnCompleteListener(verifyTask -> {
+
+                                                if (verifyTask.isSuccessful()) {
+
+                                                    // ── Lưu Firestore ──
+                                                    Map<String, Object> nguoiDung = new HashMap<>();
+
+                                                    nguoiDung.put("ho_va_ten", hoVaTen);
+                                                    nguoiDung.put("ten_dang_nhap", tenDangNhap);
+                                                    nguoiDung.put("email", email);
+
+                                                    // KHÔNG lưu mật khẩu
+                                                    // nguoiDung.put("mat_khau", matKhau);
+
+                                                    nguoiDung.put("anh_dai_dien", "");
+                                                    nguoiDung.put("tieu_su", "");
+                                                    nguoiDung.put("ngay_tao", new Date());
+
+                                                    nguoiDung.put("verified", false);
+                                                    nguoiDung.put("private", false);
+
+                                                    nguoiDung.put("uid", uid);
+
+                                                    nguoiDung.put("so_nguoi_theo_doi", 0);
+                                                    nguoiDung.put("so_nguoi_dang_theo_doi", 0);
+
+                                                    db.collection("nguoi_dung")
+                                                            .document(uid)
+                                                            .set(nguoiDung)
+                                                            .addOnSuccessListener(unused -> {
+
+                                                                Toast.makeText(
+                                                                        RegisterActivity.this,
+                                                                        "Đã gửi email xác minh",
+                                                                        Toast.LENGTH_LONG
+                                                                ).show();
+
+                                                                auth.signOut();
+
+                                                                startActivity(
+                                                                        new Intent(
+                                                                                RegisterActivity.this,
+                                                                                LoginActivity.class
+                                                                        )
+                                                                );
+
+                                                                finish();
+
+                                                            })
+                                                            .addOnFailureListener(e -> {
+
+                                                                Toast.makeText(
+                                                                        RegisterActivity.this,
+                                                                        "Lỗi lưu dữ liệu: "
+                                                                                + e.getMessage(),
+                                                                        Toast.LENGTH_LONG
+                                                                ).show();
+
+                                                            });
+
+                                                } else {
+
+                                                    Toast.makeText(
+                                                            RegisterActivity.this,
+                                                            "Không gửi được email xác minh",
+                                                            Toast.LENGTH_LONG
+                                                    ).show();
+
+                                                }
+
                                             });
 
                                 } else {
+
                                     Toast.makeText(
                                             RegisterActivity.this,
                                             task.getException().getMessage(),
                                             Toast.LENGTH_LONG
                                     ).show();
+
                                 }
                             });
                 })

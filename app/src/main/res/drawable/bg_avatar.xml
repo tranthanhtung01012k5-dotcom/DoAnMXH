@@ -1,0 +1,4 @@
+<!-- res/drawable/bg_avatar.xml -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="100dp"/>
+</shape>

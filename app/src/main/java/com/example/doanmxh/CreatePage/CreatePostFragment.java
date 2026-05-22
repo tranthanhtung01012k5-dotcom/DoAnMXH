@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.doanmxh.HomePage.ImageAdapter;
 import com.example.doanmxh.R;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -55,12 +56,14 @@ public class CreatePostFragment extends Fragment {
     private FirebaseAuth auth;
 
     private final List<Uri> selectedImages = new ArrayList<>();
+    private final List<String> displayUris = new ArrayList<>();
     private final List<String> imageUrls = new ArrayList<>();
+    private ImageAdapter adapter;
 
-    private ImagePreviewAdapter adapter;
+    private static final String TAG = "UPLOAD_DEBUG";
+    private final ImageRepository imageRepository = new ImageRepository();
 
-    public CreatePostFragment() {
-    }
+    public CreatePostFragment() {}
 
     @Nullable
     @Override
@@ -68,38 +71,37 @@ public class CreatePostFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
-        View view = inflater.inflate(
-                R.layout.fragment_create,
-                container,
-                false
-        );
+        View view = inflater.inflate(R.layout.fragment_create, container, false);
 
-        edtNoiDung = view.findViewById(R.id.edtNoiDung);
-        btnDang = view.findViewById(R.id.btnPost);
-        btnAnh = view.findViewById(R.id.btnAnh);
+        edtNoiDung  = view.findViewById(R.id.edtNoiDung);
+        btnDang     = view.findViewById(R.id.btnPost);
+        btnAnh      = view.findViewById(R.id.btnAnh);
         recyclerAnh = view.findViewById(R.id.rvImages);
-
         txtUsername = view.findViewById(R.id.txtUsername);
-        imgAvatar = view.findViewById(R.id.imgAvatar);
+        imgAvatar   = view.findViewById(R.id.imgAvatar);
 
-        db = FirebaseFirestore.getInstance();
+        db      = FirebaseFirestore.getInstance();
         storage = FirebaseStorage.getInstance();
-        auth = FirebaseAuth.getInstance();
+        auth    = FirebaseAuth.getInstance();
 
         loadUserInfo();
 
-        adapter = new ImagePreviewAdapter(requireContext(), selectedImages);
-
-        recyclerAnh.setLayoutManager(
-                new GridLayoutManager(requireContext(), 2)
-        );
-
+        // ✅ Dùng ImageAdapter có nút X
+        adapter = new ImageAdapter(displayUris, position -> {
+            // displayUris đã bị xóa bên trong ImageAdapter
+            // Xóa Uri tương ứng trong selectedImages
+            if (position < selectedImages.size()) {
+                selectedImages.remove(position);
+            }
+        });
+        recyclerAnh.setLayoutManager(new GridLayoutManager(requireContext(), 2));
         recyclerAnh.setAdapter(adapter);
 
         btnAnh.setOnClickListener(v -> openGallery());
-        ImageButton btnCamera = view.findViewById(R.id.btnCamera);
 
+        ImageButton btnCamera = view.findViewById(R.id.btnCamera);
         btnCamera.setOnClickListener(v -> openCamera());
+
         btnDang.setOnClickListener(v -> dangBai());
 
         return view;
@@ -110,32 +112,20 @@ public class CreatePostFragment extends Fragment {
     // =========================
 
     private void loadUserInfo() {
-
         if (auth.getCurrentUser() == null) return;
 
         String uid = auth.getCurrentUser().getUid();
 
-        db.collection("nguoi_dung")
-                .document(uid)
-                .get()
-                .addOnSuccessListener(documentSnapshot -> {
+        db.collection("nguoi_dung").document(uid).get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) return;
 
-                    if (!documentSnapshot.exists()) return;
+                    String hoTen = doc.getString("ho_va_ten");
+                    String avatar = doc.getString("anh_dai_dien");
 
-                    String hoTen =
-                            documentSnapshot.getString("ho_va_ten");
-
-                    String avatar =
-                            documentSnapshot.getString("anh_dai_dien");
-
-                    txtUsername.setText(
-                            hoTen != null
-                                    ? hoTen
-                                    : "Người dùng"
-                    );
+                    txtUsername.setText(hoTen != null ? hoTen : "Người dùng");
 
                     if (avatar != null && !avatar.isEmpty()) {
-
                         Glide.with(requireContext())
                                 .load(avatar)
                                 .placeholder(R.drawable.ic_placeholder_avatar)
@@ -145,17 +135,13 @@ public class CreatePostFragment extends Fragment {
     }
 
     // =========================
-    // Chọn ảnh
+    // Chọn ảnh từ thư viện
     // =========================
 
     private void openGallery() {
-
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-
         intent.setType("image/*");
-
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-
         pickImagesLauncher.launch(intent);
     }
 
@@ -163,26 +149,21 @@ public class CreatePostFragment extends Fragment {
             registerForActivityResult(
                     new ActivityResultContracts.StartActivityForResult(),
                     result -> {
-
-                        if (result.getResultCode() == getActivity().RESULT_OK
+                        if (result.getResultCode() == requireActivity().RESULT_OK
                                 && result.getData() != null) {
 
                             Intent data = result.getData();
 
                             if (data.getClipData() != null) {
-
                                 ClipData clipData = data.getClipData();
-
                                 for (int i = 0; i < clipData.getItemCount(); i++) {
-
                                     Uri uri = clipData.getItemAt(i).getUri();
-
                                     selectedImages.add(uri);
+                                    displayUris.add(uri.toString()); // ✅
                                 }
-
                             } else if (data.getData() != null) {
-
                                 selectedImages.add(data.getData());
+                                displayUris.add(data.getData().toString()); // ✅
                             }
 
                             adapter.notifyDataSetChanged();
@@ -190,28 +171,49 @@ public class CreatePostFragment extends Fragment {
                     });
 
     // =========================
+    // Chụp ảnh từ camera
+    // =========================
+
+    private final ActivityResultLauncher<Uri> cameraLauncher =
+            registerForActivityResult(
+                    new ActivityResultContracts.TakePicture(),
+                    result -> {
+                        if (result && cameraImageUri != null) {
+                            selectedImages.add(cameraImageUri);
+                            displayUris.add(cameraImageUri.toString()); // ✅
+                            adapter.notifyDataSetChanged();
+                        } else {
+                            Toast.makeText(requireContext(),
+                                    "Chụp ảnh thất bại", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+    private void openCamera() {
+        File file = new File(
+                requireContext().getCacheDir(),
+                "camera_" + System.currentTimeMillis() + ".jpg"
+        );
+        cameraImageUri = androidx.core.content.FileProvider.getUriForFile(
+                requireContext(),
+                requireContext().getPackageName() + ".provider",
+                file
+        );
+        cameraLauncher.launch(cameraImageUri);
+    }
+
+    // =========================
     // Đăng bài
     // =========================
 
     private void dangBai() {
-
         String noiDung = edtNoiDung.getText().toString().trim();
 
-        if (TextUtils.isEmpty(noiDung)
-                && selectedImages.isEmpty()) {
-
-            Toast.makeText(
-                    requireContext(),
-                    "Vui lòng nhập nội dung",
-                    Toast.LENGTH_SHORT
-            ).show();
-
+        if (TextUtils.isEmpty(noiDung) && displayUris.isEmpty()) { // ✅ check displayUris
+            Toast.makeText(requireContext(), "Vui lòng nhập nội dung", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        ProgressDialog dialog =
-                new ProgressDialog(requireContext());
-
+        ProgressDialog dialog = new ProgressDialog(requireContext());
         dialog.setMessage("Đang đăng bài...");
         dialog.setCancelable(false);
         dialog.show();
@@ -219,11 +221,8 @@ public class CreatePostFragment extends Fragment {
         imageUrls.clear();
 
         if (selectedImages.isEmpty()) {
-
             savePost(noiDung, dialog);
-
         } else {
-
             uploadImages(0, noiDung, dialog);
         }
     }
@@ -232,175 +231,66 @@ public class CreatePostFragment extends Fragment {
     // Upload ảnh
     // =========================
 
-//    private void uploadImages(int index,
-//                              String noiDung,
-//                              ProgressDialog dialog) {
-//
-//        if (index >= selectedImages.size()) {
-//            savePost(noiDung, dialog);
-//            return;
-//        }
-//
-//        Uri imageUri = selectedImages.get(index);
-//
-//        uploadToImgbb(imageUri, new Callback<String>() {
-//            @Override
-//            public void onSuccess(String url) {
-//
-//                imageUrls.add(url);
-//
-//                uploadImages(index + 1, noiDung, dialog);
-//            }
-//
-//            @Override
-//            public void onError() {
-//
-//                dialog.dismiss();
-//
-//                Toast.makeText(
-//                        requireContext(),
-//                        "Upload ảnh Imgbb thất bại",
-//                        Toast.LENGTH_SHORT
-//                ).show();
-//            }
-//        });
-//    }
-private static final String TAG = "UPLOAD_DEBUG";
-
-    private ImageRepository imageRepository = new ImageRepository();
-
-    private void uploadImages(int index,
-                              String noiDung,
-                              ProgressDialog dialog) {
-
+    private void uploadImages(int index, String noiDung, ProgressDialog dialog) {
         Log.d(TAG, "Bắt đầu upload index = " + index);
 
         if (index >= selectedImages.size()) {
-
             Log.d(TAG, "Upload xong tất cả ảnh. Gọi savePost()");
             savePost(noiDung, dialog);
             return;
         }
 
         Uri uri = selectedImages.get(index);
-
-        Log.d(TAG, "Đang upload ảnh thứ " + index + " URI = " + uri.toString());
+        Log.d(TAG, "Đang upload ảnh thứ " + index + " URI = " + uri);
 
         imageRepository.uploadImage(requireContext(), uri,
                 new ImageRepository.UploadCallback() {
-
                     @Override
                     public void onSuccess(String url) {
-
                         Log.d(TAG, "Upload OK index = " + index + " URL = " + url);
-
                         imageUrls.add(url);
-
                         uploadImages(index + 1, noiDung, dialog);
                     }
 
                     @Override
                     public void onError() {
-
                         Log.e(TAG, "Upload FAIL index = " + index);
-
                         dialog.dismiss();
-
-                        Toast.makeText(
-                                requireContext(),
-                                "Upload ảnh thất bại",
-                                Toast.LENGTH_SHORT
-                        ).show();
+                        Toast.makeText(requireContext(),
+                                "Upload ảnh thất bại", Toast.LENGTH_SHORT).show();
                     }
                 });
     }
 
-    //=========================
-    //Mở CAMERA
-    //===========
-    private final ActivityResultLauncher<Uri> cameraLauncher =
-            registerForActivityResult(
-                    new ActivityResultContracts.TakePicture(),
-                    result -> {
-
-                        if (result) {
-                            if (cameraImageUri != null) {
-
-                                selectedImages.add(cameraImageUri);
-                                adapter.notifyDataSetChanged();
-                            }
-                        } else {
-                            Toast.makeText(requireContext(),
-                                    "Chụp ảnh thất bại",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-            );
-    private void openCamera() {
-
-        File file = new File(
-                requireContext().getCacheDir(),
-                "camera_" + System.currentTimeMillis() + ".jpg"
-        );
-
-        cameraImageUri = androidx.core.content.FileProvider.getUriForFile(
-                requireContext(),
-                requireContext().getPackageName() + ".provider",
-                file
-        );
-
-        cameraLauncher.launch(cameraImageUri);
-    }
     // =========================
     // Lưu Firestore
     // =========================
 
-    private void savePost(String noiDung,
-                          ProgressDialog dialog) {
-
+    private void savePost(String noiDung, ProgressDialog dialog) {
         String uid = auth.getCurrentUser().getUid();
 
         Map<String, Object> post = new HashMap<>();
-
         post.put("nguoi_dung_id", uid);
-
         post.put("noi_dung", noiDung);
-
         post.put("ngay_tao", Timestamp.now());
-
         post.put("da_xoa", false);
-
         post.put("che_do_xem", "public");
-
         post.put("so_like", 0);
-
         post.put("so_binh_luan", 0);
-
         post.put("so_share", 0);
-
         post.put("danh_sach_anh", imageUrls);
+        post.put("danh_sach_video", new ArrayList<>());
 
-        post.put("danh_sach_video",
-                new ArrayList<>());
-
-        db.collection("bai_viet")
-                .add(post)
-                .addOnSuccessListener(documentReference -> {
-
+        db.collection("bai_viet").add(post)
+                .addOnSuccessListener(ref -> {
                     dialog.dismiss();
+                    Toast.makeText(requireContext(), "Đăng bài thành công", Toast.LENGTH_SHORT).show();
 
-                    Toast.makeText(
-                            requireContext(),
-                            "Đăng bài thành công",
-                            Toast.LENGTH_SHORT
-                    ).show();
-
+                    // ✅ Clear đủ 3 list
                     edtNoiDung.setText("");
-
                     selectedImages.clear();
-
+                    displayUris.clear();
                     imageUrls.clear();
-
                     adapter.notifyDataSetChanged();
 
                     requireActivity().runOnUiThread(() -> {
@@ -409,15 +299,8 @@ private static final String TAG = "UPLOAD_DEBUG";
                     });
                 })
                 .addOnFailureListener(e -> {
-
                     dialog.dismiss();
-
-                    Toast.makeText(
-                            requireContext(),
-                            "Đăng bài thất bại",
-                            Toast.LENGTH_SHORT
-                    ).show();
+                    Toast.makeText(requireContext(), "Đăng bài thất bại", Toast.LENGTH_SHORT).show();
                 });
     }
 }
-

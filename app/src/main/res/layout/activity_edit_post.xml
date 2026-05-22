@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#101010">
+    <!-- Thêm nút Back ở trên cùng, trước ScrollView -->
+    <ImageButton
+        android:id="@+id/btnBack"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_arrow_back_24"
+        app:tint="#FFFFFF"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="16dp">
+
+            <!-- Avatar -->
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/imgAvatar"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@color/placeholder_bg"
+                android:scaleType="centerCrop"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:shapeAppearanceOverlay="@style/ShapeCircle"
+                tools:src="@drawable/ic_placeholder_avatar" />
+
+            <!-- Username -->
+
+            <TextView
+                android:id="@+id/txtUsername"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="Tên người dùng"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toEndOf="@id/imgAvatar"
+                app:layout_constraintTop_toTopOf="@id/imgAvatar" />
+
+            <!-- Content -->
+
+            <EditText
+                android:id="@+id/edtNoiDung"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="@null"
+                android:fontFamily="sans-serif"
+                android:gravity="top"
+                android:hint="Bạn đang nghĩ gì?"
+                android:importantForAutofill="no"
+                android:inputType="textMultiLine"
+                android:minHeight="120dp"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#666666"
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@id/txtUsername"
+                app:layout_constraintTop_toBottomOf="@id/txtUsername" />
+
+            <!-- Preview Image -->
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvImages"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:layout_constraintTop_toBottomOf="@id/edtNoiDung"
+                app:layout_constraintStart_toStartOf="@id/edtNoiDung"
+                app:layout_constraintEnd_toEndOf="parent"
+                tools:listitem="@layout/item_preview_image" />
+
+            <!-- Tool Bar -->
+
+            <LinearLayout
+                android:id="@+id/layoutTools"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                app:layout_constraintTop_toBottomOf="@id/rvImages"
+                app:layout_constraintStart_toStartOf="@id/rvImages"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <ImageButton
+                    android:id="@+id/btnAnh"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_marginEnd="20dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Ảnh"
+                    android:src="@drawable/ic_picture"
+                    app:tint="#888888" />
+
+                <ImageButton
+                    android:id="@+id/btnCamera"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_marginEnd="20dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Camera"
+                    android:src="@drawable/ic_photo"
+                    app:tint="#888888" />
+
+                <ImageButton
+                    android:id="@+id/btnMic"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:layout_marginEnd="20dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Mic"
+                    android:src="@drawable/ic_micro"
+                    app:tint="#888888" />
+
+                <ImageButton
+                    android:id="@+id/btnHastag"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Hashtag"
+                    android:src="@drawable/ic_hastag"
+                    app:tint="#888888" />
+
+            </LinearLayout>
+
+            <!-- Post Button -->
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnPost"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="100dp"
+                android:backgroundTint="#FFFFFF"
+                android:paddingStart="22dp"
+                android:paddingEnd="22dp"
+                android:text="Lưu"
+                android:textAllCaps="false"
+                android:textColor="#000000"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                app:cornerRadius="20dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/layoutTools" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </ScrollView>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

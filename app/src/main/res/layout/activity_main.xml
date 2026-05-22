@@ -8,7 +8,7 @@
     android:background="#000000"
     android:fitsSystemWindows="true">
 
-    <!-- ── Top App Bar ── -->
+    <!-- Top App Bar -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
@@ -24,45 +24,25 @@
             android:paddingStart="4dp"
             android:paddingEnd="4dp">
 
-            <!-- Left: avatar -->
-<!--            <ImageButton-->
-<!--                android:id="@+id/btnToolbarLeft"-->
-<!--                android:layout_width="48dp"-->
-<!--                android:layout_height="48dp"-->
-<!--                android:layout_gravity="start|center_vertical"-->
-<!--                android:minWidth="48dp"-->
-<!--                android:minHeight="48dp"-->
-<!--                android:background="?attr/selectableItemBackgroundBorderless"-->
-<!--                android:contentDescription="@string/cd_toolbar_left"-->
-<!--                android:src="@drawable/ic_placeholder_avatar"-->
-<!--                android:visibility="invisible" />-->
-
-            <!-- Center: Logo Threads -->
             <ImageView
                 android:id="@+id/ivThreadsLogo"
                 android:layout_width="32dp"
                 android:layout_height="32dp"
                 android:layout_gravity="center"
-                android:contentDescription="@string/cd_threads_logo"
                 android:src="@drawable/thread_logo_white"
                 android:scaleType="fitCenter" />
 
-            <!-- Right: Direct Message — ✅ dùng imageTintList thay tint -->
             <ImageButton
                 android:id="@+id/btnDirectMessage"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
                 android:layout_gravity="end|center_vertical"
-                android:minWidth="48dp"
-                android:minHeight="48dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/cd_direct_message"
                 android:src="@drawable/ic_send_outline_24"
                 app:tint="@android:color/white" />
 
         </androidx.appcompat.widget.Toolbar>
 
-        <!-- Divider mỏng dưới toolbar -->
         <View
             android:layout_width="match_parent"
             android:layout_height="0.5dp"
@@ -70,31 +50,31 @@
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Fragment Container -->
+    <!-- Fragment -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/nav_host_fragment"
         android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingBottom="70dp"
+        android:paddingBottom="64dp"
         android:clipToPadding="false"
         app:defaultNavHost="true"
         app:navGraph="@navigation/nav_graph"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:context=".MainActivity" />
 
-    <!-- ── Bottom Navigation ── -->
+    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_gravity="bottom"
         android:background="#000000"
-        android:paddingTop="4dp"
-        android:paddingBottom="8dp"
+        android:paddingTop="2dp"
+        android:paddingBottom="6dp"
         app:elevation="0dp"
-        app:itemIconSize="24dp"
-        app:itemIconTint="@color/selector_nav_icon"
+
+        app:itemIconSize="22dp"
         app:itemRippleColor="#1AFFFFFF"
         app:labelVisibilityMode="unlabeled"
         app:menu="@menu/bottom_nav_menu" />

@@ -120,49 +120,47 @@ public class PostDetailActivity extends AppCompatActivity {
                 }
 
                 String authorUid = post.getNguoiDungId();
+
                 if (authorUid == null || authorUid.equals(myUid)) return;
 
-                String docId = myUid + "_" + authorUid;
+                // Chỉ lưu trong subcollection của user
+                Map<String, Object> followerEntry = new HashMap<>();
+                followerEntry.put("nguoi_dung_id", myUid);
+                followerEntry.put("ngay_theo_doi", new Date());
 
-                Map<String, Object> followData = new HashMap<>();
-                followData.put("nguoi_theo_doi_id", myUid);
-                followData.put("nguoi_duoc_theo_doi_id", authorUid);
-                followData.put("ngay_theo_doi", new Date());
-
-                db.collection("theo_doi")
-                        .document(docId)
-                        .set(followData)
+                db.collection("nguoi_dung")
+                        .document(authorUid)
+                        .collection("nguoi_theo_doi")
+                        .document(myUid)
+                        .set(followerEntry)
                         .addOnSuccessListener(unused -> {
-                            // Tăng số người theo dõi của tác giả
+
+                            // tăng số follower của tác giả
                             db.collection("nguoi_dung")
                                     .document(authorUid)
-                                    .update("so_nguoi_theo_doi", FieldValue.increment(1));
-
-                            Map<String, Object> followerEntry = new HashMap<>();
-                            followerEntry.put("nguoi_dung_id", myUid);
-                            followerEntry.put("ngay_theo_doi", new Date());
-                            db.collection("nguoi_dung")
-                                    .document(authorUid)
-                                    .collection("nguoi_theo_doi")
-                                    .document(myUid)
-                                    .set(followerEntry);
-
-                            // Tăng số người đang theo dõi của người dùng hiện tại
-                            db.collection("nguoi_dung")
-                                    .document(myUid)
-                                    .update("so_nguoi_dang_theo_doi", FieldValue.increment(1));
+                                    .update("so_nguoi_theo_doi",
+                                            FieldValue.increment(1));
 
                             Map<String, Object> followingEntry = new HashMap<>();
                             followingEntry.put("nguoi_dung_id", authorUid);
                             followingEntry.put("ngay_theo_doi", new Date());
+
+                            // lưu danh sách đang theo dõi
                             db.collection("nguoi_dung")
                                     .document(myUid)
                                     .collection("nguoi_dang_theo_doi")
                                     .document(authorUid)
                                     .set(followingEntry);
 
+                            // tăng số đang theo dõi
+                            db.collection("nguoi_dung")
+                                    .document(myUid)
+                                    .update("so_nguoi_dang_theo_doi",
+                                            FieldValue.increment(1));
+
                             post.setFollowing(true);
                             postAdapter.notifyItemChanged(position);
+
                             Toast.makeText(PostDetailActivity.this,
                                     "Đã theo dõi @" + post.getTenDangNhap(),
                                     Toast.LENGTH_SHORT).show();
@@ -346,193 +344,127 @@ public class PostDetailActivity extends AppCompatActivity {
     }
 
     private void loadComments() {
-
         db.collection("bai_viet")
                 .document(postId)
                 .collection("binh_luan")
                 .orderBy("ngay_tao", Query.Direction.ASCENDING)
-
                 .addSnapshotListener((snapshots, error) -> {
 
-                    if (error != null || snapshots == null)
-                        return;
+                    if (error != null || snapshots == null) return;
 
-                    List<CommentModel> roots =
-                            new ArrayList<>();
+                    List<CommentModel> roots = new ArrayList<>();
+                    Map<String, List<CommentModel>> replyMap = new HashMap<>();
 
-                    Map<String, List<CommentModel>> replyMap =
-                            new HashMap<>();
+                    // ✅ Giữ lại map comment cũ để preserve avatar/tên
+                    Map<String, CommentModel> oldCommentMap = new HashMap<>();
+                    for (CommentModel c : commentList) {
+                        oldCommentMap.put(c.getDocumentId(), c);
+                    }
 
                     commentList.clear();
 
-                    for (DocumentSnapshot doc
-                            : snapshots.getDocuments()) {
+                    List<CommentModel> allNewComments = new ArrayList<>();
 
-                        CommentModel comment =
-                                new CommentModel();
+                    for (DocumentSnapshot doc : snapshots.getDocuments()) {
 
+                        CommentModel comment = new CommentModel();
                         comment.setDocumentId(doc.getId());
-
-                        comment.setNoiDung(
-                                doc.getString("noi_dung")
-                        );
-
-                        comment.setNguoiDungId(
-                                doc.getString("nguoi_dung_id")
-                        );
-
-                        comment.setBinhLuanChaId(
-                                doc.getString("binh_luan_cha_id")
-                        );
+                        comment.setNoiDung(doc.getString("noi_dung"));
+                        comment.setNguoiDungId(doc.getString("nguoi_dung_id"));
+                        comment.setBinhLuanChaId(doc.getString("binh_luan_cha_id"));
 
                         if (doc.getTimestamp("ngay_tao") != null) {
-
-                            comment.setNgayTao(
-                                    doc.getTimestamp("ngay_tao")
-                            );
+                            comment.setNgayTao(doc.getTimestamp("ngay_tao"));
                         }
 
-                        Long soLikeLong =
-                                doc.getLong("so_like");
+                        Long soLikeLong = doc.getLong("so_like");
+                        comment.setSoLike(soLikeLong != null ? soLikeLong.intValue() : 0);
 
-                        comment.setSoLike(
-                                soLikeLong != null
-                                        ? soLikeLong.intValue()
-                                        : 0
-                        );
-
-                        comment.setLikedByMe(false);
-
-                        comment.setFollowing(false);
-
-                        // =========================
-                        // LOAD USER INFO
-                        // =========================
-
-                        String uid =
-                                comment.getNguoiDungId();
-
-                        if (uid != null && !uid.isEmpty()) {
-
-                            db.collection("nguoi_dung")
-                                    .document(uid)
-                                    .get()
-
-                                    .addOnSuccessListener(userDoc -> {
-
-                                        if (userDoc.exists()) {
-
-                                            comment.setHoVaTen(
-                                                    userDoc.getString(
-                                                            "ho_va_ten"
-                                                    )
-                                            );
-
-                                            comment.setAnhDaiDien(
-                                                    userDoc.getString(
-                                                            "anh_dai_dien"
-                                                    )
-                                            );
-                                        }
-
-                                        commentAdapter.notifyDataSetChanged();
-                                    });
-                        }
-
-                        // =========================
-                        // CHECK LIKE
-                        // =========================
-
-                        if (myUid != null) {
-
-                            db.collection("bai_viet")
-                                    .document(postId)
-                                    .collection("binh_luan")
-                                    .document(comment.getDocumentId())
-                                    .collection("luot_thich")
-                                    .document(myUid)
-                                    .get()
-
-                                    .addOnSuccessListener(likeDoc -> {
-
-                                        comment.setLikedByMe(
-                                                likeDoc.exists()
-                                        );
-
-                                        commentAdapter.notifyDataSetChanged();
-                                    });
-
-                            // =========================
-                            // CHECK FOLLOW
-                            // =========================
-
-                            if (uid != null) {
-
-                                db.collection("theo_doi")
-                                        .document(myUid + "_" + uid)
-                                        .get()
-
-                                        .addOnSuccessListener(followDoc -> {
-
-                                            comment.setFollowing(
-                                                    followDoc.exists()
-                                            );
-
-                                            commentAdapter.notifyDataSetChanged();
-                                        });
-                            }
-                        }
-
-                        // =========================
-                        // ROOT / REPLY
-                        // =========================
-
-                        String parentId =
-                                comment.getBinhLuanChaId();
-
-                        if (parentId == null
-                                || parentId.isEmpty()) {
-
-                            roots.add(comment);
-
+                        // ✅ Lấy lại avatar/tên/like/follow từ comment cũ nếu có
+                        CommentModel old = oldCommentMap.get(doc.getId());
+                        if (old != null) {
+                            comment.setHoVaTen(old.getHoVaTen());
+                            comment.setAnhDaiDien(old.getAnhDaiDien());
+                            comment.setLikedByMe(old.isLikedByMe());
+                            comment.setFollowing(old.isFollowing());
                         } else {
+                            comment.setLikedByMe(false);
+                            comment.setFollowing(false);
 
-                            if (!replyMap.containsKey(parentId)) {
+                            // ✅ Chỉ load user info nếu là comment MỚI (chưa có trong oldMap)
+                            String uid = comment.getNguoiDungId();
+                            if (uid != null && !uid.isEmpty()) {
+                                final CommentModel finalComment = comment;
+                                db.collection("nguoi_dung").document(uid).get()
+                                        .addOnSuccessListener(userDoc -> {
+                                            if (userDoc.exists()) {
+                                                finalComment.setHoVaTen(userDoc.getString("ho_va_ten"));
+                                                finalComment.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+                                            }
+                                            // ✅ Notify đúng index
+                                            int idx = commentList.indexOf(finalComment);
+                                            if (idx >= 0) commentAdapter.notifyItemChanged(idx);
+                                        });
 
-                                replyMap.put(
-                                        parentId,
-                                        new ArrayList<>()
-                                );
+                                if (myUid != null) {
+                                    db.collection("bai_viet").document(postId)
+                                            .collection("binh_luan").document(doc.getId())
+                                            .collection("luot_thich").document(myUid).get()
+                                            .addOnSuccessListener(likeDoc -> {
+                                                finalComment.setLikedByMe(likeDoc.exists());
+                                                int idx = commentList.indexOf(finalComment);
+                                                if (idx >= 0) commentAdapter.notifyItemChanged(idx);
+                                            });
+
+                                    db.collection("theo_doi")
+                                            .document(myUid + "_" + uid).get()
+                                            .addOnSuccessListener(followDoc -> {
+                                                finalComment.setFollowing(followDoc.exists());
+                                                int idx = commentList.indexOf(finalComment);
+                                                if (idx >= 0) commentAdapter.notifyItemChanged(idx);
+                                            });
+                                }
                             }
+                        }
 
-                            replyMap.get(parentId)
-                                    .add(comment);
+                        allNewComments.add(comment);
+
+                        String parentId = comment.getBinhLuanChaId();
+                        if (parentId == null || parentId.isEmpty()) {
+                            roots.add(comment);
+                        } else {
+                            if (!replyMap.containsKey(parentId)) {
+                                replyMap.put(parentId, new ArrayList<>());
+                            }
+                            replyMap.get(parentId).add(comment);
                         }
                     }
 
-                    // =========================
-                    // BUILD FINAL LIST
-                    // =========================
+                    // Build final list
+                    // Thay đoạn "Build final list" cũ bằng đoạn này
 
+// Build final list - đệ quy để hiện đủ 3 lớp
                     for (CommentModel root : roots) {
-
                         commentList.add(root);
-
-                        List<CommentModel> replies =
-                                replyMap.get(
-                                        root.getDocumentId()
-                                );
-
-                        if (replies != null) {
-
-                            commentList.addAll(replies);
-                        }
+                        addRepliesRecursive(root.getDocumentId(), replyMap);
                     }
 
                     commentAdapter.notifyDataSetChanged();
                 });
     }
+    private void addRepliesRecursive(
+            String parentId,
+            Map<String, List<CommentModel>> replyMap
+    ) {
+        List<CommentModel> replies = replyMap.get(parentId);
+        if (replies == null) return;
 
+        for (CommentModel reply : replies) {
+            commentList.add(reply);
+            // Tiếp tục đệ quy xuống lá tiếp theo
+            addRepliesRecursive(reply.getDocumentId(), replyMap);
+        }
+    }
     private void sendComment() {
 
         String noiDung =
@@ -591,7 +523,7 @@ public class PostDetailActivity extends AppCompatActivity {
                                 currentPost.getSoBinhLuan() + 1
                         );
 
-                        postAdapter.notifyItemChanged(0);
+                        postAdapter.notifyItemChanged(0, "LIKE_UPDATE");
                     }
                 });
     }
@@ -609,7 +541,7 @@ public class PostDetailActivity extends AppCompatActivity {
                                 .update("so_like", FieldValue.increment(-1));
                         post.setLikedByMe(false);
                         post.setSoLuotThich(Math.max(0, post.getSoLuotThich() - 1));
-                        postAdapter.notifyItemChanged(0);
+                        postAdapter.notifyItemChanged(0, "LIKE_UPDATE");
                     } else {
                         db.collection("nguoi_dung").document(myUid).get()
                                 .addOnSuccessListener(userDoc -> {
@@ -626,7 +558,7 @@ public class PostDetailActivity extends AppCompatActivity {
                                             .update("so_like", FieldValue.increment(1));
                                     post.setLikedByMe(true);
                                     post.setSoLuotThich(post.getSoLuotThich() + 1);
-                                    postAdapter.notifyItemChanged(0);
+                                    postAdapter.notifyItemChanged(0, "LIKE_UPDATE");
                                 });
                     }
                 });

@@ -6,17 +6,19 @@
     android:background="#000000"
     android:id="@+id/profileFragment"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingHorizontal="16dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="8dp">
 
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp">
+        android:layout_marginBottom="14dp">
 
         <ImageView
             android:id="@+id/btnLanguage"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
             android:layout_alignParentStart="true"
             android:contentDescription="Web Icon"
             android:src="@drawable/ic_language"
@@ -30,8 +32,8 @@
 
             <ImageView
                 android:id="@+id/btnMenu"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
                 android:contentDescription="Menu Icon"
                 android:src="@drawable/ic_menu"
                 app:tint="#FFFFFF" />
@@ -41,7 +43,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp">
+        android:layout_marginBottom="10dp">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -56,13 +58,13 @@
                 android:layout_height="wrap_content"
                 android:text="Keng Nguyễn"
                 android:textColor="#FFFFFF"
-                android:textSize="26sp"
+                android:textSize="23sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -72,7 +74,7 @@
                     android:layout_height="wrap_content"
                     android:text="phaidaucuoctinh_005"
                     android:textColor="#FFFFFF"
-                    android:textSize="14sp" />
+                    android:textSize="13sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -83,14 +85,14 @@
                     android:paddingVertical="2dp"
                     android:text="threads.net"
                     android:textColor="#8E8E93"
-                    android:textSize="11sp" />
+                    android:textSize="10sp" />
             </LinearLayout>
         </LinearLayout>
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/imgProfile"
-            android:layout_width="74dp"
-            android:layout_height="74dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
             android:layout_alignParentEnd="true"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_placeholder_avatar"
@@ -103,16 +105,16 @@
         android:id="@+id/txtTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:lineSpacingExtra="4dp"
-        android:text="Tình yêu thật\nThế giới ảo"
+        android:lineSpacingExtra="2dp"
+        android:text="Tình yêu thật&#10;Thế giới ảo"
         android:textColor="#FFFFFF"
-        android:textSize="15sp" />
+        android:textSize="14sp" />
 
     <!-- Avatar những người đang follow + số người theo dõi -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="10dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -131,48 +133,49 @@
             android:layout_height="wrap_content"
             android:text=" người theo dõi"
             android:textColor="#888888"
-            android:textSize="14sp" />
+            android:textSize="13sp" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="14dp"
         android:orientation="horizontal">
 
         <android.widget.Button
             android:id="@+id/btnEditProfile"
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="36dp"
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
             android:background="#1C1C1E"
             android:text="Chỉnh sửa hồ sơ"
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textStyle="bold" />
 
         <android.widget.Button
             android:layout_width="0dp"
-            android:layout_height="40dp"
+            android:layout_height="36dp"
             android:layout_marginStart="6dp"
             android:layout_weight="1"
             android:background="#1C1C1E"
             android:text="Chia sẻ hồ sơ"
             android:textAllCaps="false"
             android:textColor="#FFFFFF"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textStyle="bold" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="18dp"
         android:orientation="horizontal">
 
         <LinearLayout
+            android:id="@+id/btnPost"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -182,10 +185,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingVertical="10dp"
+                android:paddingVertical="8dp"
                 android:text="Threads"
                 android:textColor="#FFFFFF"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <View
@@ -195,6 +198,7 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@id/btnComment"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -204,10 +208,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingVertical="10dp"
+                android:paddingVertical="8dp"
                 android:text="Câu trả lời"
                 android:textColor="#636366"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <View
@@ -226,10 +230,10 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingVertical="10dp"
+                android:paddingVertical="8dp"
                 android:text="Đăng lại"
                 android:textColor="#636366"
-                android:textSize="15sp"
+                android:textSize="14sp"
                 android:textStyle="bold" />
 
             <View
@@ -253,5 +257,11 @@
             android:textColor="#636366"
             android:textSize="15sp" />
 
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvMyThreads"
+            android:layout_width="match_parent"
+            android:layout_height="297dp"
+            android:nestedScrollingEnabled="false" />
     </FrameLayout>
+
 </LinearLayout>

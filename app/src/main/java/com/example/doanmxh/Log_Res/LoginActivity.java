@@ -82,16 +82,28 @@ public class LoginActivity extends AppCompatActivity {
 
     private void loginUser() {
 
-        String email    = edtUsername.getText().toString().trim();
+        String email = edtUsername.getText().toString().trim();
         String password = edtPassword.getText().toString().trim();
 
         if (TextUtils.isEmpty(email) || TextUtils.isEmpty(password)) {
-            Toast.makeText(this, "Nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
+
+            Toast.makeText(
+                    this,
+                    "Nhập đầy đủ thông tin",
+                    Toast.LENGTH_SHORT
+            ).show();
+
             return;
         }
 
         if (password.length() < 6) {
-            Toast.makeText(this, "Mật khẩu tối thiểu 6 ký tự", Toast.LENGTH_SHORT).show();
+
+            Toast.makeText(
+                    this,
+                    "Mật khẩu tối thiểu 6 ký tự",
+                    Toast.LENGTH_SHORT
+            ).show();
+
             return;
         }
 
@@ -100,37 +112,113 @@ public class LoginActivity extends AppCompatActivity {
 
                     if (task.isSuccessful()) {
 
-                        // ✅ Lưu trạng thái "ghi nhớ" vào SharedPreferences
-                        SharedPreferences prefs = getSharedPreferences(PREF_NAME, MODE_PRIVATE);
-                        SharedPreferences.Editor editor = prefs.edit();
+                        if (auth.getCurrentUser() == null) {
 
-                        if (checkRemember.isChecked()) {
-                            // Tích checkbox → lưu session
-                            editor.putBoolean(KEY_REMEMBER, true);
-                        } else {
-                            // Không tích → đánh dấu không ghi nhớ
-                            editor.putBoolean(KEY_REMEMBER, false);
+                            Toast.makeText(
+                                    LoginActivity.this,
+                                    "Không lấy được user",
+                                    Toast.LENGTH_SHORT
+                            ).show();
+
+                            return;
                         }
-                        editor.apply();
 
-                        Toast.makeText(
-                                LoginActivity.this,
-                                "Đăng nhập thành công",
-                                Toast.LENGTH_SHORT
-                        ).show();
+                        auth.getCurrentUser()
+                                .reload()
+                                .addOnCompleteListener(reloadTask -> {
 
-                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                        startActivity(intent);
-                        finish();
+                                    boolean verified =
+                                            auth.getCurrentUser()
+                                                    .isEmailVerified();
+
+                                    if (!verified) {
+
+                                        auth.signOut();
+
+                                        Toast.makeText(
+                                                LoginActivity.this,
+                                                "Email chưa được xác minh",
+                                                Toast.LENGTH_LONG
+                                        ).show();
+
+                                        // gửi lại email xác minh
+                                        auth.signInWithEmailAndPassword(
+                                                        email,
+                                                        password
+                                                )
+                                                .addOnSuccessListener(authResult -> {
+
+                                                    if (auth.getCurrentUser() != null) {
+
+                                                        auth.getCurrentUser()
+                                                                .sendEmailVerification();
+
+                                                        Toast.makeText(
+                                                                LoginActivity.this,
+                                                                "Đã gửi lại email xác minh",
+                                                                Toast.LENGTH_LONG
+                                                        ).show();
+                                                    }
+
+                                                    auth.signOut();
+
+                                                });
+
+                                        return;
+                                    }
+
+                                    // ✅ Đã xác minh
+
+                                    SharedPreferences prefs =
+                                            getSharedPreferences(
+                                                    PREF_NAME,
+                                                    MODE_PRIVATE
+                                            );
+
+                                    SharedPreferences.Editor editor =
+                                            prefs.edit();
+
+                                    editor.putBoolean(
+                                            KEY_REMEMBER,
+                                            checkRemember.isChecked()
+                                    );
+
+                                    editor.apply();
+
+                                    Toast.makeText(
+                                            LoginActivity.this,
+                                            "Đăng nhập thành công",
+                                            Toast.LENGTH_SHORT
+                                    ).show();
+
+                                    Intent intent =
+                                            new Intent(
+                                                    LoginActivity.this,
+                                                    MainActivity.class
+                                            );
+
+                                    intent.setFlags(
+                                            Intent.FLAG_ACTIVITY_NEW_TASK
+                                                    | Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                    );
+
+                                    startActivity(intent);
+
+                                    finish();
+
+                                });
 
                     } else {
+
                         Toast.makeText(
                                 LoginActivity.this,
-                                "Đăng nhập thất bại: " + task.getException().getMessage(),
+                                "Đăng nhập thất bại: "
+                                        + task.getException().getMessage(),
                                 Toast.LENGTH_LONG
                         ).show();
+
                     }
+
                 });
     }
 }

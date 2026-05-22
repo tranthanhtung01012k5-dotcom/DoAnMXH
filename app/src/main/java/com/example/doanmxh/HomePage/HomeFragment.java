@@ -10,6 +10,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -63,6 +64,7 @@ public class HomeFragment extends Fragment {
 
         adapter = new PostAdapter(postList, new PostAdapter.OnPostActionListener() {
 
+
             @Override
             public void onLikeClick(PostModel post, int position) {
                 if (getContext() == null) return;
@@ -75,29 +77,43 @@ public class HomeFragment extends Fragment {
                     return;
                 }
 
+                // ✅ Luôn lấy post mới nhất từ postList theo documentId
+                String docId = post.getDocumentId();
+                PostModel currentPost = null;
+                int currentPosition = -1;
+                for (int i = 0; i < postList.size(); i++) {
+                    if (postList.get(i).getDocumentId().equals(docId)) {
+                        currentPost = postList.get(i);
+                        currentPosition = i;
+                        break;
+                    }
+                }
+                if (currentPost == null) return;
+
+                final PostModel finalPost = currentPost;
+                final int finalPosition = currentPosition;
+
                 db.collection("bai_viet")
-                        .document(post.getDocumentId())
+                        .document(docId)
                         .collection("luot_thich")
                         .document(currentUid)
                         .get()
                         .addOnSuccessListener(doc -> {
                             if (doc.exists()) {
-                                // Đã like → bỏ like
                                 db.collection("bai_viet")
-                                        .document(post.getDocumentId())
+                                        .document(docId)
                                         .collection("luot_thich")
                                         .document(currentUid)
                                         .delete()
                                         .addOnSuccessListener(unused -> {
                                             db.collection("bai_viet")
-                                                    .document(post.getDocumentId())
+                                                    .document(docId)
                                                     .update("so_like", FieldValue.increment(-1));
-                                            post.setLikedByMe(false);
-                                            post.setSoLuotThich(Math.max(0, post.getSoLuotThich() - 1));
-                                            adapter.notifyItemChanged(position);
+                                            finalPost.setLikedByMe(false);
+                                            finalPost.setSoLuotThich(Math.max(0, finalPost.getSoLuotThich() - 1));
+                                            adapter.notifyItemChanged(finalPosition, "LIKE_UPDATE");
                                         });
                             } else {
-                                // Chưa like → lấy tên user rồi thêm like
                                 db.collection("nguoi_dung")
                                         .document(currentUid)
                                         .get()
@@ -111,17 +127,17 @@ public class HomeFragment extends Fragment {
                                             likeData.put("ngay_like", new Date());
 
                                             db.collection("bai_viet")
-                                                    .document(post.getDocumentId())
+                                                    .document(docId)
                                                     .collection("luot_thich")
                                                     .document(currentUid)
                                                     .set(likeData)
                                                     .addOnSuccessListener(unused -> {
                                                         db.collection("bai_viet")
-                                                                .document(post.getDocumentId())
+                                                                .document(docId)
                                                                 .update("so_like", FieldValue.increment(1));
-                                                        post.setLikedByMe(true);
-                                                        post.setSoLuotThich(post.getSoLuotThich() + 1);
-                                                        adapter.notifyItemChanged(position);
+                                                        finalPost.setLikedByMe(true);
+                                                        finalPost.setSoLuotThich(finalPost.getSoLuotThich() + 1);
+                                                        adapter.notifyItemChanged(finalPosition, "LIKE_UPDATE");
                                                     });
                                         });
                             }
@@ -148,76 +164,75 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onAddFriendClick(PostModel post, int position) {
+
                 if (getContext() == null) return;
 
                 String currentUid = FirebaseAuth.getInstance().getCurrentUser() != null
-                        ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+                        ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                        : null;
 
                 if (currentUid == null) {
-                    Toast.makeText(getContext(), "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(),
+                            "Vui lòng đăng nhập",
+                            Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                String docId = currentUid + "_" + post.getNguoiDungId();
+                String authorUid = post.getNguoiDungId();
 
-                // ── 1. Lưu vào collection "theo_doi" ──
-                Map<String, Object> followData = new HashMap<>();
-                followData.put("nguoi_theo_doi_id", currentUid);
-                followData.put("nguoi_duoc_theo_doi_id", post.getNguoiDungId());
-                followData.put("ngay_theo_doi", new Date());
+                if (authorUid == null || authorUid.equals(currentUid)) return;
 
-                db.collection("theo_doi").document(docId)
-                        .set(followData)
+                // ── Người theo dõi của tác giả ──
+                Map<String, Object> followerEntry = new HashMap<>();
+                followerEntry.put("nguoi_dung_id", currentUid);
+                followerEntry.put("ngay_theo_doi", new Date());
+
+                db.collection("nguoi_dung")
+                        .document(authorUid)
+                        .collection("nguoi_theo_doi")
+                        .document(currentUid)
+                        .set(followerEntry)
                         .addOnSuccessListener(unused -> {
+
                             if (getContext() == null) return;
 
-                            String authorUid = post.getNguoiDungId();
-
-                            // ── 2. Phía tác giả bài (người được follow) ──
-                            // Tăng so_nguoi_theo_doi
+                            // tăng follower cho tác giả
                             db.collection("nguoi_dung")
                                     .document(authorUid)
-                                    .update("so_nguoi_dang_theo_doi", FieldValue.increment(1));
+                                    .update("so_nguoi_theo_doi",
+                                            FieldValue.increment(1));
 
-                            // Thêm currentUid vào subcollection "nguoi_theo_doi" của tác giả
-                            // set() tự tạo document nếu chưa có
-                            Map<String, Object> followerEntry = new HashMap<>();
-                            followerEntry.put("nguoi_dung_id", currentUid);
-                            followerEntry.put("ngay_theo_doi", new Date());
-
-                            db.collection("nguoi_dung")
-                                    .document(authorUid)
-                                    .collection("nguoi_dang_theo_doi")
-                                    .document(currentUid)
-                                    .set(followerEntry);
-
-                            // ── 3. Phía người dùng hiện tại (người nhấn follow) ──
-                            // Tăng so_nguoi_dang_theo_doi
-                            db.collection("nguoi_dung")
-                                    .document(currentUid)
-                                    .update("so_nguoi_theo_doi", FieldValue.increment(1));
-
-                            // Thêm authorUid vào subcollection "nguoi_dang_theo_doi" của currentUid
+                            // ── Người hiện tại đang theo dõi ai ──
                             Map<String, Object> followingEntry = new HashMap<>();
                             followingEntry.put("nguoi_dung_id", authorUid);
                             followingEntry.put("ngay_theo_doi", new Date());
 
                             db.collection("nguoi_dung")
                                     .document(currentUid)
-                                    .collection("nguoi_theo_doi")
+                                    .collection("nguoi_dang_theo_doi")
                                     .document(authorUid)
                                     .set(followingEntry);
 
-                            // ── 4. Cập nhật UI ──
+                            // tăng số đang theo dõi
+                            db.collection("nguoi_dung")
+                                    .document(currentUid)
+                                    .update("so_nguoi_dang_theo_doi",
+                                            FieldValue.increment(1));
+
+                            // cập nhật UI
                             Toast.makeText(getContext(),
                                     "Đã theo dõi @" + post.getTenDangNhap(),
                                     Toast.LENGTH_SHORT).show();
+
                             post.setFollowing(true);
-                            adapter.notifyItemChanged(position);
+                            adapter.notifyItemChanged(position, "LIKE_UPDATE");
                         })
                         .addOnFailureListener(e -> {
+
                             if (getContext() == null) return;
-                            Toast.makeText(getContext(), "Lỗi: " + e.getMessage(),
+
+                            Toast.makeText(getContext(),
+                                    "Lỗi: " + e.getMessage(),
                                     Toast.LENGTH_SHORT).show();
                         });
             }
@@ -243,8 +258,11 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onMoreOptionsClick(PostModel post, int position) {
-                if (getContext() != null)
-                    Toast.makeText(getContext(), "Tùy chọn", Toast.LENGTH_SHORT).show();
+                PostOptionBottomSheet sheet = new PostOptionBottomSheet(post.getDocumentId());
+                sheet.setOnPostDeletedListener(deletedId -> {
+                    // Firestore listener tự bắt REMOVED event, không cần làm thêm
+                });
+                sheet.show(getChildFragmentManager(), "post_options");
             }
 
             @Override
@@ -260,11 +278,13 @@ public class HomeFragment extends Fragment {
 
         swipeRefresh.setColorSchemeColors(0xFFFFFFFF);
         swipeRefresh.setProgressBackgroundColorSchemeColor(0xFF222222);
+        // swipeRefresh - bỏ dòng lỗi, giữ nguyên flow
         swipeRefresh.setOnRefreshListener(() -> {
             postList.clear();
             adapter.notifyDataSetChanged();
             if (listenerRegistration != null)
                 listenerRegistration.remove();
+            listenerRegistration = null;
             loadFromFirestore();
             swipeRefresh.setRefreshing(false);
         });
@@ -512,32 +532,40 @@ public class HomeFragment extends Fragment {
                                 }
 
                                 // ─────────────── MODIFIED ───────────────
+                                // MODIFIED case - thêm payload + giữ avatar/tên
                                 case MODIFIED: {
-
-                                    PostModel newPost =
-                                            dc.getDocument().toObject(PostModel.class);
-
+                                    PostModel newPost = dc.getDocument().toObject(PostModel.class);
                                     newPost.setDocumentId(docId);
 
                                     for (int i = 0; i < postList.size(); i++) {
-
                                         PostModel old = postList.get(i);
 
                                         if (old.getDocumentId().equals(docId)) {
 
-                                            // 🔥 GIỮ STATE UI QUAN TRỌNG
+                                            // Giữ lại UI state - KHÔNG override likedByMe vì onLikeClick đã set rồi
                                             newPost.setTopComment(old.getTopComment());
                                             newPost.setTopReplies(old.getTopReplies());
-                                            newPost.setLikedByMe(old.isLikedByMe());
                                             newPost.setFollowing(old.isFollowing());
 
+                                            // Giữ avatar + tên
+                                            newPost.setHoVaTen(old.getHoVaTen());
+                                            newPost.setAnhDaiDien(old.getAnhDaiDien());
+                                            newPost.setTenDangNhap(old.getTenDangNhap());
+                                            newPost.setVerified(old.isVerified());
+
+                                            // ✅ Giữ likedByMe từ local state (onLikeClick đã cập nhật đúng)
+                                            newPost.setLikedByMe(old.isLikedByMe());
+
+                                            // ✅ Giữ so_like từ local nếu Firestore chưa kịp sync
+                                            // (tránh giật số khi Firestore trả về giá trị cũ)
+                                            newPost.setSoLuotThich(old.getSoLuotThich());
+
                                             postList.set(i, newPost);
-                                            adapter.notifyItemChanged(i);
+                                            adapter.notifyItemChanged(i, "LIKE_UPDATE");
                                             break;
                                         }
                                     }
-
-                                    break; // ❗ CỰC QUAN TRỌNG
+                                    break;
                                 }
 
                                 // ─────────────── REMOVED ───────────────
