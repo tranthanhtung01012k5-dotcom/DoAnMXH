@@ -6,8 +6,17 @@ import com.google.firebase.firestore.PropertyName;
 
 import java.util.Date;
 
-public class CommentModel {
-//    public int getLevel() {
+public class
+CommentModel {
+    public String getPostId() {
+        return postId;
+    }
+
+    public void setPostId(String postId) {
+        this.postId = postId;
+    }
+
+    //    public int getLevel() {
 //        return level;
 //    }
 //
@@ -16,10 +25,24 @@ public class CommentModel {
 //    }
 //
 //    private int level = 0;
+    private String postId;
     private String documentId;
     @PropertyName("nguoi_dung_id")
     private String nguoiDungId;
     private String hoVaTen;
+    @PropertyName("ten_dang_nhap")
+    private String tenDangNhap;
+    @PropertyName("ten_dang_nhap")
+
+    public String getTenDangNhap() {
+        return tenDangNhap;
+    }
+    @PropertyName("ten_dang_nhap")
+
+    public void setTenDangNhap(String tenDangNhap) {
+        this.tenDangNhap = tenDangNhap;
+    }
+
     @PropertyName("anh_dai_dien")
     private String anhDaiDien;
     @PropertyName("noi_dung")

@@ -1,0 +1,48 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="240dp"
+    android:height="240dp"
+    android:viewportWidth="240"
+    android:viewportHeight="240">
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,20 h60 v60 h-60 z M30,30 v40 h40 v-40 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,40 h20 v20 h-20 z" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M160,20 h60 v60 h-60 z M170,30 v40 h40 v-40 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M180,40 h20 v20 h-20 z" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,160 h60 v60 h-60 z M30,170 v40 h40 v-40 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,180 h20 v20 h-20 z" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="
+            M90,20h10v10h-10z M110,20h20v10h-20z M140,20h10v10h-10z
+            M90,40h10v20h-10z M110,50h10v10h-10z M130,40h20v10h-20z
+            M100,70h30v10h-30z M140,70h10v10h-10z
+
+            M20,90h10v20h-10z M40,90h20v10h-20z M80,90h30v10h-30z M120,90h40v10h-40z M170,90h20v10h-20z M200,90h20v10h-20z
+            M30,110h20v10h-20z M60,110h10v10h-10z M90,110h20v10h-20z M130,110h10v20h-10z M160,110h30v10h-30z M210,110h10v10h-10z
+            M20,130h30v10h-30z M70,130h20v10h-20z M100,140h20v10h-20z M140,130h30v10h-30z M190,130h20v10h-20z
+
+            M90,160h20v10h-20z M120,160h10v20h-10z M150,160h30v10h-30z M190,160h10v10h-10z M210,150h10v20h-10z
+            M90,180h10v10h-10z M110,190h30v10h-30z M160,180h20v10h-20z M200,180h10v10h-10z
+            M90,210h30v10h-30z M140,200h20v20h-20z M170,210h40v10h-40z
+        " />
+
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M95,95 h50 v50 h-50 z" />
+
+</vector>

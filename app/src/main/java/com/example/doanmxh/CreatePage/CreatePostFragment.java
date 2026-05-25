@@ -279,6 +279,8 @@ public class CreatePostFragment extends Fragment {
         post.put("so_binh_luan", 0);
         post.put("so_share", 0);
         post.put("danh_sach_anh", imageUrls);
+        post.put("bai_viet_cha_id", "");
+        post.put("is_repost", false);
         post.put("danh_sach_video", new ArrayList<>());
 
         db.collection("bai_viet").add(post)

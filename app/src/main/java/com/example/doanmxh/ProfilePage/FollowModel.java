@@ -8,6 +8,15 @@ public class FollowModel {
     private String name;
     private String avatar;
 
+    public boolean isFollowing() {
+        return isFollowing;
+    }
+
+    public void setFollowing(boolean following) {
+        isFollowing = following;
+    }
+
+    private boolean isFollowing;
     public FollowModel() {
     }
 

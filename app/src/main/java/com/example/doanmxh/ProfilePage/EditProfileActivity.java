@@ -6,7 +6,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.Switch;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,7 +34,7 @@ public class EditProfileActivity extends AppCompatActivity {
 
     private ImageView ivAvatar;
 
-    private Switch switchPrivate;
+    private MaterialSwitch switchPrivate;
 
     private FirebaseAuth mAuth;
 

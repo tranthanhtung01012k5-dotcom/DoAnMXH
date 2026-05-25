@@ -14,11 +14,17 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.doanmxh.HomePage.PostModel;
 import com.example.doanmxh.R;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import android.content.Intent;
 public class FollowAdapter
         extends RecyclerView.Adapter<FollowAdapter.ViewHolder> {
@@ -51,7 +57,7 @@ public class FollowAdapter
             @NonNull ViewHolder holder,
             int position
     ) {
-
+        PostModel post = new PostModel();
         FollowModel model = list.get(position);
 
         holder.txtUsername.setText(model.getUsername());
@@ -113,7 +119,7 @@ public class FollowAdapter
         // Check follow
         db.collection("nguoi_dung")
                 .document(currentUid)
-                .collection("nguoi_theo_doi")
+                .collection("nguoi_dang_theo_doi")
                 .document(model.getUid())
                 .get()
                 .addOnSuccessListener(documentSnapshot -> {
@@ -185,24 +191,110 @@ public class FollowAdapter
                     });
                 });
     }
-    private void followUser(
+    private void unfollowUser(
             FollowModel model,
             ViewHolder holder
     ) {
 
         db.collection("nguoi_dung")
                 .document(currentUid)
-                .collection("nguoi_theo_doi")
+                .collection("nguoi_dang_theo_doi")
                 .document(model.getUid())
-                .set(new java.util.HashMap<>())
+                .delete()
+
                 .addOnSuccessListener(unused -> {
 
+                    // xóa khỏi follower của người kia
                     db.collection("nguoi_dung")
                             .document(model.getUid())
-                            .collection("nguoi_dang_theo_doi")
+                            .collection("nguoi_theo_doi")
                             .document(currentUid)
-                            .set(new java.util.HashMap<>());
+                            .delete();
+//                    db.collection("nguoi_dung")
+//                            .document(currentUid)
+//                            .collection("nguoi_theo_doi")
+//                            .document(model.getUid())
+//                            .delete();
 
+                    // cập nhật trạng thái local
+                    if (model != null) {
+                        model.setFollowing(false);
+                    }
+
+                    // current user giảm số đang theo dõi
+                    db.collection("nguoi_dung")
+                            .document(currentUid)
+                            .update(
+                                    "so_nguoi_dang_theo_doi",
+                                    FieldValue.increment(-1)
+                            );
+
+                    // người bị unfollow giảm follower
+                    db.collection("nguoi_dung")
+                            .document(model.getUid())
+                            .update(
+                                    "so_nguoi_theo_doi",
+                                    FieldValue.increment(-1)
+                            );
+
+                    // cập nhật UI
+                    holder.btnFollow.setText("Theo dõi");
+
+                    holder.btnFollow.setBackgroundTintList(
+                            ColorStateList.valueOf(Color.WHITE)
+                    );
+
+                    holder.btnFollow.setTextColor(Color.BLACK);
+                });
+    }
+    private void followUser(
+            FollowModel model,
+            ViewHolder holder
+    ) {
+
+        // dữ liệu follow
+        Map<String, Object> followData = new HashMap<>();
+        followData.put("nguoi_dung_id", currentUid);
+        followData.put("ngay_theo_doi", new Date());
+
+        // currentUid follow model.getUid()
+        db.collection("nguoi_dung")
+                .document(currentUid)
+                .collection("nguoi_dang_theo_doi")
+                .document(model.getUid())
+                .set(followData)
+
+                .addOnSuccessListener(unused -> {
+
+                    // thêm vào danh sách follower của người kia
+                    db.collection("nguoi_dung")
+                            .document(model.getUid())
+                            .collection("nguoi_theo_doi")
+                            .document(currentUid)
+                            .set(followData);
+
+                    // cập nhật PostModel
+                    if (model != null) {
+                        model.setFollowing(true);
+                    }
+
+                    // current user tăng số đang theo dõi
+                    db.collection("nguoi_dung")
+                            .document(currentUid)
+                            .update(
+                                    "so_nguoi_dang_theo_doi",
+                                    FieldValue.increment(1)
+                            );
+
+                    // người được follow tăng follower
+                    db.collection("nguoi_dung")
+                            .document(model.getUid())
+                            .update(
+                                    "so_nguoi_theo_doi",
+                                    FieldValue.increment(1)
+                            );
+
+                    // cập nhật UI
                     holder.btnFollow.setText("Đang theo dõi");
 
                     holder.btnFollow.setBackgroundTintList(
@@ -212,33 +304,6 @@ public class FollowAdapter
                     );
 
                     holder.btnFollow.setTextColor(Color.WHITE);
-                });
-    }
-    private void unfollowUser(
-            FollowModel model,
-            ViewHolder holder
-    ) {
-
-        db.collection("nguoi_dung")
-                .document(currentUid)
-                .collection("nguoi_theo_doi")
-                .document(model.getUid())
-                .delete()
-                .addOnSuccessListener(unused -> {
-
-                    db.collection("nguoi_dung")
-                            .document(model.getUid())
-                            .collection("nguoi_dang_theo_doi")
-                            .document(currentUid)
-                            .delete();
-
-                    holder.btnFollow.setText("Theo dõi");
-
-                    holder.btnFollow.setBackgroundTintList(
-                            ColorStateList.valueOf(Color.WHITE)
-                    );
-
-                    holder.btnFollow.setTextColor(Color.BLACK);
                 });
     }
     @Override

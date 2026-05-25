@@ -191,7 +191,16 @@ public class PostModel {
     // =========================
     // Dữ liệu set thủ công
     // =========================
+    @PropertyName("bai_viet_cha_id")
+    private String baiVietChaId;
 
+    // Runtime only (không lưu Firestore)
+    private PostModel postCha;
+
+    public String getBaiVietChaId() { return baiVietChaId; }
+    public void setBaiVietChaId(String baiVietChaId) { this.baiVietChaId = baiVietChaId; }
+    public PostModel getPostCha() { return postCha; }
+    public void setPostCha(PostModel postCha) { this.postCha = postCha; }
     public String getHoVaTen() {
         return hoVaTen;
     }
@@ -236,6 +245,12 @@ public class PostModel {
     }
 
     public boolean isRepost() {
-        return baiVietGocId > 0;
+        return isRepost;
     }
+
+    public void setRepost(boolean repost) {
+        isRepost = repost;
+    }
+
+    private boolean isRepost;
 }

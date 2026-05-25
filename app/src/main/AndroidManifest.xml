@@ -36,6 +36,9 @@
         <activity android:name=".ProfilePage.EditProfileActivity" />
         <activity android:name=".ProfilePage.UserProfileActivity" />
         <activity android:name=".HomePage.EditPostActivity" />
+        <activity
+            android:name=".HomePage.FullScreenImageActivity"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

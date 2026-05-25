@@ -1,11 +1,16 @@
 package com.example.doanmxh.HomePage;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -15,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import com.bumptech.glide.Glide;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
 import com.google.firebase.Timestamp;
@@ -31,8 +37,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import com.google.firebase.firestore.DocumentSnapshot;
+import android.widget.EditText;
 public class HomeFragment extends Fragment {
-
+    private com.google.android.material.imageview.ShapeableImageView ivUserAvatarPost;
+    private EditText tvQuickPostHint;
+    private com.google.android.material.button.MaterialButton btnQuickPost;
     private RecyclerView rvFeed;
     private SwipeRefreshLayout swipeRefresh;
     private PostAdapter adapter;
@@ -46,9 +55,10 @@ public class HomeFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
-
+        enableImmersiveMode();
         rvFeed = view.findViewById(R.id.rvFeed);
         swipeRefresh = view.findViewById(R.id.swipeRefresh);
+
 
         if (rvFeed == null || swipeRefresh == null) {
             Log.e("HomeFragment", "View null");
@@ -61,7 +71,38 @@ public class HomeFragment extends Fragment {
             Log.e("HomeFragment", "Firestore null");
             return view;
         }
+        ivUserAvatarPost = view.findViewById(R.id.ivUserAvatarPost);
+        tvQuickPostHint  = view.findViewById(R.id.tvQuickPostHint);
+        btnQuickPost     = view.findViewById(R.id.btnQuickPost);
 
+// Load avatar người dùng hiện tại
+        String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+
+        if (myUid != null) {
+            db.collection("nguoi_dung").document(myUid).get()
+                    .addOnSuccessListener(doc -> {
+                        if (doc.exists()) {
+                            String avatar = doc.getString("anh_dai_dien");
+                            if (!TextUtils.isEmpty(avatar)) {
+                                Glide.with(this)
+                                        .load(avatar)
+                                        .placeholder(R.drawable.ic_placeholder_avatar)
+                                        .into(ivUserAvatarPost);
+                            }
+                        }
+                    });
+        }
+
+// Nút đăng bài nhanh
+        btnQuickPost.setOnClickListener(v -> {
+            String content = tvQuickPostHint.getText().toString().trim();
+            if (content.isEmpty()) {
+                tvQuickPostHint.setError("Vui lòng nhập nội dung");
+                return;
+            }
+            quickPost(content);
+        });
         adapter = new PostAdapter(postList, new PostAdapter.OnPostActionListener() {
 
 
@@ -226,6 +267,7 @@ public class HomeFragment extends Fragment {
 
                             post.setFollowing(true);
                             adapter.notifyItemChanged(position, "LIKE_UPDATE");
+                            adapter.notifyItemChanged(position);
                         })
                         .addOnFailureListener(e -> {
 
@@ -246,8 +288,40 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onRepostClick(PostModel post, int position) {
-                if (getContext() != null)
-                    Toast.makeText(getContext(), "Đã repost", Toast.LENGTH_SHORT).show();
+                if (getContext() == null) return;
+
+                String currentUid = FirebaseAuth.getInstance().getCurrentUser() != null
+                        ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+
+                if (currentUid == null) {
+                    Toast.makeText(getContext(), "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Confirm trước khi repost
+                new androidx.appcompat.app.AlertDialog.Builder(getContext())
+                        .setTitle("Đăng lại bài viết")
+                        .setMessage("Bạn muốn đăng lại bài này?")
+                        .setPositiveButton("Đăng lại", (dialog, which) -> {
+                            Map<String, Object> repost = new HashMap<>();
+                            repost.put("nguoi_dung_id", currentUid);
+                            repost.put("noi_dung", "");                          // nội dung rỗng hoặc thêm caption sau
+                            repost.put("ngay_tao", com.google.firebase.Timestamp.now());
+                            repost.put("so_like", 0);
+                            repost.put("so_binh_luan", 0);
+                            repost.put("da_xoa", false);
+                            repost.put("hinh_anh", new ArrayList<>());
+                            repost.put("bai_viet_cha_id", post.getDocumentId());
+                            repost.put("is_repost", true);// ← ID bài gốc
+
+                            db.collection("bai_viet").add(repost)
+                                    .addOnSuccessListener(ref ->
+                                            Toast.makeText(getContext(), "Đã đăng lại!", Toast.LENGTH_SHORT).show())
+                                    .addOnFailureListener(e ->
+                                            Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                        })
+                        .setNegativeButton("Hủy", null)
+                        .show();
             }
 
             @Override
@@ -291,7 +365,35 @@ public class HomeFragment extends Fragment {
 
         return view;
     }
+    private void loadBaiVietCha(PostModel post, String chaId, Runnable onDone) {
+        db.collection("bai_viet").document(chaId).get()
+                .addOnSuccessListener(chaDoc -> {
+                    if (!chaDoc.exists()) { onDone.run(); return; }
 
+                    PostModel postCha = chaDoc.toObject(PostModel.class);
+                    postCha.setDocumentId(chaDoc.getId());
+
+                    String chaUid = chaDoc.getString("nguoi_dung_id");
+                    if (chaUid != null && !chaUid.isEmpty()) {
+                        db.collection("nguoi_dung").document(chaUid).get()
+                                .addOnSuccessListener(userDoc -> {
+                                    if (userDoc.exists()) {
+                                        postCha.setHoVaTen(userDoc.getString("ho_va_ten"));
+                                        postCha.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
+                                        postCha.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+                                        postCha.setVerified(Boolean.TRUE.equals(userDoc.getBoolean("verified")));
+                                    }
+                                    post.setPostCha(postCha);
+                                    onDone.run();
+                                })
+                                .addOnFailureListener(e -> { post.setPostCha(postCha); onDone.run(); });
+                    } else {
+                        post.setPostCha(postCha);
+                        onDone.run();
+                    }
+                })
+                .addOnFailureListener(e -> onDone.run());
+    }
     private void loadFromFirestore() {
 
         listenerRegistration = db.collection("bai_viet")
@@ -299,69 +401,52 @@ public class HomeFragment extends Fragment {
                 .addSnapshotListener((snapshots, error) -> {
 
                     if (error != null) {
-                        Log.e("HomeFragment",
-                                "Lỗi load feed: " + error.getMessage());
+                        Log.e("HomeFragment", "Lỗi load feed: " + error.getMessage());
                         return;
                     }
 
                     if (snapshots == null) return;
 
-                    String myUid =
-                            FirebaseAuth.getInstance().getCurrentUser() != null
-                                    ? FirebaseAuth.getInstance()
-                                    .getCurrentUser()
-                                    .getUid()
-                                    : null;
+                    String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
+                            ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                            : null;
 
                     // ─────────────────────────────────────
                     // LOAD FIRST TIME
                     // ─────────────────────────────────────
-
                     if (postList.isEmpty()) {
 
-                        List<PostModel> tempList =
-                                new ArrayList<>();
-
+                        List<PostModel> tempList = new ArrayList<>();
                         int[] pendingCount = {0};
 
-                        for (DocumentChange dc
-                                : snapshots.getDocumentChanges()) {
+                        for (DocumentChange dc : snapshots.getDocumentChanges()) {
 
-                            if (dc.getType()
-                                    != DocumentChange.Type.ADDED)
-                                continue;
+                            if (dc.getType() != DocumentChange.Type.ADDED) continue;
 
                             pendingCount[0]++;
 
-                            PostModel post =
-                                    dc.getDocument()
-                                            .toObject(PostModel.class);
+                            PostModel post = dc.getDocument().toObject(PostModel.class);
+                            post.setDocumentId(dc.getDocument().getId());
 
-                            post.setDocumentId(
-                                    dc.getDocument().getId());
+                            // ✅ Set sớm để dùng trong callback
+                            String baiVietChaId = dc.getDocument().getString("bai_viet_cha_id");
+                            if (baiVietChaId != null && !baiVietChaId.isEmpty()) {
+                                post.setBaiVietChaId(baiVietChaId);
+                            }
 
-                            String nguoiDungId =
-                                    dc.getDocument()
-                                            .getString("nguoi_dung_id");
+                            String nguoiDungId = dc.getDocument().getString("nguoi_dung_id");
 
                             Runnable finishTask = () -> {
-
                                 loadTopComment(post, () -> {
-
                                     tempList.add(post);
-
                                     pendingCount[0]--;
-
                                     if (pendingCount[0] == 0) {
-
                                         sortAndRefresh(tempList);
                                     }
                                 });
                             };
 
-                            // load user
-                            if (nguoiDungId != null
-                                    && !nguoiDungId.isEmpty()) {
+                            if (nguoiDungId != null && !nguoiDungId.isEmpty()) {
 
                                 db.collection("nguoi_dung")
                                         .document(nguoiDungId)
@@ -369,25 +454,11 @@ public class HomeFragment extends Fragment {
                                         .addOnSuccessListener(userDoc -> {
 
                                             if (userDoc.exists()) {
-
-                                                post.setHoVaTen(
-                                                        userDoc.getString(
-                                                                "ho_va_ten"));
-
-                                                post.setTenDangNhap(
-                                                        userDoc.getString(
-                                                                "ten_dang_nhap"));
-
-                                                post.setAnhDaiDien(
-                                                        userDoc.getString(
-                                                                "anh_dai_dien"));
-
-                                                post.setVerified(
-                                                        Boolean.TRUE.equals(
-                                                                userDoc.getBoolean(
-                                                                        "verified")
-                                                        )
-                                                );
+                                                post.setHoVaTen(userDoc.getString("ho_va_ten"));
+                                                post.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
+                                                post.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+                                                post.setVerified(Boolean.TRUE.equals(
+                                                        userDoc.getBoolean("verified")));
                                             }
 
                                             // check like
@@ -400,84 +471,81 @@ public class HomeFragment extends Fragment {
                                                         .get()
                                                         .addOnSuccessListener(likeDoc -> {
 
-                                                            post.setLikedByMe(
-                                                                    likeDoc.exists());
+                                                            post.setLikedByMe(likeDoc.exists());
 
-                                                            String authorUid =
-                                                                    post.getNguoiDungId();
+                                                            String authorUid = post.getNguoiDungId();
 
                                                             // check follow
-                                                            if (authorUid != null
-                                                                    && !authorUid.equals(myUid)) {
+                                                            if (authorUid != null && !authorUid.equals(myUid)) {
 
-                                                                db.collection("theo_doi")
-                                                                        .document(
-                                                                                myUid
-                                                                                        + "_"
-                                                                                        + authorUid)
+                                                                db.collection("nguoi_dung")
+                                                                        .document(myUid)                    // ✅ sửa
+                                                                        .collection("nguoi_dang_theo_doi")  // ✅ sửa
+                                                                        .document(authorUid)
                                                                         .get()
                                                                         .addOnSuccessListener(followDoc -> {
+                                                                            post.setFollowing(followDoc.exists());
 
-                                                                            post.setFollowing(
-                                                                                    followDoc.exists());
-
-                                                                            finishTask.run();
+                                                                            // ✅ check repost SAU KHI có đủ thông tin
+                                                                            String chaId = post.getBaiVietChaId();
+                                                                            if (chaId != null && !chaId.isEmpty()) {
+                                                                                loadBaiVietCha(post, chaId, finishTask);
+                                                                            } else {
+                                                                                finishTask.run();
+                                                                            }
                                                                         })
                                                                         .addOnFailureListener(e -> {
-
                                                                             post.setFollowing(false);
-
                                                                             finishTask.run();
                                                                         });
 
                                                             } else {
-
                                                                 post.setFollowing(false);
 
-                                                                finishTask.run();
+                                                                // ✅ check repost
+                                                                String chaId = post.getBaiVietChaId();
+                                                                if (chaId != null && !chaId.isEmpty()) {
+                                                                    loadBaiVietCha(post, chaId, finishTask);
+                                                                } else {
+                                                                    finishTask.run();
+                                                                }
                                                             }
                                                         })
                                                         .addOnFailureListener(e -> {
-
                                                             post.setLikedByMe(false);
-
                                                             finishTask.run();
                                                         });
 
                                             } else {
-
                                                 post.setFollowing(false);
 
-                                                finishTask.run();
+                                                // ✅ check repost
+                                                String chaId = post.getBaiVietChaId();
+                                                if (chaId != null && !chaId.isEmpty()) {
+                                                    loadBaiVietCha(post, chaId, finishTask);
+                                                } else {
+                                                    finishTask.run();
+                                                }
                                             }
-
                                         })
                                         .addOnFailureListener(e -> {
-
-                                            Log.e("HomeFragment",
-                                                    "Lỗi load user: "
-                                                            + e.getMessage());
-
+                                            Log.e("HomeFragment", "Lỗi load user: " + e.getMessage());
                                             finishTask.run();
                                         });
 
                             } else {
-
                                 finishTask.run();
                             }
                         }
 
                         if (pendingCount[0] == 0) {
-
                             sortAndRefresh(tempList);
                         }
-
                     }
 
                     // ─────────────────────────────────────
                     // REALTIME UPDATE
                     // ─────────────────────────────────────
-
                     else {
 
                         for (DocumentChange dc : snapshots.getDocumentChanges()) {
@@ -489,18 +557,19 @@ public class HomeFragment extends Fragment {
                                 // ─────────────── ADDED ───────────────
                                 case ADDED: {
 
-                                    PostModel post =
-                                            dc.getDocument().toObject(PostModel.class);
-
+                                    PostModel post = dc.getDocument().toObject(PostModel.class);
                                     post.setDocumentId(docId);
 
-                                    String nguoiDungId =
-                                            dc.getDocument().getString("nguoi_dung_id");
+                                    // ✅ Set sớm
+                                    String baiVietChaId = dc.getDocument().getString("bai_viet_cha_id");
+                                    if (baiVietChaId != null && !baiVietChaId.isEmpty()) {
+                                        post.setBaiVietChaId(baiVietChaId);
+                                    }
+
+                                    String nguoiDungId = dc.getDocument().getString("nguoi_dung_id");
 
                                     Runnable insertTask = () -> {
-
                                         loadTopComment(post, () -> {
-
                                             postList.add(0, post);
                                             adapter.notifyItemInserted(0);
                                             rvFeed.scrollToPosition(0);
@@ -518,11 +587,19 @@ public class HomeFragment extends Fragment {
                                                         post.setHoVaTen(userDoc.getString("ho_va_ten"));
                                                         post.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
                                                         post.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
-                                                        post.setVerified(Boolean.TRUE.equals(userDoc.getBoolean("verified")));
+                                                        post.setVerified(Boolean.TRUE.equals(
+                                                                userDoc.getBoolean("verified")));
                                                     }
 
-                                                    insertTask.run();
-                                                });
+                                                    // ✅ check repost rồi mới insertTask
+                                                    String chaId = post.getBaiVietChaId();
+                                                    if (chaId != null && !chaId.isEmpty()) {
+                                                        loadBaiVietCha(post, chaId, insertTask);
+                                                    } else {
+                                                        insertTask.run();
+                                                    }
+                                                })
+                                                .addOnFailureListener(e -> insertTask.run());
 
                                     } else {
                                         insertTask.run();
@@ -532,8 +609,8 @@ public class HomeFragment extends Fragment {
                                 }
 
                                 // ─────────────── MODIFIED ───────────────
-                                // MODIFIED case - thêm payload + giữ avatar/tên
                                 case MODIFIED: {
+
                                     PostModel newPost = dc.getDocument().toObject(PostModel.class);
                                     newPost.setDocumentId(docId);
 
@@ -541,24 +618,17 @@ public class HomeFragment extends Fragment {
                                         PostModel old = postList.get(i);
 
                                         if (old.getDocumentId().equals(docId)) {
-
-                                            // Giữ lại UI state - KHÔNG override likedByMe vì onLikeClick đã set rồi
                                             newPost.setTopComment(old.getTopComment());
                                             newPost.setTopReplies(old.getTopReplies());
                                             newPost.setFollowing(old.isFollowing());
-
-                                            // Giữ avatar + tên
                                             newPost.setHoVaTen(old.getHoVaTen());
                                             newPost.setAnhDaiDien(old.getAnhDaiDien());
                                             newPost.setTenDangNhap(old.getTenDangNhap());
                                             newPost.setVerified(old.isVerified());
-
-                                            // ✅ Giữ likedByMe từ local state (onLikeClick đã cập nhật đúng)
                                             newPost.setLikedByMe(old.isLikedByMe());
-
-                                            // ✅ Giữ so_like từ local nếu Firestore chưa kịp sync
-                                            // (tránh giật số khi Firestore trả về giá trị cũ)
                                             newPost.setSoLuotThich(old.getSoLuotThich());
+                                            newPost.setPostCha(old.getPostCha());        // ✅ giữ postCha
+                                            newPost.setBaiVietChaId(old.getBaiVietChaId()); // ✅ giữ baiVietChaId
 
                                             postList.set(i, newPost);
                                             adapter.notifyItemChanged(i, "LIKE_UPDATE");
@@ -571,28 +641,20 @@ public class HomeFragment extends Fragment {
                                 // ─────────────── REMOVED ───────────────
                                 case REMOVED: {
 
-                                    String removedId = docId;
-
                                     for (int i = 0; i < postList.size(); i++) {
-
-                                        if (postList.get(i).getDocumentId().equals(removedId)) {
-
+                                        if (postList.get(i).getDocumentId().equals(docId)) {
                                             postList.remove(i);
                                             adapter.notifyItemRemoved(i);
                                             break;
                                         }
                                     }
-
                                     break;
                                 }
                             }
                         }
                     }
 
-                    Log.d("HomeFragment",
-                            "Feed: "
-                                    + postList.size()
-                                    + " bài");
+                    Log.d("HomeFragment", "Feed: " + postList.size() + " bài");
                 });
     }
 
@@ -862,5 +924,66 @@ public class HomeFragment extends Fragment {
         }
 
         onDone.run();
+    }
+    private void enableImmersiveMode() {
+        // Kiểm tra an toàn xem Fragment đã được gắn vào Activity chưa
+        if (getActivity() == null) return;
+
+        Window window = getActivity().getWindow();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false);
+            WindowInsetsController controller = window.getInsetsController();
+            if (controller != null) {
+                controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            }
+        } else {
+            window.getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                            | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+            );
+        }
+    }
+    private void quickPost(String content) {
+        String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+
+        if (myUid == null) {
+            Toast.makeText(getContext(), "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        btnQuickPost.setEnabled(false);
+
+        Map<String, Object> post = new HashMap<>();
+        post.put("nguoi_dung_id", myUid);
+        post.put("noi_dung", content);
+        post.put("ngay_tao", com.google.firebase.Timestamp.now());
+        post.put("so_like", 0);
+        post.put("so_binh_luan", 0);
+        post.put("da_xoa", false);
+        post.put("hinh_anh", new ArrayList<>());
+
+        db.collection("bai_viet")
+                .add(post)
+                .addOnSuccessListener(ref -> {
+                    tvQuickPostHint.setText("");
+                    tvQuickPostHint.clearFocus();
+                    android.view.inputmethod.InputMethodManager imm =
+                            (android.view.inputmethod.InputMethodManager)
+                                    requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) imm.hideSoftInputFromWindow(tvQuickPostHint.getWindowToken(), 0);
+
+                    btnQuickPost.setEnabled(true);
+                    Toast.makeText(getContext(), "Đã đăng!", Toast.LENGTH_SHORT).show();})
+                .addOnFailureListener(e -> {
+                    btnQuickPost.setEnabled(true);
+                    Toast.makeText(getContext(), "Lỗi đăng bài: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                });
     }
 }

@@ -24,7 +24,6 @@ import com.example.doanmxh.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.ServerTimestamp;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -91,7 +90,7 @@ public class RegisterActivity extends AppCompatActivity {
         String email       = edtEmail.getText().toString().trim();
         String matKhau     = edtPassword.getText().toString().trim();
 
-        // ── Validate ──
+        // ── Validate cơ bản ──
         if (TextUtils.isEmpty(hoVaTen) || TextUtils.isEmpty(tenDangNhap)
                 || TextUtils.isEmpty(email) || TextUtils.isEmpty(matKhau)) {
             Toast.makeText(this, "Nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
@@ -112,27 +111,15 @@ public class RegisterActivity extends AppCompatActivity {
             Toast.makeText(this, "Vui lòng đồng ý điều khoản", Toast.LENGTH_SHORT).show();
             return;
         }
-// Username phải bắt đầu bằng @
-        if (!tenDangNhap.startsWith("@")) {
-            Toast.makeText(this,
-                    "Tên người dùng phải bắt đầu bằng @",
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
 
-// Không được chỉ nhập @
-        if (tenDangNhap.length() <= 1) {
+        // ── Validate tên đăng nhập: chỉ chữ, số, dấu _ , từ 3-20 ký tự ──
+        if (!tenDangNhap.matches("^[a-zA-Z0-9_]{3,20}$")) {
             Toast.makeText(this,
-                    "Tên người dùng không hợp lệ",
-                    Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!tenDangNhap.matches("^@[a-zA-Z0-9._]{3,20}$")) {
-            Toast.makeText(this,
-                    "Username phải bắt đầu bằng @ và từ 4-20 ký tự",
+                    "Tên người dùng chỉ gồm chữ, số, dấu _ và từ 3-20 ký tự",
                     Toast.LENGTH_LONG).show();
             return;
         }
+
         // ── Kiểm tra ten_dang_nhap trùng trước khi đăng ký ──
         db.collection("nguoi_dung")
                 .whereEqualTo("ten_dang_nhap", tenDangNhap)
@@ -168,22 +155,18 @@ public class RegisterActivity extends AppCompatActivity {
                                     // ── Gửi email xác minh ──
                                     user.sendEmailVerification()
                                             .addOnSuccessListener(unused -> {
-
                                                 Toast.makeText(
                                                         RegisterActivity.this,
                                                         "ĐÃ GỬI MAIL THÀNH CÔNG",
                                                         Toast.LENGTH_LONG
                                                 ).show();
-
                                             })
                                             .addOnFailureListener(e -> {
-
                                                 Toast.makeText(
                                                         RegisterActivity.this,
                                                         "LỖI: " + e.getMessage(),
                                                         Toast.LENGTH_LONG
                                                 ).show();
-
                                             })
                                             .addOnCompleteListener(verifyTask -> {
 
@@ -191,80 +174,58 @@ public class RegisterActivity extends AppCompatActivity {
 
                                                     // ── Lưu Firestore ──
                                                     Map<String, Object> nguoiDung = new HashMap<>();
-
-                                                    nguoiDung.put("ho_va_ten", hoVaTen);
+                                                    nguoiDung.put("ho_va_ten",   hoVaTen);
                                                     nguoiDung.put("ten_dang_nhap", tenDangNhap);
-                                                    nguoiDung.put("email", email);
-
-                                                    // KHÔNG lưu mật khẩu
-                                                    // nguoiDung.put("mat_khau", matKhau);
-
+                                                    nguoiDung.put("email",       email);
                                                     nguoiDung.put("anh_dai_dien", "");
-                                                    nguoiDung.put("tieu_su", "");
-                                                    nguoiDung.put("ngay_tao", new Date());
-
-                                                    nguoiDung.put("verified", false);
-                                                    nguoiDung.put("private", false);
-
-                                                    nguoiDung.put("uid", uid);
-
-                                                    nguoiDung.put("so_nguoi_theo_doi", 0);
-                                                    nguoiDung.put("so_nguoi_dang_theo_doi", 0);
+                                                    nguoiDung.put("tieu_su",     "");
+                                                    nguoiDung.put("ngay_tao",    new Date());
+                                                    nguoiDung.put("verified",    false);
+                                                    nguoiDung.put("private",     false);
+                                                    nguoiDung.put("uid",         uid);
+                                                    nguoiDung.put("so_nguoi_theo_doi",       0);
+                                                    nguoiDung.put("so_nguoi_dang_theo_doi",  0);
 
                                                     db.collection("nguoi_dung")
                                                             .document(uid)
                                                             .set(nguoiDung)
                                                             .addOnSuccessListener(unused -> {
-
                                                                 Toast.makeText(
                                                                         RegisterActivity.this,
                                                                         "Đã gửi email xác minh",
                                                                         Toast.LENGTH_LONG
                                                                 ).show();
-
                                                                 auth.signOut();
-
-                                                                startActivity(
-                                                                        new Intent(
-                                                                                RegisterActivity.this,
-                                                                                LoginActivity.class
-                                                                        )
-                                                                );
-
+                                                                startActivity(new Intent(
+                                                                        RegisterActivity.this,
+                                                                        LoginActivity.class));
                                                                 finish();
-
                                                             })
                                                             .addOnFailureListener(e -> {
-
                                                                 Toast.makeText(
                                                                         RegisterActivity.this,
-                                                                        "Lỗi lưu dữ liệu: "
-                                                                                + e.getMessage(),
+                                                                        "Lỗi lưu dữ liệu: " + e.getMessage(),
                                                                         Toast.LENGTH_LONG
                                                                 ).show();
-
                                                             });
 
                                                 } else {
-
                                                     Toast.makeText(
                                                             RegisterActivity.this,
                                                             "Không gửi được email xác minh",
                                                             Toast.LENGTH_LONG
                                                     ).show();
-
                                                 }
-
                                             });
 
                                 } else {
-
                                     Toast.makeText(
                                             RegisterActivity.this,
-                                            task.getException().getMessage(),
+                                            task.getException() != null
+                                                    ? task.getException().getMessage()
+                                                    : "Đăng ký thất bại",
                                             Toast.LENGTH_LONG
                                     ).show();
-
                                 }
                             });
                 })

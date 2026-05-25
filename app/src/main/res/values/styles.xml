@@ -30,6 +30,18 @@
         <item name="cornerSize">12dp</item>
     </style>
     <style name="CircleImageView">
+        <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
+    </style>
+<!--    <style name="CircleImageView">-->
+<!--        <item name="cornerSize">50%</item>-->
+<!--    </style>-->
+    <style name="Theme.YourAppName" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+
+        <item name="android:windowFullscreen">true</item>
+
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+
     </style>
 </resources>
