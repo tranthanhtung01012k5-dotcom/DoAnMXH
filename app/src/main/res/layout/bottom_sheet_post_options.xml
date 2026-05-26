@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@android:color/black">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tùy chọn bài viết"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:textColor="#000"
+        android:paddingBottom="16dp" />
+
+    <!-- Chỉnh sửa -->
+
+    <LinearLayout
+        android:id="@+id/layoutEdit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="14dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_edit" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chỉnh sửa bài viết"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+    <!-- Xóa -->
+
+    <LinearLayout
+        android:id="@+id/layoutDelete"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="14dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_delete" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Xóa bài viết"
+            android:textSize="16sp"
+            android:textColor="#FFFFFF"
+            android:layout_marginStart="12dp" />
+
+    </LinearLayout>
+
+    <!-- Chia sẻ -->
+
+<!--    <LinearLayout-->
+<!--        android:id="@+id/layoutShare"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:orientation="horizontal"-->
+<!--        android:padding="14dp"-->
+<!--        android:clickable="true"-->
+<!--        android:focusable="true">-->
+
+<!--        <ImageView-->
+<!--            android:layout_width="24dp"-->
+<!--            android:layout_height="24dp"-->
+<!--            android:src="@drawable/ic_retweet_24" />-->
+
+<!--        <TextView-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:text="Chia sẻ"-->
+<!--            android:textSize="16sp"-->
+<!--            android:textColor="#FFFFFF"-->
+<!--            android:layout_marginStart="12dp" />-->
+
+<!--    </LinearLayout>-->
+
+</LinearLayout>
