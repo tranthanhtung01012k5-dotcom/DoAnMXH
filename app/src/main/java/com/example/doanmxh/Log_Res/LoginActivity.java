@@ -10,6 +10,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -52,7 +53,13 @@ public class LoginActivity extends AppCompatActivity {
         db   = FirebaseFirestore.getInstance();
 
         btnLogin.setOnClickListener(v -> loginUser());
+        TextView txtForgotPassword = findViewById(R.id.txtForgotPassword);
 
+        txtForgotPassword.setOnClickListener(v -> {
+            Intent intent = new Intent(LoginActivity.this, ForgotPassActivity.class);
+            startActivity(intent);
+            Log.d("ForgotPassword", "Forgot password text clicked");
+        });
         // ── Spannable "Đăng ký" ──
         String text = "Chưa có tài khoản? Đăng ký";
         SpannableString spannableString = new SpannableString(text);

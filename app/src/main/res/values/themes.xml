@@ -42,5 +42,17 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">28dp</item>
     </style>
+    <style name="DarkAlertDialog1" parent="Theme.MaterialComponents.Dialog.Alert">
+        <item name="android:background">#1C1C1E</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorSurface">#FFFFFF</item>
+        <item name="buttonBarPositiveButtonStyle">@style/DarkDialogButton2</item>
+        <item name="buttonBarNegativeButtonStyle">@style/DarkDialogButton2</item>
+        <item name="buttonBarNeutralButtonStyle">@style/DarkDialogButton2</item>
+    </style>
 
+    <style name="DarkDialogButton2" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
 </resources>

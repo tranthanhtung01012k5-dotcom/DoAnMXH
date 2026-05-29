@@ -25,6 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.doanmxh.HomePage.ImageAdapter;
+import com.example.doanmxh.Mention.MentionHelper;
 import com.example.doanmxh.R;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
@@ -39,7 +40,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import android.view.inputmethod.InputMethodManager;
+import android.content.Context;
 public class CreatePostFragment extends Fragment {
 
     private Uri cameraImageUri;
@@ -62,7 +64,7 @@ public class CreatePostFragment extends Fragment {
 
     private static final String TAG = "UPLOAD_DEBUG";
     private final ImageRepository imageRepository = new ImageRepository();
-
+    private MentionHelper mentionHelper;
     public CreatePostFragment() {}
 
     @Nullable
@@ -85,7 +87,7 @@ public class CreatePostFragment extends Fragment {
         auth    = FirebaseAuth.getInstance();
 
         loadUserInfo();
-
+        mentionHelper = new MentionHelper(requireContext(),edtNoiDung,db,null);
         // ✅ Dùng ImageAdapter có nút X
         adapter = new ImageAdapter(displayUris, position -> {
             // displayUris đã bị xóa bên trong ImageAdapter
@@ -277,6 +279,7 @@ public class CreatePostFragment extends Fragment {
         post.put("che_do_xem", "public");
         post.put("so_like", 0);
         post.put("so_binh_luan", 0);
+        post.put("so_repost",0);
         post.put("so_share", 0);
         post.put("danh_sach_anh", imageUrls);
         post.put("bai_viet_cha_id", "");
@@ -286,17 +289,25 @@ public class CreatePostFragment extends Fragment {
         db.collection("bai_viet").add(post)
                 .addOnSuccessListener(ref -> {
                     dialog.dismiss();
-                    Toast.makeText(requireContext(), "Đăng bài thành công", Toast.LENGTH_SHORT).show();
 
-                    // ✅ Clear đủ 3 list
+                    // ✅ Tắt bàn phím
+                    hideKeyboard();
+
+                    Toast.makeText(requireContext(),
+                            "Đăng bài thành công",
+                            Toast.LENGTH_SHORT).show();
+
                     edtNoiDung.setText("");
                     selectedImages.clear();
                     displayUris.clear();
                     imageUrls.clear();
+
                     adapter.notifyDataSetChanged();
 
                     requireActivity().runOnUiThread(() -> {
-                        BottomNavigationView nav = requireActivity().findViewById(R.id.bottomNav);
+                        BottomNavigationView nav =
+                                requireActivity().findViewById(R.id.bottomNav);
+
                         nav.setSelectedItemId(R.id.homeFragment);
                     });
                 })
@@ -304,5 +315,27 @@ public class CreatePostFragment extends Fragment {
                     dialog.dismiss();
                     Toast.makeText(requireContext(), "Đăng bài thất bại", Toast.LENGTH_SHORT).show();
                 });
+    }
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+//        if (listenerRegistration != null) {
+//            listenerRegistration.remove();
+//            listenerRegistration = null;
+//        }
+        if (mentionHelper != null) mentionHelper.dismiss();
+    }
+    private void hideKeyboard() {
+        View view = requireActivity().getCurrentFocus();
+
+        if (view != null) {
+            InputMethodManager imm =
+                    (InputMethodManager) requireContext()
+                            .getSystemService(Context.INPUT_METHOD_SERVICE);
+
+            if (imm != null) {
+                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+            }
+        }
     }
 }

@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -260,10 +261,16 @@ public class CommentAdapter
                     : null;
             if (uid == null) return;
 
+            // ← Thêm dòng này
+            String effectivePostId = (currentComment.getPostId() != null && !currentComment.getPostId().isEmpty())
+                    ? currentComment.getPostId()
+                    : postId;
+            if (effectivePostId == null || effectivePostId.isEmpty()) return; // ← chặn crash
+
             FirebaseFirestore db = FirebaseFirestore.getInstance();
             String commentId = currentComment.getDocumentId();
 
-            db.collection("bai_viet").document(postId)
+            db.collection("bai_viet").document(effectivePostId) // ← đổi postId → effectivePostId
                     .collection("binh_luan").document(commentId)
                     .collection("luot_thich").document(uid)
                     .get()
@@ -271,7 +278,7 @@ public class CommentAdapter
                         boolean daLike = documentSnapshot.exists();
                         if (daLike) {
                             documentSnapshot.getReference().delete();
-                            db.collection("bai_viet").document(postId)
+                            db.collection("bai_viet").document(effectivePostId) // ← đổi
                                     .collection("binh_luan").document(commentId)
                                     .update("so_like", FieldValue.increment(-1));
                             currentComment.setLikedByMe(false);
@@ -280,11 +287,11 @@ public class CommentAdapter
                             Map<String, Object> likeData = new HashMap<>();
                             likeData.put("nguoi_dung_id", uid);
                             likeData.put("ngay_like", new Date());
-                            db.collection("bai_viet").document(postId)
+                            db.collection("bai_viet").document(effectivePostId) // ← đổi
                                     .collection("binh_luan").document(commentId)
                                     .collection("luot_thich").document(uid)
                                     .set(likeData);
-                            db.collection("bai_viet").document(postId)
+                            db.collection("bai_viet").document(effectivePostId) // ← đổi
                                     .collection("binh_luan").document(commentId)
                                     .update("so_like", FieldValue.increment(1));
                             currentComment.setLikedByMe(true);
@@ -368,68 +375,176 @@ public class CommentAdapter
     //  DIALOG SỬA BÌNH LUẬN
     // ────────────────────────────────────────────────────────
     private void showEditDialog(Context ctx, CommentModel comment, int position) {
+        String effectivePostId = (comment.getPostId() != null && !comment.getPostId().isEmpty())
+                ? comment.getPostId()
+                : postId;
+
+        if (effectivePostId == null || effectivePostId.isEmpty()) return;
+
         View dialogView = LayoutInflater.from(ctx)
                 .inflate(R.layout.dialog_edit_comment, null);
+
         TextInputEditText etContent = dialogView.findViewById(R.id.etEditComment);
+        MaterialButton btnCancel    = dialogView.findViewById(R.id.btnCancel);
+        MaterialButton btnSave      = dialogView.findViewById(R.id.btnSave);
+
         etContent.setText(comment.getNoiDung());
         if (etContent.getText() != null)
             etContent.setSelection(etContent.getText().length());
 
-        new AlertDialog.Builder(ctx, R.style.DarkAlertDialog)
-                .setTitle("Sửa bình luận")
-                .setView(dialogView)
-                .setPositiveButton("Lưu", (dialog, which) -> {
-                    String newContent = etContent.getText() != null
-                            ? etContent.getText().toString().trim() : "";
-                    if (newContent.isEmpty()) return;
-                    FirebaseFirestore.getInstance()
-                            .collection("bai_viet").document(postId)
-                            .collection("binh_luan").document(comment.getDocumentId())
-                            .update("noi_dung", newContent)
-                            .addOnSuccessListener(unused -> {
-                                comment.setNoiDung(newContent);
-                                notifyItemChanged(position);
-                                if (listener != null)
-                                    listener.onEditComment(comment, position, newContent);
-                            });
-                })
-                .setNegativeButton("Hủy", null)
-                .show();
+        // Dialog không viền, nền trong suốt để MaterialCardView tự bo góc
+        android.app.Dialog dialog = new android.app.Dialog(ctx);
+        dialog.setContentView(dialogView);
+        dialog.getWindow().setBackgroundDrawable(
+                new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        dialog.getWindow().setLayout(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        dialog.setCancelable(true);
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        btnSave.setOnClickListener(v -> {
+            String newContent = etContent.getText() != null
+                    ? etContent.getText().toString().trim() : "";
+            if (newContent.isEmpty()) return;
+
+            FirebaseFirestore.getInstance()
+                    .collection("bai_viet").document(effectivePostId)
+                    .collection("binh_luan").document(comment.getDocumentId())
+                    .update("noi_dung", newContent)
+                    .addOnSuccessListener(unused -> {
+                        comment.setNoiDung(newContent);
+                        notifyItemChanged(position);
+                        if (listener != null)
+                            listener.onEditComment(comment, position, newContent);
+                        dialog.dismiss();
+                    });
+        });
+
+        dialog.show();
     }
 
     // ────────────────────────────────────────────────────────
     //  DIALOG XÁC NHẬN XÓA
     // ────────────────────────────────────────────────────────
-    private void showDeleteConfirm(Context ctx, CommentModel comment, int position) {
+    private void showDeleteConfirm(Context ctx,
+                                   CommentModel comment,
+                                   int position) {
+
+        String effectivePostId =
+                (comment.getPostId() != null
+                        && !comment.getPostId().isEmpty())
+                        ? comment.getPostId()
+                        : postId;
+
+        if (effectivePostId == null
+                || effectivePostId.isEmpty()) {
+            return;
+        }
+
         new AlertDialog.Builder(ctx, R.style.DarkAlertDialog)
                 .setTitle("Xóa bình luận")
                 .setMessage("Bạn có chắc muốn xóa bình luận này không?")
                 .setPositiveButton("Xóa", (dialog, which) -> {
-                    FirebaseFirestore.getInstance()
-                            .collection("bai_viet").document(postId)
-                            .collection("binh_luan")
-                            .whereEqualTo("binh_luan_cha_id", comment.getDocumentId())
-                            .get()
-                            .addOnSuccessListener(queryDocumentSnapshots -> {
-                                for (DocumentSnapshot doc : queryDocumentSnapshots.getDocuments()) {
-                                    doc.getReference().update("binh_luan_cha_id", "");
-                                }
-                            })
-                            .addOnFailureListener(e -> Log.e("Firestore", "Lỗi cập nhật", e));
 
-                    FirebaseFirestore.getInstance()
-                            .collection("bai_viet").document(postId)
-                            .collection("binh_luan").document(comment.getDocumentId())
-                            .delete()
-                            .addOnSuccessListener(unused -> {
-                                if (position < commentList.size()) {
-                                    commentList.remove(position);
-                                    notifyItemRemoved(position);
-                                    notifyItemRangeChanged(position, commentList.size());
+                    FirebaseFirestore db =
+                            FirebaseFirestore.getInstance();
+
+                    String commentId =
+                            comment.getDocumentId();
+
+                    // ====================================
+                    // Tìm tất cả comment con
+                    // ====================================
+
+                    db.collection("bai_viet")
+                            .document(effectivePostId)
+                            .collection("binh_luan")
+                            .whereEqualTo(
+                                    "binh_luan_cha_id",
+                                    commentId
+                            )
+                            .get()
+                            .addOnSuccessListener(query -> {
+
+                                // ====================================
+                                // Chuyển comment con thành comment thường
+                                // ====================================
+
+                                for (DocumentSnapshot doc
+                                        : query.getDocuments()) {
+
+                                    String childId = doc.getId();
+
+                                    // Update Firestore
+                                    doc.getReference()
+                                            .update(
+                                                    "binh_luan_cha_id",
+                                                    ""
+                                            );
+
+                                    // Update local list
+                                    for (CommentModel item : commentList) {
+
+                                        if (item.getDocumentId()
+                                                .equals(childId)) {
+
+                                            item.setBinhLuanChaId("");
+
+                                            break;
+                                        }
+                                    }
                                 }
-                                if (listener != null)
-                                    listener.onDeleteComment(comment, position);
-                            });
+
+                                // ====================================
+                                // Xóa comment cha
+                                // ====================================
+
+                                db.collection("bai_viet")
+                                        .document(effectivePostId)
+                                        .collection("binh_luan")
+                                        .document(commentId)
+                                        .delete()
+                                        .addOnSuccessListener(unused -> {
+
+                                            // ====================================
+                                            // Xóa local object theo object
+                                            // Không xóa theo position
+                                            // ====================================
+
+                                            commentList.remove(comment);
+
+                                            // ====================================
+                                            // Render lại toàn bộ
+                                            // ====================================
+
+                                            notifyDataSetChanged();
+
+                                            // ====================================
+                                            // Callback
+                                            // ====================================
+
+                                            if (listener != null) {
+                                                listener.onDeleteComment(
+                                                        comment,
+                                                        position
+                                                );
+                                            }
+                                        })
+                                        .addOnFailureListener(e ->
+                                                Log.e(
+                                                        "DELETE_COMMENT",
+                                                        "Xóa comment thất bại: "
+                                                                + e.getMessage()
+                                                ));
+                            })
+                            .addOnFailureListener(e ->
+                                    Log.e(
+                                            "DELETE_COMMENT",
+                                            "Lỗi xử lý reply: "
+                                                    + e.getMessage()
+                                    ));
                 })
                 .setNegativeButton("Hủy", null)
                 .show();

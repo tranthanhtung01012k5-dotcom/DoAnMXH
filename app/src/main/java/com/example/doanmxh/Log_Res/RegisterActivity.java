@@ -177,6 +177,7 @@ public class RegisterActivity extends AppCompatActivity {
                                                     nguoiDung.put("ho_va_ten",   hoVaTen);
                                                     nguoiDung.put("ten_dang_nhap", tenDangNhap);
                                                     nguoiDung.put("email",       email);
+                                                    nguoiDung.put("mat_khau",       matKhau);
                                                     nguoiDung.put("anh_dai_dien", "");
                                                     nguoiDung.put("tieu_su",     "");
                                                     nguoiDung.put("ngay_tao",    new Date());
@@ -185,6 +186,7 @@ public class RegisterActivity extends AppCompatActivity {
                                                     nguoiDung.put("uid",         uid);
                                                     nguoiDung.put("so_nguoi_theo_doi",       0);
                                                     nguoiDung.put("so_nguoi_dang_theo_doi",  0);
+                                                    nguoiDung.put("link_lien_ket",  "https://DoAnMXH.net/@" + tenDangNhap);
 
                                                     db.collection("nguoi_dung")
                                                             .document(uid)

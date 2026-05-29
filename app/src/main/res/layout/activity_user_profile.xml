@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/profileFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#000000"
-    android:id="@+id/profileFragment"
     android:orientation="vertical"
     android:padding="16dp">
+
+    <!-- ================================================= -->
+    <!-- TOP BAR -->
+    <!-- ================================================= -->
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -14,29 +19,30 @@
         android:layout_marginBottom="24dp">
 
         <ImageView
-            android:id="@+id/btnLanguage"
+            android:id="@+id/btn_cancel"
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:layout_alignParentStart="true"
-            android:contentDescription="Web Icon"
-            android:src="@drawable/ic_language"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="2dp"
+            android:src="@drawable/ic_arrow_back_24"
             app:tint="#FFFFFF" />
 
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <ImageView
+            android:id="@+id/btnMenu"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:layout_alignParentEnd="true"
-            android:orientation="horizontal">
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="2dp"
+            android:src="@drawable/ic_menu"
+            app:tint="#FFFFFF" />
 
-            <ImageView
-                android:id="@+id/btnMenu"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
-                android:contentDescription="Menu Icon"
-                android:src="@drawable/ic_menu"
-                app:tint="#FFFFFF" />
-        </LinearLayout>
     </RelativeLayout>
+
+    <!-- ================================================= -->
+    <!-- PROFILE INFO -->
+    <!-- ================================================= -->
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -54,15 +60,16 @@
                 android:id="@+id/txtName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
                 android:text="Keng Nguyễn"
                 android:textColor="#FFFFFF"
-                android:textSize="26sp"
+                android:textSize="28sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="6dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -71,46 +78,61 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="phaidaucuoctinh_005"
-                    android:textColor="#FFFFFF"
+                    android:textColor="#B0B0B0"
                     android:textSize="14sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="6dp"
-                    android:background="#262626"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="2dp"
+                    android:layout_marginStart="8dp"
+                    android:background="#1C1C1E"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
                     android:text="threads.net"
                     android:textColor="#8E8E93"
                     android:textSize="11sp" />
+
             </LinearLayout>
+
         </LinearLayout>
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/imgProfile"
-            android:layout_width="74dp"
-            android:layout_height="74dp"
+            android:layout_width="78dp"
+            android:layout_height="78dp"
             android:layout_alignParentEnd="true"
+            android:clickable="true"
+            android:focusable="true"
             android:scaleType="centerCrop"
-            android:src="@android:drawable/sym_def_app_icon"
-            app:shapeAppearanceOverlay="@style/CircleImageView" />
+            android:src="@drawable/ic_placeholder_avatar"
+            app:shapeAppearanceOverlay="@style/CircleImageView"
+            app:strokeColor="#2A2A2A"
+            app:strokeWidth="1dp" />
+
     </RelativeLayout>
+
+    <!-- ================================================= -->
+    <!-- BIO -->
+    <!-- ================================================= -->
 
     <TextView
         android:id="@+id/txtTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
         android:lineSpacingExtra="4dp"
         android:text="Tình yêu thật\nThế giới ảo"
         android:textColor="#FFFFFF"
         android:textSize="15sp" />
 
-    <!-- Avatar những người đang follow + số người theo dõi -->
+    <!-- ================================================= -->
+    <!-- FOLLOWERS -->
+    <!-- ================================================= -->
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="18dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
@@ -118,7 +140,7 @@
             android:id="@+id/layoutFollowingAvatars"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="10dp"
             android:clipChildren="false"
             android:clipToPadding="false"
             android:orientation="horizontal" />
@@ -127,50 +149,26 @@
             android:id="@+id/txtSoNguoiTheoDoi"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text=" người theo dõi"
-            android:textColor="#888888"
+            android:text="0 người theo dõi"
+            android:textColor="#8E8E93"
             android:textSize="14sp" />
+
     </LinearLayout>
 
-<!--    <LinearLayout-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:layout_marginTop="20dp"-->
-<!--        android:orientation="horizontal">-->
-
-<!--&lt;!&ndash;        <android.widget.Button&ndash;&gt;-->
-<!--&lt;!&ndash;            android:id="@+id/btnEditProfile"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:layout_width="0dp"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:layout_height="40dp"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:layout_marginEnd="6dp"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:layout_weight="1"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:background="#1C1C1E"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:text="Chỉnh sửa hồ sơ"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:textAllCaps="false"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:textColor="#FFFFFF"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:textSize="14sp"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:textStyle="bold" />&ndash;&gt;-->
-
-<!--&lt;!&ndash;        <android.widget.Button&ndash;&gt;-->
-<!--&lt;!&ndash;            android:layout_width="0dp"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:layout_height="40dp"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:layout_marginStart="6dp"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:layout_weight="1"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:background="#1C1C1E"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:text="Chia sẻ hồ sơ"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:textAllCaps="false"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:textColor="#FFFFFF"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:textSize="14sp"&ndash;&gt;-->
-<!--&lt;!&ndash;            android:textStyle="bold" />&ndash;&gt;-->
-<!--    </LinearLayout>-->
+    <!-- ================================================= -->
+    <!-- TABS -->
+    <!-- ================================================= -->
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="26dp"
         android:orientation="horizontal">
 
+        <!-- POSTS -->
+
         <LinearLayout
+            android:id="@+id/btnPost"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -178,21 +176,27 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/txtTabPost"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingVertical="10dp"
+                android:paddingVertical="12dp"
                 android:text="Threads"
                 android:textColor="#FFFFFF"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
             <View
+                android:id="@+id/linePost"
                 android:layout_width="match_parent"
-                android:layout_height="1.5dp"
+                android:layout_height="2dp"
                 android:background="#FFFFFF" />
+
         </LinearLayout>
 
+        <!-- COMMENTS -->
+
         <LinearLayout
+            android:id="@+id/btnComment"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -200,21 +204,27 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/txtTabComment"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingVertical="10dp"
+                android:paddingVertical="12dp"
                 android:text="Câu trả lời"
                 android:textColor="#636366"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
             <View
+                android:id="@+id/lineComment"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="#1C1C1E" />
+
         </LinearLayout>
 
+        <!-- REPOST -->
+
         <LinearLayout
+            android:id="@+id/btnRepost"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -222,34 +232,37 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/txtTabRepost"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingVertical="10dp"
+                android:paddingVertical="12dp"
                 android:text="Đăng lại"
                 android:textColor="#636366"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
             <View
+                android:id="@+id/lineRepost"
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
                 android:background="#1C1C1E" />
+
         </LinearLayout>
+
     </LinearLayout>
 
-    <FrameLayout
+    <!-- ================================================= -->
+    <!-- POSTS LIST -->
+    <!-- ================================================= -->
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvMyThreads"
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:layout_marginTop="6dp"
         android:layout_weight="1"
-        android:foregroundGravity="center">
+        android:clipToPadding="false"
+        android:overScrollMode="never"
+        android:paddingBottom="20dp" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="Bạn chưa đăng Thread nào."
-            android:textColor="#636366"
-            android:textSize="15sp" />
-
-    </FrameLayout>
 </LinearLayout>

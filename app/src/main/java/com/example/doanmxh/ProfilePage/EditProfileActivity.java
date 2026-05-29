@@ -1,5 +1,6 @@
 package com.example.doanmxh.ProfilePage;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -43,6 +44,8 @@ public class EditProfileActivity extends AppCompatActivity {
     private FirebaseUser currentUser;
 
     private String avatarUrl = "";
+    private String customLink = "";
+    private String username = "";
 
     private Uri selectedImageUri;
 
@@ -120,14 +123,8 @@ public class EditProfileActivity extends AppCompatActivity {
 
         btnDone.setOnClickListener(v -> saveProfile());
 
-        tvAddLink.setOnClickListener(v -> {
+        tvAddLink.setOnClickListener(v -> showLinkDialog());
 
-            Toast.makeText(
-                    this,
-                    "TODO: Thêm liên kết",
-                    Toast.LENGTH_SHORT
-            ).show();
-        });
     }
 
     // =========================
@@ -189,8 +186,8 @@ public class EditProfileActivity extends AppCompatActivity {
         Boolean isPrivate =
                 document.getBoolean("private");
 
-        String username =
-                document.getString("ten_dang_nhap");
+        username = document.getString("ten_dang_nhap");
+        if (username == null) username = "";
 
         edtName.setText(name);
 
@@ -217,12 +214,77 @@ public class EditProfileActivity extends AppCompatActivity {
                     R.drawable.ic_placeholder_avatar
             );
         }
+        customLink = document.getString("link_lien_ket");
+        if (customLink == null) customLink = "";
+        refreshLinkView();
     }
 
     // =========================
     // UPLOAD AVATAR
     // =========================
+    private void refreshLinkView() {
+        if (TextUtils.isEmpty(customLink)) {
+            tvAddLink.setText("https://DoAnMXH.net/@" + username);
+        } else {
+            tvAddLink.setText(customLink);
+        }
+        tvAddLink.setTextColor(0xFF2F80ED);
+    }
+    private void showLinkDialog() {
+        EditText input = new EditText(this);
+        input.setHint("https://example.com");
+        input.setSingleLine(true);
+        input.setPadding(48, 32, 48, 16);
+        input.setTextColor(0xFFFFFFFF);
+        input.setHintTextColor(0xFF8E8E93);
+        input.setBackground(null);
+        input.setBackgroundTintList(
+                android.content.res.ColorStateList.valueOf(0xFF636366));
 
+        if (!TextUtils.isEmpty(customLink)) {
+            input.setText(customLink);
+            input.setSelection(customLink.length());
+        }
+
+        new AlertDialog.Builder(this, R.style.DarkAlertDialog1)
+                .setTitle(TextUtils.isEmpty(customLink) ? "Thêm liên kết" : "Sửa liên kết")
+                .setView(input)
+                .setPositiveButton("Lưu", (dialog, which) -> {
+                    String url = input.getText().toString().trim();
+                    if (TextUtils.isEmpty(url)) {
+                        Toast.makeText(this, "Vui lòng nhập liên kết", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                        url = "https://" + url;
+                    }
+                    String finalUrl = url;
+                    db.collection("nguoi_dung")
+                            .document(currentUser.getUid())
+                            .update("link_lien_ket", finalUrl)
+                            .addOnSuccessListener(unused -> {
+                                customLink = finalUrl;
+                                refreshLinkView();
+                                Toast.makeText(this, "Đã lưu liên kết", Toast.LENGTH_SHORT).show();
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Lỗi lưu liên kết", Toast.LENGTH_SHORT).show());
+                })
+                .setNegativeButton("Hủy", null)
+                .setNeutralButton(TextUtils.isEmpty(customLink) ? null : "Xóa", (dialog, which) -> {
+                    db.collection("nguoi_dung")
+                            .document(currentUser.getUid())
+                            .update("link_lien_ket", "")
+                            .addOnSuccessListener(unused -> {
+                                customLink = "";
+                                refreshLinkView(); // sẽ hiển thị link mặc định
+                                Toast.makeText(this, "Đã xóa liên kết", Toast.LENGTH_SHORT).show();
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this, "Lỗi xóa liên kết", Toast.LENGTH_SHORT).show());
+                })
+                .show();
+    }
     private void uploadAvatarToImgbb(Uri uri) {
 
         imageRepository.uploadImage(
@@ -297,7 +359,8 @@ public class EditProfileActivity extends AppCompatActivity {
         map.put("anh_dai_dien", avatarUrl);
 
         map.put("private", isPrivate);
-
+// 4. Trong saveProfile() — đổi field name cho nhất quán
+        map.put("link_lien_ket", customLink);
         db.collection("nguoi_dung")
                 .document(uid)
                 .update(map)

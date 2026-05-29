@@ -32,10 +32,12 @@
                   android:windowSoftInputMode="adjustPan"/>
         <activity android:name=".Log_Res.LoginActivity"/>
         <activity android:name=".Log_Res.RegisterActivity"/>
+        <activity android:name=".Log_Res.ForgotPassActivity"/>
         <activity android:name=".HomePage.PostDetailActivity" />
         <activity android:name=".ProfilePage.EditProfileActivity" />
         <activity android:name=".ProfilePage.UserProfileActivity" />
         <activity android:name=".HomePage.EditPostActivity" />
+        <activity android:name=".Message.MessageActivity" />
         <activity
             android:name=".HomePage.FullScreenImageActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar" />

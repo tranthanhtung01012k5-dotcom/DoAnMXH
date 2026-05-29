@@ -50,11 +50,11 @@ CommentModel {
     private Timestamp ngayTao;
     private String binhLuanChaId;
     private boolean verified;
-
+@PropertyName("so_like")
     public int getSo_like() {
         return so_like;
     }
-
+@PropertyName("so_like")
     public void setSo_like(int soTim) {
         this.so_like = soTim;
     }

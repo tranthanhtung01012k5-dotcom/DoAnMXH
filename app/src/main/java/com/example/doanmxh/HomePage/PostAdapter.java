@@ -2,6 +2,7 @@ package com.example.doanmxh.HomePage;
 
 import android.content.Context;
 import android.content.Intent;
+import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,13 +20,21 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import android.graphics.Color;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
 
     private List<PostModel> postList;
@@ -94,21 +103,16 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             holder.tvContent.setText("Bài viết đã bị xóa");
             holder.tvContent.setAlpha(0.4f);
         } else {
-            holder.tvContent.setText(noiDung != null ? noiDung : "");
+            holder.tvContent.setText(
+                    highlightMentions(
+                            holder.tvContent,
+                            noiDung != null ? noiDung : ""
+                    )
+            );
             holder.tvContent.setAlpha(post.isRepost() ? 0.7f : 1f);
         }
 
-        // Stats
-        int soBinhLuan  = post.getSoBinhLuan();
-        int soLuotThich = post.getSoLuotThich();
-        if (soBinhLuan == 0 && soLuotThich == 0) {
-            holder.tvStats.setVisibility(View.GONE);
-        } else {
-            holder.tvStats.setVisibility(View.VISIBLE);
-            holder.tvStats.setText(
-                    soBinhLuan + " lượt trả lời · " + soLuotThich + " lượt thích"
-            );
-        }
+        bindStats(holder, post);
 
         // Top Comment
         CommentModel topComment = post.getTopComment();
@@ -227,6 +231,18 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     //  >3 ảnh → giống 3 ảnh, img3 có overlay "+N"
     //           click "+N" → ImageListBottomSheet (list dọc, click → full screen)
     // ════════════════════════════════════════════════════════
+    private void bindStats(@NonNull PostViewHolder holder, PostModel post) {
+        int likes    = post.getSoLuotThich();
+        int comments = post.getSoBinhLuan();
+        int reposts  = post.getSoRepost();
+        int shares  = post.getSoShare();// nếu có, không thì bỏ dòng này
+
+        holder.tvLikeCount.setText(likes > 0 ? String.valueOf(likes) : "");
+        holder.tvCommentCount.setText(comments > 0 ? String.valueOf(comments) : "");
+        holder.tvRepostCount.setText(reposts > 0 ? String.valueOf(reposts) : "");
+        holder.tvShareCount.setText(shares > 0 ? String.valueOf(shares) : "");
+        Log.d("LIKE_DEBUG", "so_like = " + post.getSoLuotThich());
+    }
     private void bindImages(@NonNull PostViewHolder holder, List<String> images) {
         Context ctx = holder.itemView.getContext();
 
@@ -359,88 +375,60 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
         PostModel post = postList.get(position);
 
-        if (!payloads.isEmpty() && payloads.contains("LIKE_UPDATE")) {
-
-            updateLikeUI(holder, post);
-
-            int soLuotThich = post.getSoLuotThich();
-            int soBinhLuan  = post.getSoBinhLuan();
-
-            if (soBinhLuan == 0 && soLuotThich == 0) {
-
-                holder.tvStats.setVisibility(View.GONE);
-
-            } else {
-
-                holder.tvStats.setVisibility(View.VISIBLE);
-
-                holder.tvStats.setText(
-                        soBinhLuan + " lượt trả lời · "
-                                + soLuotThich + " lượt thích"
-                );
+        if (!payloads.isEmpty()) {
+            if (payloads.contains("LIKE_UPDATE") || payloads.contains("REPOST_UPDATE")) {
+                updateLikeUI(holder, post);
+                bindStats(holder, post);
             }
-
         } else {
-
             super.onBindViewHolder(holder, position, payloads);
         }
-
-        // ===================================================
-        // REPOST
-        // ===================================================
+        // =========================
+// REPOST FIXED VERSION
+// =========================
 
         View layoutRepost = holder.itemView.findViewById(R.id.layoutRepost);
 
-        TextView tvRepostAuthor =
-                holder.itemView.findViewById(R.id.tvRepostAuthor);
-
-        TextView tvRepostContent =
-                holder.itemView.findViewById(R.id.tvRepostContent);
-
-        ShapeableImageView ivRepostAvatar =
-                holder.itemView.findViewById(R.id.ivRepostAvatar);
-
-        // ✅ THÊM IMAGEVIEW NÀY
-        ImageView ivRepostImage =
-                holder.itemView.findViewById(R.id.ivRepostImage);
+        TextView tvRepostAuthor = holder.itemView.findViewById(R.id.tvRepostAuthor);
+        TextView tvRepostContent = holder.itemView.findViewById(R.id.tvRepostContent);
+        ShapeableImageView ivRepostAvatar = holder.itemView.findViewById(R.id.ivRepostAvatar);
+        ImageView ivRepostImage = holder.itemView.findViewById(R.id.ivRepostImage);
 
         PostModel postCha = post.getPostCha();
+
+// RESET trước (QUAN TRỌNG)
+        layoutRepost.setVisibility(View.GONE);
 
         if (postCha != null) {
 
             layoutRepost.setVisibility(View.VISIBLE);
 
+            // AUTHOR
             tvRepostAuthor.setText(
                     postCha.getTenDangNhap() != null
                             ? "@" + postCha.getTenDangNhap()
                             : "Người dùng"
             );
 
+            // CONTENT
             tvRepostContent.setText(
                     postCha.getNoiDung() != null
                             ? postCha.getNoiDung()
                             : ""
             );
 
-            // =========================
-            // AVATAR
-            // =========================
-
-            if (postCha.getAnhDaiDien() != null
-                    && !postCha.getAnhDaiDien().isEmpty()) {
-
+            // AVATAR (SAFE CHECK)
+            if (postCha.getAnhDaiDien() != null && !postCha.getAnhDaiDien().isEmpty()) {
                 Glide.with(holder.itemView.getContext())
                         .load(postCha.getAnhDaiDien())
                         .circleCrop()
                         .into(ivRepostAvatar);
+            } else {
+                ivRepostAvatar.setImageResource(R.drawable.ic_placeholder_avatar);
             }
 
-            // =========================
-            // ẢNH REPOST
-            // =========================
-
-            if (postCha.getDanhSachAnh() != null
-                    && !postCha.getDanhSachAnh().isEmpty()) {
+            // IMAGE (SAFE CHECK)
+            if (postCha.getDanhSachAnh() != null && !postCha.getDanhSachAnh().isEmpty()) {
 
                 ivRepostImage.setVisibility(View.VISIBLE);
 
@@ -450,28 +438,17 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                         .into(ivRepostImage);
 
             } else {
-
                 ivRepostImage.setVisibility(View.GONE);
             }
 
+            // CLICK
             layoutRepost.setOnClickListener(v -> {
-
-                Intent intent = new Intent(
-                        holder.itemView.getContext(),
-                        PostDetailActivity.class
-                );
-
-                intent.putExtra(
-                        PostDetailActivity.EXTRA_POST_ID,
-                        postCha.getDocumentId()
-                );
-
-                holder.itemView.getContext()
-                        .startActivity(intent);
+                Intent intent = new Intent(holder.itemView.getContext(), PostDetailActivity.class);
+                intent.putExtra(PostDetailActivity.EXTRA_POST_ID, postCha.getDocumentId());
+                holder.itemView.getContext().startActivity(intent);
             });
 
         } else {
-
             layoutRepost.setVisibility(View.GONE);
         }
     }
@@ -528,7 +505,78 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         postList.remove(position);
         notifyItemRemoved(position);
     }
+    private SpannableString highlightMentions(TextView textView, String text) {
 
+        SpannableString spannable = new SpannableString(text);
+
+        Pattern pattern = Pattern.compile("@\\w+");
+        Matcher matcher = pattern.matcher(text);
+
+        while (matcher.find()) {
+
+            String mention = matcher.group(); // @tung
+            String username = mention.substring(1);
+
+            ClickableSpan clickableSpan = new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+
+                    Context ctx = widget.getContext();
+
+                    FirebaseFirestore.getInstance()
+                            .collection("nguoi_dung")
+                            .whereEqualTo("ten_dang_nhap", username)
+                            .limit(1)
+                            .get()
+                            .addOnSuccessListener(queryDocumentSnapshots -> {
+
+                                if (!queryDocumentSnapshots.isEmpty()) {
+
+                                    String uid =
+                                            queryDocumentSnapshots
+                                                    .getDocuments()
+                                                    .get(0)
+                                                    .getId();
+
+                                    Log.d("DEBUG", "uid = " + uid);
+
+                                    Intent intent =
+                                            new Intent(ctx, UserProfileActivity.class);
+
+                                    intent.putExtra("user_uid", uid);
+
+                                    ctx.startActivity(intent);
+                                }
+                            });
+                }
+
+                @Override
+                public void updateDrawState(
+                        @NonNull android.text.TextPaint ds
+                ) {
+                    super.updateDrawState(ds);
+
+                    ds.setColor(Color.parseColor("#1DA1F2"));
+                    ds.setUnderlineText(false);
+                }
+            };
+
+            spannable.setSpan(
+                    clickableSpan,
+                    matcher.start(),
+                    matcher.end(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            );
+        }
+
+        textView.setMovementMethod(
+                android.text.method.LinkMovementMethod.getInstance()
+        );
+
+        textView.setHighlightColor(Color.TRANSPARENT);
+
+        return spannable;
+    }
     // ════════════════════════════════════════════════════════
     //  VIEW HOLDER
     // ════════════════════════════════════════════════════════
@@ -544,12 +592,13 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         TextView tvMore;
         View viewOverlay;
         ConstraintLayout layoutImages;
-        TextView tvAuthorName, tvPostTime, tvContent, tvStats;
+        TextView tvAuthorName, tvPostTime, tvContent;
+        TextView tvLikeCount, tvCommentCount, tvRepostCount,tvShareCount; // ← thay tvStats
         ImageButton btnLike, btnComment, btnRepost, btnShare, btnMoreOptions;
 
         public PostViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivRepostImage = itemView.findViewById(R.id.ivRepostImage);
+            ivRepostImage       = itemView.findViewById(R.id.ivRepostImage);
             tvTopCommentUser    = itemView.findViewById(R.id.tvTopCommentUser);
             layoutTopComment    = itemView.findViewById(R.id.layoutTopComment);
             imgTopCommentAvatar = itemView.findViewById(R.id.imgTopCommentAvatar);
@@ -569,7 +618,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             tvAuthorName        = itemView.findViewById(R.id.tvAuthorName);
             tvPostTime          = itemView.findViewById(R.id.tvPostTime);
             tvContent           = itemView.findViewById(R.id.tvContent);
-            tvStats             = itemView.findViewById(R.id.tvStats);
+            tvLikeCount         = itemView.findViewById(R.id.tvLikeCount);    // ← mới
+            tvCommentCount      = itemView.findViewById(R.id.tvCommentCount); // ← mới
+            tvRepostCount       = itemView.findViewById(R.id.tvRepostCount);
+            tvShareCount        = itemView.findViewById(R.id.tvShareCount); // ← mới
             btnLike             = itemView.findViewById(R.id.btnLike);
             btnComment          = itemView.findViewById(R.id.btnComment);
             btnRepost           = itemView.findViewById(R.id.btnRepost);
@@ -577,4 +629,5 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             btnMoreOptions      = itemView.findViewById(R.id.btnMoreOptions);
         }
     }
+
 }

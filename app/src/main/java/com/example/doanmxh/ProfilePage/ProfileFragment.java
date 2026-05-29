@@ -31,9 +31,11 @@ import com.example.doanmxh.HomePage.PostAdapter;
 import com.example.doanmxh.HomePage.PostDetailActivity;
 import com.example.doanmxh.HomePage.PostModel;
 import com.example.doanmxh.Log_Res.LoginActivity;
+import com.example.doanmxh.MainActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
@@ -92,17 +94,18 @@ public class ProfileFragment extends Fragment {
             startActivity(intent);
 
         });
+        // ── Sửa shareProfile click listener trong onCreateView() ─────────────
         shareProfile.setOnClickListener(v -> {
+            String currentUsername = txtUsername.getText().toString();
+            ShareQrBottomSheet sheet = new ShareQrBottomSheet(currentUsername);
 
-            ShareQrBottomSheet sheet =
-                    new ShareQrBottomSheet(
-                            txtUsername.getText().toString()
-                    );
+            sheet.setScanRequestListener(() -> {
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).startQrScanner();
+                }
+            });
 
-            sheet.show(
-                    getParentFragmentManager(),
-                    "ShareQrBottomSheet"
-            );
+            sheet.show(getParentFragmentManager(), "ShareQrBottomSheet");
         });
         btnPost.setOnClickListener(v -> {
 
@@ -217,12 +220,45 @@ public class ProfileFragment extends Fragment {
 
                     }
                     @Override
-                    public void  onEditComment(CommentModel comment, int position, String newContent)
-                    {
+                    public void onEditComment(CommentModel comment, int position, String newContent) {
+                        // Adapter đang dùng postId = "" → sửa lại bằng cách update thủ công ở đây
+                        String correctPostId = comment.getPostId(); // đã được set trong loadMyComments
+                        if (correctPostId == null || correctPostId.isEmpty()) return;
 
+                        db.collection("bai_viet")
+                                .document(correctPostId)
+                                .collection("binh_luan")
+                                .document(comment.getDocumentId())
+                                .update("noi_dung", newContent)
+                                .addOnSuccessListener(unused -> {
+                                    comment.setNoiDung(newContent);
+                                    commentAdapter.notifyItemChanged(position);
+                                });
                     }
                     @Override
-                    public void onDeleteComment(CommentModel comment, int position) {}
+                    public void onDeleteComment(CommentModel comment, int position) {
+
+                        String correctPostId = comment.getPostId();
+
+                        if (correctPostId == null || correctPostId.isEmpty()) {
+                            return;
+                        }
+
+                        // Chỉ update số bình luận
+                        db.collection("bai_viet")
+                                .document(correctPostId)
+                                .update(
+                                        "so_binh_luan",
+                                        com.google.firebase.firestore.FieldValue.increment(-1)
+                                )
+                                .addOnFailureListener(e ->
+                                        Log.e(
+                                                "DELETE_COMMENT",
+                                                "Giảm so_binh_luan thất bại: "
+                                                        + e.getMessage()
+                                        )
+                                );
+                    }
 
                 }
         );
@@ -616,8 +652,6 @@ public class ProfileFragment extends Fragment {
     }
     private void loadRepostThreads(String uid) {
 
-        Log.d("REPOST", "Bắt đầu load repost của uid = " + uid);
-
         myPostList.clear();
         postAdapter.notifyDataSetChanged();
 
@@ -625,146 +659,178 @@ public class ProfileFragment extends Fragment {
                 .whereEqualTo("nguoi_dung_id", uid)
                 .whereEqualTo("da_xoa", false)
                 .whereEqualTo("is_repost", true)
-                .orderBy("ngay_tao",
-                        com.google.firebase.firestore.Query.Direction.DESCENDING)
+                .orderBy("ngay_tao", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
 
-                    Log.d("REPOST",
-                            "Số repost tìm thấy = " + querySnapshot.size());
-
-                    List<PostModel> tempList = new ArrayList<>();
-
-                    int[] pending = {querySnapshot.size()};
-
-                    if (pending[0] == 0) {
-
-                        Log.d("REPOST", "Không có repost");
-
+                    if (querySnapshot.isEmpty()) {
                         postAdapter.notifyDataSetChanged();
                         return;
                     }
 
-                    for (var repostDoc : querySnapshot.getDocuments()) {
-
-                        String parentId =
-                                repostDoc.getString("bai_viet_cha_id");
-
-                        Log.d("REPOST",
-                                "parentId = " + parentId);
-
-                        if (parentId == null) {
-
-                            pending[0]--;
-
-                            continue;
+                    List<String> parentIds = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        String pid = doc.getString("bai_viet_cha_id");
+                        if (pid != null && !pid.isEmpty() && !parentIds.contains(pid)) {
+                            parentIds.add(pid);
                         }
+                    }
 
-                        db.collection("bai_viet")
-                                .document(parentId)
-                                .get()
-                                .addOnSuccessListener(parentDoc -> {
+                    List<PostModel> tempList = new ArrayList<>();
+                    int[] loadedCount = {0};
+                    int total = parentIds.size();
 
-                                    if (!parentDoc.exists()) {
+                    if (total == 0) {
+                        postAdapter.notifyDataSetChanged();
+                        return;
+                    }
 
-                                        pending[0]--;
-
-                                        return;
-                                    }
-
-                                    PostModel post =
-                                            parentDoc.toObject(PostModel.class);
-
-                                    if (post == null) {
-
-                                        pending[0]--;
-
-                                        return;
-                                    }
-
-                                    post.setDocumentId(parentDoc.getId());
-
-                                    post.setRepost(true);
-
-                                    String postOwnerUid =
-                                            parentDoc.getString("nguoi_dung_id");
-
-                                    // load thông tin user
-                                    if (postOwnerUid != null &&
-                                            !postOwnerUid.isEmpty()) {
-
-                                        db.collection("nguoi_dung")
-                                                .document(postOwnerUid)
-                                                .get()
-                                                .addOnSuccessListener(userDoc -> {
-
-                                                    if (userDoc.exists()) {
-
-                                                        post.setHoVaTen(
-                                                                userDoc.getString("ho_va_ten"));
-
-                                                        post.setTenDangNhap(
-                                                                userDoc.getString("ten_dang_nhap"));
-
-                                                        post.setAnhDaiDien(
-                                                                userDoc.getString("anh_dai_dien"));
-
-                                                        post.setVerified(
-                                                                Boolean.TRUE.equals(
-                                                                        userDoc.getBoolean("verified")));
-                                                    }
-
-                                                    checkLikeAndFinish(
-                                                            uid,
-                                                            post,
-                                                            tempList,
-                                                            pending
-                                                    );
-                                                })
-                                                .addOnFailureListener(e -> {
-
-                                                    checkLikeAndFinish(
-                                                            uid,
-                                                            post,
-                                                            tempList,
-                                                            pending
-                                                    );
-                                                });
-
-                                    } else {
-
-                                        checkLikeAndFinish(
-                                                uid,
-                                                post,
-                                                tempList,
-                                                pending
-                                        );
-                                    }
-                                })
-                                .addOnFailureListener(e -> {
-
-                                    Log.e("REPOST",
-                                            "Lỗi load bài gốc: "
-                                                    + e.getMessage());
-
-                                    pending[0]--;
-
-                                    if (pending[0] == 0) {
-
-                                        myPostList.clear();
-                                        myPostList.addAll(tempList);
-
-                                        postAdapter.notifyDataSetChanged();
-                                    }
-                                });
+                    for (String parentId : parentIds) {
+                        loadPostWithContext(parentId, tempList, loadedCount, total);
                     }
                 })
-                .addOnFailureListener(e -> {
+                .addOnFailureListener(e -> Log.e("REPOST_DEBUG", "Query FAIL: ", e));
+    }
 
-                    Log.e("REPOST",
-                            "Lỗi query repost: "
-                                    + e.getMessage(), e);
+    /**
+     * Load một bài viết theo ID, nếu bài đó là repost thì tiếp tục load bài gốc của nó
+     * rồi gán postCha vào trước khi add vào list
+     */
+    private void loadPostWithContext(String postId, List<PostModel> tempList, int[] loadedCount, int total) {
+
+        db.collection("bai_viet")
+                .document(postId)
+                .get()
+                .addOnSuccessListener(postDoc -> {
+
+                    if (!postDoc.exists()) {
+                        checkAndNotify(tempList, loadedCount, total);
+                        return;
+                    }
+
+                    String postUserId = postDoc.getString("nguoi_dung_id");
+                    boolean isRepost = Boolean.TRUE.equals(postDoc.getBoolean("is_repost"));
+
+                    db.collection("nguoi_dung")
+                            .document(postUserId)
+                            .get()
+                            .addOnSuccessListener(userDoc -> {
+
+                                PostModel post = buildPostModel(postDoc, userDoc);
+
+                                if (isRepost) {
+                                    // Bài cha cũng là repost → phải load tiếp bài gốc của nó
+                                    String grandParentId = postDoc.getString("bai_viet_cha_id");
+
+                                    if (grandParentId != null && !grandParentId.isEmpty()) {
+                                        db.collection("bai_viet")
+                                                .document(grandParentId)
+                                                .get()
+                                                .addOnSuccessListener(grandParentDoc -> {
+
+                                                    if (!grandParentDoc.exists()) {
+                                                        tempList.add(post);
+                                                        checkAndNotify(tempList, loadedCount, total);
+                                                        return;
+                                                    }
+
+                                                    String gpUserId = grandParentDoc.getString("nguoi_dung_id");
+
+                                                    db.collection("nguoi_dung")
+                                                            .document(gpUserId)
+                                                            .get()
+                                                            .addOnSuccessListener(gpUserDoc -> {
+
+                                                                // post = bài cha (dạng repost)
+                                                                // grandParentPost = bài gốc thật sự
+                                                                PostModel grandParentPost = buildPostModel(grandParentDoc, gpUserDoc);
+                                                                post.setPostCha(grandParentPost); // gán bài gốc vào postCha của bài cha
+
+                                                                tempList.add(post);
+                                                                checkAndNotify(tempList, loadedCount, total);
+                                                            });
+                                                });
+                                    } else {
+                                        tempList.add(post);
+                                        checkAndNotify(tempList, loadedCount, total);
+                                    }
+
+                                } else {
+                                    // Bài cha là bài thường → hiển thị thẳng
+                                    tempList.add(post);
+                                    checkAndNotify(tempList, loadedCount, total);
+                                }
+                            });
                 });
+    }
+
+    private PostModel buildPostModel(DocumentSnapshot doc, DocumentSnapshot userDoc) {
+        PostModel post = new PostModel();
+        post.setDocumentId(doc.getId());
+        post.setNguoiDungId(doc.getString("nguoi_dung_id"));
+        post.setNoiDung(doc.getString("noi_dung"));
+        post.setDanhSachAnh((List<String>) doc.get("danh_sach_anh"));
+        post.setRepost(Boolean.TRUE.equals(doc.getBoolean("is_repost")));
+        post.setBaiVietChaId(doc.getString("bai_viet_cha_id"));
+
+        // ================================
+        // STATS
+        // ================================
+        post.setSoLuotThich(doc.getLong("so_like") != null ? doc.getLong("so_like").intValue() : 0);
+        post.setSoBinhLuan(doc.getLong("so_binh_luan") != null ? doc.getLong("so_binh_luan").intValue() : 0);
+        post.setSoRepost(doc.getLong("so_repost") != null ? doc.getLong("so_repost").intValue() : 0);
+        post.setSoShare(doc.getLong("so_share") != null ? doc.getLong("so_share").intValue() : 0);
+
+        // ================================
+        // USER INFO
+        // ================================
+        post.setHoVaTen(userDoc.getString("ho_va_ten"));
+        post.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
+        post.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+        post.setVerified(Boolean.TRUE.equals(userDoc.getBoolean("verified")));
+
+        return post;
+    }
+
+    private void checkAndNotify(List<PostModel> tempList, int[] loadedCount, int total) {
+        loadedCount[0]++;
+        if (loadedCount[0] >= total) {
+            myPostList.clear();
+            myPostList.addAll(tempList);
+            postAdapter.notifyDataSetChanged();
+        }
+    }
+
+    // ════════════════════════════════════════════════════════
+//  Đệ quy tìm bài gốc — nếu parentDoc cũng là repost
+//  thì tiếp tục tìm bai_viet_cha_id của nó
+// ════════════════════════════════════════════════════════
+    private void findOriginalPost(String postId,
+                                  OnDocumentFound onFound,
+                                  Runnable onNotFound) {
+        db.collection("bai_viet").document(postId).get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) { onNotFound.run(); return; }
+
+                    Boolean isRepost = doc.getBoolean("is_repost");
+                    String chaId     = doc.getString("bai_viet_cha_id");
+
+                    // Nếu doc này cũng là repost → tìm tiếp bài cha của nó
+                    if (Boolean.TRUE.equals(isRepost)
+                            && chaId != null
+                            && !chaId.isEmpty()) {
+                        findOriginalPost(chaId, onFound, onNotFound);
+                    } else {
+                        // Đây là bài gốc thực sự
+                        onFound.onFound(doc);
+                    }
+                })
+                .addOnFailureListener(e -> onNotFound.run());
+    }
+
+    // Interface callback
+    interface OnDocumentFound {
+        void onFound(com.google.firebase.firestore.DocumentSnapshot doc);
     }
     private void checkLikeAndFinish(
             String myUid,
