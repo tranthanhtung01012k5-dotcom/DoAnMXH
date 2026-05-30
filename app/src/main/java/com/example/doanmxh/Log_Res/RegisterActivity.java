@@ -183,8 +183,10 @@ public class RegisterActivity extends AppCompatActivity {
                                                     nguoiDung.put("ngay_tao",    new Date());
                                                     nguoiDung.put("verified",    false);
                                                     nguoiDung.put("private",     false);
+                                                    nguoiDung.put("lan_hoat_dong_cuoi   ",new Date());
                                                     nguoiDung.put("uid",         uid);
                                                     nguoiDung.put("so_nguoi_theo_doi",       0);
+                                                    nguoiDung.put("trang_thai_hoat_dong",  false);
                                                     nguoiDung.put("so_nguoi_dang_theo_doi",  0);
                                                     nguoiDung.put("link_lien_ket",  "https://DoAnMXH.net/@" + tenDangNhap);
 

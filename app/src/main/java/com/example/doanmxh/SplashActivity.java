@@ -67,7 +67,7 @@ public class SplashActivity extends AppCompatActivity {
                         .addOnSuccessListener(doc -> {
 
                             if (doc.exists()) {
-
+                                updateOnlineStatus(true);
                                 // Tài khoản hợp lệ
                                 goToMain();
 
@@ -136,5 +136,19 @@ public class SplashActivity extends AppCompatActivity {
                             | View.SYSTEM_UI_FLAG_FULLSCREEN
             );
         }
+    }
+    private void updateOnlineStatus(boolean online) {
+
+        FirebaseUser user =
+                FirebaseAuth.getInstance().getCurrentUser();
+
+        if (user == null) {
+            return;
+        }
+
+        FirebaseFirestore.getInstance()
+                .collection("nguoi_dung")
+                .document(user.getUid())
+                .update("trang_thai_hoat_dong", online);
     }
 }

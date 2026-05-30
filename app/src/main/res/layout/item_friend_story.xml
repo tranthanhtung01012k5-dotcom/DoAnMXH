@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    item_friend_story.xml
+    1 ô bạn bè trong hàng ngang — gộp story ring + online dot + tên + preview status
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="80dp"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:layout_marginEnd="4dp"
+    android:paddingBottom="4dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:background="?attr/selectableItemBackgroundBorderless">
+
+    <!-- Avatar + ring + chấm online -->
+    <FrameLayout
+        android:layout_width="66dp"
+        android:layout_height="66dp"
+        android:layout_marginBottom="5dp">
+
+        <!-- Ring viền ngoài: gradient = story mới, xám = đã xem, trong suốt = không có story -->
+        <View
+            android:id="@+id/viewStoryRing"
+            android:layout_width="66dp"
+            android:layout_height="66dp"
+            android:background="@drawable/bg_story_ring_gradient" />
+
+        <!-- Avatar tròn, padding 3dp để lộ ring -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imgFriendAvatar"
+            android:layout_width="58dp"
+            android:layout_height="58dp"
+            android:layout_gravity="center"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_placeholder_avatar"
+            app:shapeAppearanceOverlay="@style/CircleImageView" />
+
+        <!-- Chấm xanh online — góc dưới phải, viền tối để nổi trên avatar -->
+        <View
+            android:id="@+id/viewOnlineDot"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="1dp"
+            android:layout_marginBottom="1dp"
+            android:background="@drawable/bg_status_online"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <!-- Tên bạn bè -->
+    <TextView
+        android:id="@+id/tvFriendName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Tên bạn"
+        android:textColor="#DDDDDD"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:gravity="center" />
+
+    <!-- Preview nội dung status (1 dòng, mờ hơn) -->
+    <TextView
+        android:id="@+id/tvStatusPreview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#888888"
+        android:textSize="10sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:layout_marginTop="1dp"
+        android:visibility="gone" />
+
+</LinearLayout>

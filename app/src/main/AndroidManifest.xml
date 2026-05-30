@@ -37,7 +37,7 @@
         <activity android:name=".ProfilePage.EditProfileActivity" />
         <activity android:name=".ProfilePage.UserProfileActivity" />
         <activity android:name=".HomePage.EditPostActivity" />
-        <activity android:name=".Message.MessageActivity" />
+<!--        <activity android:name=".Message.MessageFragment" />-->
         <activity
             android:name=".HomePage.FullScreenImageActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar" />

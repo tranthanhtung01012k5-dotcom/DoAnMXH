@@ -9,18 +9,17 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.doanmxh.Log_Res.LoginActivity;
-import com.example.doanmxh.Message.MessageActivity;
+import com.example.doanmxh.Message.MessageFragment;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
@@ -46,14 +45,14 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Sau đó mới findViewById
-        btnMessage = findViewById(R.id.btnDirectMessage);
-
-        btnMessage.setOnClickListener(v -> {
-            Intent intent =
-                    new Intent(MainActivity.this, MessageActivity.class);
-
-            startActivity(intent);
-        });
+//        btnMessage = findViewById(R.id.btnDirectMessage);
+//
+//        btnMessage.setOnClickListener(v -> {
+//            Intent intent =
+//                    new Intent(MainActivity.this, MessageFragment.class);
+//
+//            startActivity(intent);
+//        });
 
         BottomNavigationView bottomNav =
                 findViewById(R.id.bottomNav);
@@ -111,7 +110,36 @@ public class MainActivity extends AppCompatActivity {
         }
     }
     // ── Trong MainActivity ────────────────────────────────────────────────
+    @Override
+    protected void onStart() {
+        super.onStart();
+        updateOnlineStatus(true);
+    }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        updateOnlineStatus(false);
+    }
+    private void updateOnlineStatus(boolean trangThaiHoatDong) {
+
+        FirebaseUser user =
+                FirebaseAuth.getInstance().getCurrentUser();
+
+        if (user == null) return;
+
+        FirebaseFirestore.getInstance()
+                .collection("nguoi_dung")
+                .document(user.getUid())
+                .update("trang_thai_hoat_dong", trangThaiHoatDong);
+        if (trangThaiHoatDong == false)
+        {
+            FirebaseFirestore.getInstance()
+                    .collection("nguoi_dung")
+                    .document(user.getUid())
+                    .update("lan_cuoi_hoat_dong", FieldValue.serverTimestamp());
+        }
+    }
     public void startQrScanner() {
         new IntentIntegrator(this)
                 .setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)

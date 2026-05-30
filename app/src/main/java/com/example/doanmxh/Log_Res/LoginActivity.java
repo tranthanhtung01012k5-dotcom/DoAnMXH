@@ -176,42 +176,60 @@ public class LoginActivity extends AppCompatActivity {
 
                                     // ✅ Đã xác minh
 
-                                    SharedPreferences prefs =
-                                            getSharedPreferences(
-                                                    PREF_NAME,
-                                                    MODE_PRIVATE
-                                            );
+                                    String uid = auth.getCurrentUser().getUid();
 
-                                    SharedPreferences.Editor editor =
-                                            prefs.edit();
+                                    db.collection("nguoi_dung")
+                                            .document(uid)
+                                            .update("trang_thai_hoat_dong", true)
+                                            .addOnSuccessListener(unused -> {
 
-                                    editor.putBoolean(
-                                            KEY_REMEMBER,
-                                            checkRemember.isChecked()
-                                    );
+                                                SharedPreferences prefs =
+                                                        getSharedPreferences(
+                                                                PREF_NAME,
+                                                                MODE_PRIVATE
+                                                        );
 
-                                    editor.apply();
+                                                SharedPreferences.Editor editor =
+                                                        prefs.edit();
 
-                                    Toast.makeText(
-                                            LoginActivity.this,
-                                            "Đăng nhập thành công",
-                                            Toast.LENGTH_SHORT
-                                    ).show();
+                                                editor.putBoolean(
+                                                        KEY_REMEMBER,
+                                                        checkRemember.isChecked()
+                                                );
 
-                                    Intent intent =
-                                            new Intent(
-                                                    LoginActivity.this,
-                                                    MainActivity.class
-                                            );
+                                                editor.apply();
 
-                                    intent.setFlags(
-                                            Intent.FLAG_ACTIVITY_NEW_TASK
-                                                    | Intent.FLAG_ACTIVITY_CLEAR_TASK
-                                    );
+                                                Toast.makeText(
+                                                        LoginActivity.this,
+                                                        "Đăng nhập thành công",
+                                                        Toast.LENGTH_SHORT
+                                                ).show();
 
-                                    startActivity(intent);
+                                                Intent intent =
+                                                        new Intent(
+                                                                LoginActivity.this,
+                                                                MainActivity.class
+                                                        );
 
-                                    finish();
+                                                intent.setFlags(
+                                                        Intent.FLAG_ACTIVITY_NEW_TASK
+                                                                | Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                                );
+
+                                                startActivity(intent);
+
+                                                finish();
+
+                                            })
+                                            .addOnFailureListener(e -> {
+
+                                                Toast.makeText(
+                                                        LoginActivity.this,
+                                                        "Không cập nhật được trạng thái hoạt động",
+                                                        Toast.LENGTH_SHORT
+                                                ).show();
+
+                                            });
 
                                 });
 

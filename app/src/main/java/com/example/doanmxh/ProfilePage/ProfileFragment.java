@@ -35,7 +35,9 @@ import com.example.doanmxh.MainActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
@@ -583,7 +585,23 @@ public class ProfileFragment extends Fragment {
     }
 
     private void logout() {
-        auth.signOut();
+        FirebaseUser user =
+                FirebaseAuth.getInstance().getCurrentUser();
+
+        if (user != null) {
+
+            FirebaseFirestore.getInstance()
+                    .collection("nguoi_dung")
+                    .document(user.getUid())
+                    .update("trang_thai_hoat_dong", false);
+
+            FirebaseFirestore.getInstance()
+                    .collection("nguoi_dung")
+                    .document(user.getUid())
+                    .update("lan_cuoi_hoat_dong", FieldValue.serverTimestamp());
+        }
+
+        FirebaseAuth.getInstance().signOut();
         Toast.makeText(getContext(), "Đăng xuất thành công", Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(getActivity(), LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

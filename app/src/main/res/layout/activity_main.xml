@@ -5,87 +5,32 @@
     xmlns:tools="http://tools.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
-    android:fitsSystemWindows="false">
+    android:background="#000000">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appBarLayout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#000000"
-        android:fitsSystemWindows="true"
-        app:elevation="0dp"
-        app:liftOnScroll="true">
-
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="#000000"
-            app:contentInsetStart="0dp"
-            app:layout_scrollFlags="scroll|enterAlways|snap">
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp">
-
-                <ImageView
-                    android:id="@+id/ivThreadsLogo"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_centerInParent="true"
-                    android:src="@drawable/thread_logo_white"
-                    android:scaleType="fitCenter"
-                    android:contentDescription="@string/app_name" />
-
-                <ImageButton
-                    android:id="@+id/btnDirectMessage"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@drawable/ic_send_outline_24"
-                    android:contentDescription="Direct Messages"
-                    app:tint="#FFFFFF" />
-
-            </RelativeLayout>
-
-        </androidx.appcompat.widget.Toolbar>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="#121212" />
-
-    </com.google.android.material.appbar.AppBarLayout>
-
+    <!-- Fragment container chiếm toàn bộ màn hình -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/nav_host_fragment"
         android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:paddingBottom="80dp"
+        android:paddingBottom="84dp"
         android:clipToPadding="false"
         app:defaultNavHost="true"
         app:navGraph="@navigation/nav_graph"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:context=".MainActivity" />
 
+    <!-- BottomNavigationView nổi bên trên fragment -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottomNav"
         android:layout_width="match_parent"
         android:layout_height="64dp"
         android:layout_gravity="bottom"
-
         android:layout_marginHorizontal="24dp"
-        app:itemActiveIndicatorStyle="@null"
         android:layout_marginBottom="20dp"
         android:background="@drawable/bg_floating_bottom_nav"
         app:backgroundTint="@null"
         app:elevation="8dp"
+        app:itemActiveIndicatorStyle="@null"
         app:itemIconSize="24dp"
         app:itemIconTint="@color/bottom_nav_colors"
         app:itemRippleColor="#1AFFFFFF"
