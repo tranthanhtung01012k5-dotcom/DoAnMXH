@@ -7,6 +7,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
 import com.example.doanmxh.R;
 import java.util.List;
 
@@ -30,7 +32,11 @@ public class ActiveFriendsAdapter extends RecyclerView.Adapter<ActiveFriendsAdap
     public void onBindViewHolder(@NonNull FriendViewHolder holder, int position) {
         ChatUser user = friendList.get(position);
         holder.txtFriendName.setText(user.getUsername());
-        holder.imgFriendAvatar.setImageResource(user.getAvatarResId());
+        Glide.with(holder.itemView.getContext())
+                .load(user.getAvatarResId())
+                .placeholder(R.drawable.ic_person_outline_24)
+                .error(R.drawable.ic_person_outline_24)
+                .into(holder.imgFriendAvatar);
     }
 
     @Override

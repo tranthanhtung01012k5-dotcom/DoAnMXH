@@ -94,11 +94,28 @@
         android:layout_marginTop="6dp"
         android:lineSpacingExtra="2dp"
         android:textColor="#FFFFFF"
+
         android:textSize="15sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/avatarContainer"
         app:layout_constraintTop_toBottomOf="@id/tvAuthorName"
         tools:text="Post content..." />
+
+<!--    <TextView-->
+<!--        android:id="@+id/tvSeeMore"-->
+<!--        android:layout_width="0dp"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Xem thêm"-->
+<!--        android:textColor="#3b82f6"-->
+<!--        android:textSize="13sp"-->
+<!--        android:visibility="gone"-->
+<!--        android:layout_marginTop="2dp"-->
+<!--        android:layout_marginStart="12dp"-->
+<!--        android:layout_marginEnd="0dp"-->
+
+<!--        app:layout_constraintStart_toStartOf="@id/tvContent"-->
+<!--        app:layout_constraintEnd_toEndOf="@id/tvContent"-->
+<!--        app:layout_constraintTop_toBottomOf="@id/tvContent" />-->
 
     <!-- REPOST -->
     <LinearLayout

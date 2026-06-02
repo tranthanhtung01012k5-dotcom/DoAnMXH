@@ -194,7 +194,7 @@ public class PostDetailActivity extends AppCompatActivity {
                                     .collection("nguoi_theo_doi").document(myUid)
                                     .set(followerEntry);
                             db.collection("nguoi_dung").document(authorUid)
-                                    .update("so_nguoi_dang_theo_doi", FieldValue.increment(1));
+                                    .update("so_nguoi_theo_doi", FieldValue.increment(1));
 
                             post.setFollowing(true);
                             postAdapter.notifyItemChanged(position);

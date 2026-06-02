@@ -2,11 +2,16 @@ package com.example.doanmxh.HomePage;
 
 import android.content.Context;
 import android.content.Intent;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.text.TextUtils;
+import android.text.method.LinkMovementMethod;
 import android.text.style.ClickableSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -99,17 +104,71 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 
         // Nội dung
         String noiDung = post.getNoiDung();
-        if (post.isDaXoa()) {
-            holder.tvContent.setText("Bài viết đã bị xóa");
-            holder.tvContent.setAlpha(0.4f);
+
+        String content = post.getNoiDung() != null ? post.getNoiDung() : "";
+
+// nếu đã expand → show full
+        if (post.isExpanded()) {
+
+            holder.tvContent.setText(content);
+            holder.tvContent.setMaxLines(Integer.MAX_VALUE);
+            holder.tvContent.setEllipsize(null);
+            holder.tvContent.setMovementMethod(null);
+
+//            return;
         } else {
-            holder.tvContent.setText(
-                    highlightMentions(
-                            holder.tvContent,
-                            noiDung != null ? noiDung : ""
-                    )
-            );
-            holder.tvContent.setAlpha(post.isRepost() ? 0.7f : 1f);
+            holder.tvContent.post(() -> {
+
+                int width = holder.tvContent.getWidth();
+                if (width == 0) return;
+
+                StaticLayout layout = StaticLayout.Builder.obtain(
+                        content,
+                        0,
+                        content.length(),
+                        holder.tvContent.getPaint(),
+                        width
+                ).build();
+
+                if (layout.getLineCount() <= 3) {
+                    holder.tvContent.setText(content);
+                    return;
+                }
+
+                CharSequence visibleText = TextUtils.ellipsize(
+                        content,
+                        holder.tvContent.getPaint(),
+                        width * 3,
+                        TextUtils.TruncateAt.END
+                );
+
+                String finalText = visibleText + "  Xem thêm";
+
+                SpannableString spannable = new SpannableString(finalText);
+
+                int start = finalText.indexOf("Xem thêm");
+                int end = finalText.length();
+
+                ClickableSpan clickSpan = new ClickableSpan() {
+                    @Override
+                    public void onClick(@NonNull View widget) {
+
+                        post.setExpanded(true);
+                        notifyItemChanged(holder.getAdapterPosition());
+                    }
+
+                    @Override
+                    public void updateDrawState(@NonNull TextPaint ds) {
+                        ds.setColor(Color.parseColor("#3b82f6"));
+                        ds.setUnderlineText(false);
+                    }
+                };
+
+                spannable.setSpan(clickSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+                holder.tvContent.setText(spannable);
+                holder.tvContent.setMovementMethod(LinkMovementMethod.getInstance());
+            });
         }
 
         bindStats(holder, post);
@@ -593,7 +652,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         View viewOverlay;
         ConstraintLayout layoutImages;
         TextView tvAuthorName, tvPostTime, tvContent;
-        TextView tvLikeCount, tvCommentCount, tvRepostCount,tvShareCount; // ← thay tvStats
+        TextView tvLikeCount, tvCommentCount, tvRepostCount,tvShareCount,tvSeeMore; // ← thay tvStats
         ImageButton btnLike, btnComment, btnRepost, btnShare, btnMoreOptions;
 
         public PostViewHolder(@NonNull View itemView) {
@@ -625,6 +684,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             btnLike             = itemView.findViewById(R.id.btnLike);
             btnComment          = itemView.findViewById(R.id.btnComment);
             btnRepost           = itemView.findViewById(R.id.btnRepost);
+//            tvSeeMore           = itemView.findViewById(R.id.tvSeeMore);
             btnShare            = itemView.findViewById(R.id.btnShare);
             btnMoreOptions      = itemView.findViewById(R.id.btnMoreOptions);
         }

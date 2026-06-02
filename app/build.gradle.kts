@@ -77,4 +77,6 @@ dependencies {
     //QR
     implementation("com.google.zxing:core:3.5.3")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    //ChayNgam
+    implementation("androidx.lifecycle:lifecycle-process:2.6.1")
 }

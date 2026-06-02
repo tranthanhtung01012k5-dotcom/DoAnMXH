@@ -1,7 +1,10 @@
 package com.example.doanmxh.ProfilePage;
 
+import static android.app.PendingIntent.getActivity;
+
 import android.app.Dialog;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -10,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -25,9 +29,12 @@ import com.example.doanmxh.HomePage.CommentModel;
 import com.example.doanmxh.HomePage.PostAdapter;
 import com.example.doanmxh.HomePage.PostDetailActivity;
 import com.example.doanmxh.HomePage.PostModel;
+import com.example.doanmxh.MainActivity;
+import com.example.doanmxh.Message.ChatActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -42,137 +49,214 @@ public class UserProfileActivity extends AppCompatActivity {
 
     private ShapeableImageView imgProfile;
     private TextView txtName, txtUsername, txtBio, txtSoLuongTheoDoi;
-    private ImageView btnCancel;
+    private ImageView btnCancel,btnShare;
     private LinearLayout btnPost, btnRepost, btnComment;
     private View linePost, lineRepost, lineComment;
     private TextView txtTabPost, txtTabRepost, txtTabComment;
     private RecyclerView rvPosts;
     private LinearLayout layoutFollowingAvatars;
-
+    private Button btnFollow,btnMessage;
     private FirebaseFirestore db;
     private String targetUid, myUid, avatarUrl = "";
-
     private PostAdapter postAdapter;
     private CommentAdapter commentAdapter;
     private List<PostModel> postList = new ArrayList<>();
     private List<CommentModel> commentList = new ArrayList<>();
+
+    // Trạng thái follow hiện tại của nút btnFollow
+    private boolean isFollowingTarget = false;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_user_profile);
         enableImmersiveMode();
-        Intent intent = getIntent();
 
-        Log.d("RECEIVE_UID", "intent = " + intent);
-        Log.d("RECEIVE_UID", "extra = " + intent.getStringExtra("user_uid"));
         db    = FirebaseFirestore.getInstance();
         myUid = FirebaseAuth.getInstance().getCurrentUser() != null
                 ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
 
-        targetUid = intent.getStringExtra("user_uid");
-        Log.d("RECEIVE_UID", "targetUid = " + targetUid);
+        targetUid = getIntent().getStringExtra("user_uid");
         if (targetUid == null || targetUid.isEmpty()) { finish(); return; }
 
         // ── Ánh xạ ──────────────────────────────────────────
-        imgProfile          = findViewById(R.id.imgProfile);
-        txtName             = findViewById(R.id.txtName);
-        txtUsername         = findViewById(R.id.txtUsername);
-        txtBio              = findViewById(R.id.txtTitle);
-        txtSoLuongTheoDoi   = findViewById(R.id.txtSoNguoiTheoDoi);
-        btnCancel           = findViewById(R.id.btn_cancel);
-        btnPost             = findViewById(R.id.btnPost);
-        btnRepost           = findViewById(R.id.btnRepost);
-        btnComment          = findViewById(R.id.btnComment);
-        linePost            = findViewById(R.id.linePost);
-        lineRepost          = findViewById(R.id.lineRepost);
-        lineComment         = findViewById(R.id.lineComment);
-        txtTabPost          = findViewById(R.id.txtTabPost);
-        txtTabRepost        = findViewById(R.id.txtTabRepost);
-        txtTabComment       = findViewById(R.id.txtTabComment);
-        rvPosts             = findViewById(R.id.rvMyThreads);
+        imgProfile             = findViewById(R.id.imgProfile);
+        txtName                = findViewById(R.id.txtName);
+        txtUsername            = findViewById(R.id.txtUsername);
+        txtBio                 = findViewById(R.id.txtTitle);
+        txtSoLuongTheoDoi      = findViewById(R.id.txtSoNguoiTheoDoi);
+        btnCancel              = findViewById(R.id.btn_cancel);
+        btnPost                = findViewById(R.id.btnPost);
+        btnRepost              = findViewById(R.id.btnRepost);
+        btnComment             = findViewById(R.id.btnComment);
+        linePost               = findViewById(R.id.linePost);
+        lineRepost             = findViewById(R.id.lineRepost);
+        lineComment            = findViewById(R.id.lineComment);
+        txtTabPost             = findViewById(R.id.txtTabPost);
+        txtTabRepost           = findViewById(R.id.txtTabRepost);
+        txtTabComment          = findViewById(R.id.txtTabComment);
+        rvPosts                = findViewById(R.id.rvMyThreads);
+        btnFollow              = findViewById(R.id.btnFollow);
+        btnShare               = findViewById(R.id.btnShareProfile);
+        btnMessage             = findViewById(R.id.btnMessage);
         layoutFollowingAvatars = findViewById(R.id.layoutFollowingAvatars);
 
         btnCancel.setOnClickListener(v -> finish());
-        txtSoLuongTheoDoi.setOnClickListener(v -> {
 
-            FollowBottomSheet bottomSheet =
-                    new FollowBottomSheet(
-                            targetUid,
-                            () -> {
-                                // callback dismiss nếu cần
-                            }
-                    );
+        // Ẩn btnFollow nếu đang xem profile của chính mình
+        if (targetUid.equals(myUid)) {
+            btnFollow.setVisibility(View.GONE);
+        } else {
+            btnFollow.setVisibility(View.VISIBLE);
+            checkFollowStatus();
+        }
 
-            bottomSheet.show(
-                    getSupportFragmentManager(),
-                    "FollowBottomSheet"
-            );
-        });
+        txtSoLuongTheoDoi.setOnClickListener(v ->
+                new FollowBottomSheet(targetUid, () -> {})
+                        .show(getSupportFragmentManager(), "FollowBottomSheet"));
+
         imgProfile.setOnClickListener(v -> {
             if (avatarUrl != null && !avatarUrl.isEmpty()) showFullImage(avatarUrl);
         });
 
+        btnShare.setOnClickListener(v -> {
+            String currentUsername = txtUsername.getText().toString();
+            ShareQrBottomSheet sheet = new ShareQrBottomSheet(currentUsername);
+            sheet.setScanRequestListener(() ->
+                    startActivity(new Intent(UserProfileActivity.this, MainActivity.class)));
+            sheet.show(getSupportFragmentManager(), "ShareQrBottomSheet");
+        });
+        btnMessage.setOnClickListener( v -> {
+            Intent intent = new Intent(UserProfileActivity.this, ChatActivity.class);
+            intent.putExtra("target_uid", targetUid);
+            startActivity(intent);
+        });
+
         // ── Adapter bài viết ────────────────────────────────
         postAdapter = new PostAdapter(postList, new PostAdapter.OnPostActionListener() {
-            @Override
-            public void onLikeClick(PostModel post, int position) {
-                handleLike(post, position);
-            }
-            @Override public void onCommentClick(PostModel post, int position) {
-                openPostDetail(post.getDocumentId());
-            }
-            @Override public void onRepostClick(PostModel post, int position) {}
-            @Override public void onShareClick(PostModel post, int position) {}
+            @Override public void onLikeClick(PostModel post, int position)        { handleLike(post, position); }
+            @Override public void onCommentClick(PostModel post, int position)     { openPostDetail(post.getDocumentId()); }
+            @Override public void onRepostClick(PostModel post, int position)      {}
+            @Override public void onShareClick(PostModel post, int position)       {}
             @Override public void onMoreOptionsClick(PostModel post, int position) {}
-            @Override public void onAvatarClick(PostModel post, int position) {
-                openPostDetail(post.getDocumentId());
-            }
+            @Override public void onAvatarClick(PostModel post, int position)      { openPostDetail(post.getDocumentId()); }
             @Override public void onCommentAvataClick(CommentModel comment, int position) {}
-            @Override public void onAddFriendClick(PostModel post, int position) {
-                handleFollow(post, position);
-            }
+            @Override public void onAddFriendClick(PostModel post, int position)   { handleFollow(post, position); }
         });
         postAdapter.setOnItemClickListener(this::openPostDetail);
 
         // ── Adapter bình luận ───────────────────────────────
         commentAdapter = new CommentAdapter(commentList, "",
                 new CommentAdapter.OnCommentActionListener() {
-                    @Override public void onCommentClick(CommentModel c, int pos) {
-                        openPostDetail(c.getPostId());
-                    }
-                    @Override public void onLikeClick(CommentModel c, int pos) {}
-                    @Override public void onReplyClick(CommentModel c, int pos) {}
-                    @Override public void onAvatarClick(CommentModel c, int pos) {}
-                    @Override public void onAddFriendClick(CommentModel c, int pos) {}
-                    @Override public void onEditComment(CommentModel c, int pos, String s) {}
-                    @Override public void onDeleteComment(CommentModel c, int pos) {}
+                    @Override public void onCommentClick(CommentModel c, int pos)               { openPostDetail(c.getPostId()); }
+                    @Override public void onLikeClick(CommentModel c, int pos)                  {}
+                    @Override public void onReplyClick(CommentModel c, int pos)                 {}
+                    @Override public void onAvatarClick(CommentModel c, int pos)                {}
+                    @Override public void onAddFriendClick(CommentModel c, int pos)             {}
+                    @Override public void onEditComment(CommentModel c, int pos, String s)      {}
+                    @Override public void onDeleteComment(CommentModel c, int pos)              {}
                 });
 
         rvPosts.setLayoutManager(new LinearLayoutManager(this));
         rvPosts.setAdapter(postAdapter);
 
-        // ── Tab click ───────────────────────────────────────
-        btnPost.setOnClickListener(v -> {
-            setActiveTab(0);
-            rvPosts.setAdapter(postAdapter);
-            loadPosts();
-        });
-        btnRepost.setOnClickListener(v -> {
-            setActiveTab(1);
-            rvPosts.setAdapter(postAdapter);
-            loadReposts();
-        });
-        btnComment.setOnClickListener(v -> {
-            setActiveTab(2);
-            rvPosts.setAdapter(commentAdapter);
-            loadComments();
-        });
+        btnPost.setOnClickListener(v    -> { setActiveTab(0); rvPosts.setAdapter(postAdapter);    loadPosts(); });
+        btnRepost.setOnClickListener(v  -> { setActiveTab(1); rvPosts.setAdapter(postAdapter);    loadReposts(); });
+        btnComment.setOnClickListener(v -> { setActiveTab(2); rvPosts.setAdapter(commentAdapter); loadComments(); });
 
-        // ── Load mặc định ───────────────────────────────────
         loadUserInfo();
         setActiveTab(0);
         loadPosts();
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  CHECK & CẬP NHẬT TRẠNG THÁI FOLLOW (btnFollow trên profile)
+    // ════════════════════════════════════════════════════════
+    private void checkFollowStatus() {
+        if (myUid == null) return;
+        db.collection("nguoi_dung").document(myUid)
+                .collection("nguoi_dang_theo_doi").document(targetUid)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    isFollowingTarget = doc.exists();
+                    updateFollowButton(isFollowingTarget);
+                    setupFollowButtonListeners();
+                });
+    }
+
+    private void updateFollowButton(boolean following) {
+        if (following) {
+            btnFollow.setText("Đang theo dõi");
+            btnFollow.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#1E1E1E")));
+            btnFollow.setTextColor(Color.WHITE);
+        } else {
+            btnFollow.setText("Theo dõi");
+            btnFollow.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE));
+            btnFollow.setTextColor(Color.BLACK);
+        }
+    }
+
+    private void setupFollowButtonListeners() {
+        btnFollow.setOnClickListener(v -> {
+            if (!isFollowingTarget) followTarget();
+        });
+        btnFollow.setOnLongClickListener(v -> {
+            if (isFollowingTarget) {
+                new android.app.AlertDialog.Builder(this)
+                        .setTitle("Hủy theo dõi")
+                        .setMessage("Bạn có muốn hủy theo dõi không?")
+                        .setPositiveButton("Hủy theo dõi", (dialog, which) -> unfollowTarget())
+                        .setNegativeButton("Đóng", null)
+                        .show();
+            }
+            return true;
+        });
+    }
+
+    private void followTarget() {
+        if (myUid == null) return;
+        Map<String, Object> data = new HashMap<>();
+        data.put("nguoi_dung_id", targetUid);
+        data.put("ngay_theo_doi", new Date());
+
+        db.collection("nguoi_dung").document(myUid)
+                .collection("nguoi_dang_theo_doi").document(targetUid)
+                .set(data)
+                .addOnSuccessListener(unused -> {
+                    Map<String, Object> followerData = new HashMap<>();
+                    followerData.put("nguoi_dung_id", myUid);
+                    followerData.put("ngay_theo_doi", new Date());
+                    db.collection("nguoi_dung").document(targetUid)
+                            .collection("nguoi_theo_doi").document(myUid).set(followerData);
+                    db.collection("nguoi_dung").document(myUid)
+                            .update("so_nguoi_dang_theo_doi", FieldValue.increment(1));
+                    db.collection("nguoi_dung").document(targetUid)
+                            .update("so_nguoi_theo_doi", FieldValue.increment(1));
+
+                    isFollowingTarget = true;
+                    updateFollowButton(true);
+                    // Refresh danh sách bài viết để cập nhật trạng thái follow trong item
+                    loadPosts();
+                });
+    }
+
+    private void unfollowTarget() {
+        if (myUid == null) return;
+        db.collection("nguoi_dung").document(myUid)
+                .collection("nguoi_dang_theo_doi").document(targetUid)
+                .delete()
+                .addOnSuccessListener(unused -> {
+                    db.collection("nguoi_dung").document(targetUid)
+                            .collection("nguoi_theo_doi").document(myUid).delete();
+                    db.collection("nguoi_dung").document(myUid)
+                            .update("so_nguoi_dang_theo_doi", FieldValue.increment(-1));
+                    db.collection("nguoi_dung").document(targetUid)
+                            .update("so_nguoi_theo_doi", FieldValue.increment(-1));
+
+                    isFollowingTarget = false;
+                    updateFollowButton(false);
+                    loadPosts();
+                });
     }
 
     // ════════════════════════════════════════════════════════
@@ -215,23 +299,47 @@ public class UserProfileActivity extends AppCompatActivity {
                         if (post == null) { pending[0]--; continue; }
                         post.setDocumentId(doc.getId());
 
-                        String ownerUid = doc.getString("nguoi_dung_id");
+                        final String ownerUid = doc.getString("nguoi_dung_id");
+
+                        Runnable finish = () -> {
+                            temp.add(post); pending[0]--;
+                            if (pending[0] == 0) { postList.clear(); postList.addAll(temp); postAdapter.notifyDataSetChanged(); }
+                        };
+
+                        Runnable checkFollow = () -> {
+                            // Không check follow nếu: chưa login, không có ownerUid, hoặc là chính mình
+                            if (myUid == null || ownerUid == null || myUid.equals(ownerUid)) {
+                                post.setFollowing(false);
+                                finish.run();
+                                return;
+                            }
+                            db.collection("nguoi_dung").document(myUid)
+                                    .collection("nguoi_dang_theo_doi").document(ownerUid).get()
+                                    .addOnSuccessListener(followDoc -> {
+                                        post.setFollowing(followDoc.exists());
+                                        finish.run();
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        post.setFollowing(false);
+                                        finish.run();
+                                    });
+                        };
+
                         Runnable checkLike = () -> {
                             if (myUid == null) {
-                                temp.add(post); pending[0]--;
-                                if (pending[0] == 0) { postList.clear(); postList.addAll(temp); postAdapter.notifyDataSetChanged(); }
+                                post.setLikedByMe(false);
+                                checkFollow.run();
                                 return;
                             }
                             db.collection("bai_viet").document(post.getDocumentId())
                                     .collection("luot_thich").document(myUid).get()
                                     .addOnSuccessListener(likeDoc -> {
                                         post.setLikedByMe(likeDoc.exists());
-                                        temp.add(post); pending[0]--;
-                                        if (pending[0] == 0) { postList.clear(); postList.addAll(temp); postAdapter.notifyDataSetChanged(); }
+                                        checkFollow.run();
                                     })
                                     .addOnFailureListener(e -> {
-                                        temp.add(post); pending[0]--;
-                                        if (pending[0] == 0) { postList.clear(); postList.addAll(temp); postAdapter.notifyDataSetChanged(); }
+                                        post.setLikedByMe(false);
+                                        checkFollow.run();
                                     });
                         };
 
@@ -245,98 +353,183 @@ public class UserProfileActivity extends AppCompatActivity {
                                             post.setVerified(Boolean.TRUE.equals(userDoc.getBoolean("verified")));
                                         }
                                         checkLike.run();
-                                    }).addOnFailureListener(e -> checkLike.run());
-                        } else checkLike.run();
+                                    })
+                                    .addOnFailureListener(e -> checkLike.run());
+                        } else {
+                            checkLike.run();
+                        }
                     }
                 });
     }
 
+
     // ════════════════════════════════════════════════════════
     //  LOAD REPOST
     // ════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+//  LOAD REPOST
+// ════════════════════════════════════════════════════════
+    // ════════════════════════════════════════════════════════
+//  LOAD REPOST
+// ════════════════════════════════════════════════════════
     private void loadReposts() {
-        db.collection("nguoi_dung").document(targetUid).get()
-                .addOnSuccessListener(myUserDoc -> {
-                    String myHoVaTen     = myUserDoc.getString("ho_va_ten");
-                    String myTenDangNhap = myUserDoc.getString("ten_dang_nhap");
-                    String myAnhDaiDien  = myUserDoc.getString("anh_dai_dien");
-                    boolean myVerified   = Boolean.TRUE.equals(myUserDoc.getBoolean("verified"));
+        postList.clear();
+        postAdapter.notifyDataSetChanged();
 
-                    db.collection("bai_viet")
-                            .whereEqualTo("nguoi_dung_id", targetUid)
-                            .whereEqualTo("da_xoa", false)
-                            .whereEqualTo("is_repost", true)
-                            .orderBy("ngay_tao", Query.Direction.DESCENDING).get()
-                            .addOnSuccessListener(qs -> {
-                                List<PostModel> temp = new ArrayList<>();
-                                int[] pending = {qs.size()};
-                                if (pending[0] == 0) { postList.clear(); postAdapter.notifyDataSetChanged(); return; }
+        db.collection("bai_viet")
+                .whereEqualTo("nguoi_dung_id", targetUid)
+                .whereEqualTo("da_xoa", false)
+                .whereEqualTo("is_repost", true)
+                .orderBy("ngay_tao", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(querySnapshot -> {
+                    if (querySnapshot.isEmpty()) { postAdapter.notifyDataSetChanged(); return; }
 
-                                for (var repostDoc : qs.getDocuments()) {
-                                    String parentId = repostDoc.getString("bai_viet_cha_id");
-                                    if (parentId == null) { pending[0]--; continue; }
+                    List<String> parentIds = new ArrayList<>();
+                    for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                        String pid = doc.getString("bai_viet_cha_id");
+                        if (pid != null && !pid.isEmpty() && !parentIds.contains(pid)) {
+                            parentIds.add(pid);
+                        }
+                    }
 
-                                    db.collection("bai_viet").document(parentId).get()
-                                            .addOnSuccessListener(parentDoc -> {
-                                                if (!parentDoc.exists()) { pending[0]--; return; }
-                                                PostModel post = parentDoc.toObject(PostModel.class);
-                                                if (post == null) { pending[0]--; return; }
-                                                post.setDocumentId(parentDoc.getId());
-                                                post.setRepost(true);
-                                                post.setNguoiDungId(targetUid);
-                                                post.setHoVaTen(myHoVaTen);
-                                                post.setTenDangNhap(myTenDangNhap);
-                                                post.setAnhDaiDien(myAnhDaiDien);
-                                                post.setVerified(myVerified);
+                    if (parentIds.isEmpty()) { postAdapter.notifyDataSetChanged(); return; }
 
-                                                String ownerUid = parentDoc.getString("nguoi_dung_id");
-                                                if (ownerUid != null) {
-                                                    db.collection("nguoi_dung").document(ownerUid).get()
-                                                            .addOnSuccessListener(ownerDoc -> {
-                                                                PostModel postCha = new PostModel();
-                                                                postCha.setDocumentId(parentDoc.getId());
-                                                                postCha.setNoiDung(post.getNoiDung());
-                                                                postCha.setDanhSachAnh(post.getDanhSachAnh());
-                                                                if (ownerDoc.exists()) {
-                                                                    postCha.setHoVaTen(ownerDoc.getString("ho_va_ten"));
-                                                                    postCha.setTenDangNhap(ownerDoc.getString("ten_dang_nhap"));
-                                                                    postCha.setAnhDaiDien(ownerDoc.getString("anh_dai_dien"));
-                                                                }
-                                                                post.setPostCha(postCha);
-                                                                post.setNoiDung("");
-                                                                checkLikeAndAdd(post, temp, pending);
-                                                            })
-                                                            .addOnFailureListener(e -> checkLikeAndAdd(post, temp, pending));
-                                                } else checkLikeAndAdd(post, temp, pending);
-                                            })
-                                            .addOnFailureListener(e -> { pending[0]--; });
-                                }
-                            });
-                });
+                    List<PostModel> tempList = new ArrayList<>();
+                    int[] loadedCount = {0};
+                    int total = parentIds.size();
+
+                    for (String parentId : parentIds) {
+                        loadRepostWithContext(parentId, tempList, loadedCount, total);
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("REPOST_DEBUG", "Query FAIL: ", e));
     }
 
-    private void checkLikeAndAdd(PostModel post, List<PostModel> temp, int[] pending) {
+    private void loadRepostWithContext(String postId, List<PostModel> tempList, int[] loadedCount, int total) {
+        db.collection("bai_viet").document(postId).get()
+                .addOnSuccessListener(postDoc -> {
+                    if (!postDoc.exists()) {
+                        checkRepostAndNotify(tempList, loadedCount, total);
+                        return;
+                    }
+
+                    String postUserId = postDoc.getString("nguoi_dung_id");
+                    boolean isRepost  = Boolean.TRUE.equals(postDoc.getBoolean("is_repost"));
+
+                    db.collection("nguoi_dung").document(postUserId).get()
+                            .addOnSuccessListener(userDoc -> {
+                                PostModel post = buildRepostModel(postDoc, userDoc);
+
+                                if (isRepost) {
+                                    String grandParentId = postDoc.getString("bai_viet_cha_id");
+                                    if (grandParentId != null && !grandParentId.isEmpty()) {
+                                        db.collection("bai_viet").document(grandParentId).get()
+                                                .addOnSuccessListener(gpDoc -> {
+                                                    if (!gpDoc.exists()) {
+                                                        checkLikeAndFollow(post, tempList, loadedCount, total);
+                                                        return;
+                                                    }
+                                                    String gpUserId = gpDoc.getString("nguoi_dung_id");
+                                                    db.collection("nguoi_dung").document(gpUserId).get()
+                                                            .addOnSuccessListener(gpUserDoc -> {
+                                                                PostModel grandParentPost = buildRepostModel(gpDoc, gpUserDoc);
+                                                                post.setPostCha(grandParentPost);
+                                                                checkLikeAndFollow(post, tempList, loadedCount, total);
+                                                            })
+                                                            .addOnFailureListener(e -> checkLikeAndFollow(post, tempList, loadedCount, total));
+                                                })
+                                                .addOnFailureListener(e -> checkLikeAndFollow(post, tempList, loadedCount, total));
+                                    } else {
+                                        checkLikeAndFollow(post, tempList, loadedCount, total);
+                                    }
+                                } else {
+                                    checkLikeAndFollow(post, tempList, loadedCount, total);
+                                }
+                            })
+                            .addOnFailureListener(e -> checkRepostAndNotify(tempList, loadedCount, total));
+                })
+                .addOnFailureListener(e -> checkRepostAndNotify(tempList, loadedCount, total));
+    }
+
+    private void checkLikeAndFollow(PostModel post, List<PostModel> tempList, int[] loadedCount, int total) {
+        final String ownerUid = post.getNguoiDungId();
+
+        Runnable finish = () -> {
+            tempList.add(post); loadedCount[0]++;
+            if (loadedCount[0] == total) {
+                postList.clear();
+                postList.addAll(tempList);
+                postAdapter.notifyDataSetChanged();
+            }
+        };
+
+        Runnable checkFollow = () -> {
+            if (myUid == null || ownerUid == null || myUid.equals(ownerUid)) {
+                post.setFollowing(false);
+                finish.run();
+                return;
+            }
+            db.collection("nguoi_dung").document(myUid)
+                    .collection("nguoi_dang_theo_doi").document(ownerUid).get()
+                    .addOnSuccessListener(followDoc -> {
+                        post.setFollowing(followDoc.exists());
+                        finish.run();
+                    })
+                    .addOnFailureListener(e -> {
+                        post.setFollowing(false);
+                        finish.run();
+                    });
+        };
+
         if (myUid == null) {
-            temp.add(post); pending[0]--;
-            if (pending[0] == 0) { postList.clear(); postList.addAll(temp); postAdapter.notifyDataSetChanged(); }
+            post.setLikedByMe(false);
+            checkFollow.run();
             return;
         }
         db.collection("bai_viet").document(post.getDocumentId())
                 .collection("luot_thich").document(myUid).get()
                 .addOnSuccessListener(likeDoc -> {
                     post.setLikedByMe(likeDoc.exists());
-                    temp.add(post); pending[0]--;
-                    if (pending[0] == 0) { postList.clear(); postList.addAll(temp); postAdapter.notifyDataSetChanged(); }
+                    checkFollow.run();
                 })
                 .addOnFailureListener(e -> {
-                    temp.add(post); pending[0]--;
-                    if (pending[0] == 0) { postList.clear(); postList.addAll(temp); postAdapter.notifyDataSetChanged(); }
+                    post.setLikedByMe(false);
+                    checkFollow.run();
                 });
     }
 
+    private void checkRepostAndNotify(List<PostModel> tempList, int[] loadedCount, int total) {
+        loadedCount[0]++;
+        if (loadedCount[0] == total) {
+            postList.clear();
+            postList.addAll(tempList);
+            postAdapter.notifyDataSetChanged();
+        }
+    }
+
+    private PostModel buildRepostModel(DocumentSnapshot doc, DocumentSnapshot userDoc) {
+        PostModel post = new PostModel();
+        post.setDocumentId(doc.getId());
+        post.setNguoiDungId(doc.getString("nguoi_dung_id"));
+        post.setNoiDung(doc.getString("noi_dung"));
+        post.setDanhSachAnh((List<String>) doc.get("danh_sach_anh"));
+        post.setRepost(Boolean.TRUE.equals(doc.getBoolean("is_repost")));
+        post.setBaiVietChaId(doc.getString("bai_viet_cha_id"));
+        post.setSoLuotThich(doc.getLong("so_like")       != null ? doc.getLong("so_like").intValue()       : 0);
+        post.setSoBinhLuan(doc.getLong("so_binh_luan")   != null ? doc.getLong("so_binh_luan").intValue()   : 0);
+        post.setSoRepost(doc.getLong("so_repost")        != null ? doc.getLong("so_repost").intValue()      : 0);
+        post.setSoShare(doc.getLong("so_share")          != null ? doc.getLong("so_share").intValue()       : 0);
+        post.setHoVaTen(userDoc.getString("ho_va_ten"));
+        post.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
+        post.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+        post.setVerified(Boolean.TRUE.equals(userDoc.getBoolean("verified")));
+        return post;
+    }
+
     // ════════════════════════════════════════════════════════
-    //  LOAD BÌNH LUẬN
-    // ════════════════════════════════════════════════════════
+//  LOAD BÌNH LUẬN  (CommentModel không có isFollowing nên chỉ check like)
+// ════════════════════════════════════════════════════════
     private void loadComments() {
         db.collectionGroup("binh_luan")
                 .whereEqualTo("nguoi_dung_id", targetUid)
@@ -357,12 +550,49 @@ public class UserProfileActivity extends AppCompatActivity {
                             postId = doc.getReference().getParent().getParent().getId();
                         }
                         comment.setPostId(postId);
-                        String finalPostId = postId;
+                        final String finalPostId = postId;
+                        final String ownerUid = comment.getNguoiDungId();
 
-                        String ownerUid = comment.getNguoiDungId();
                         Runnable finish = () -> {
                             temp.add(comment); pending[0]--;
                             if (pending[0] == 0) { commentList.clear(); commentList.addAll(temp); commentAdapter.notifyDataSetChanged(); }
+                        };
+
+                        Runnable checkFollow = () -> {
+                            if (myUid == null || ownerUid == null || myUid.equals(ownerUid)) {
+                                comment.setFollowing(false);
+                                finish.run();
+                                return;
+                            }
+                            db.collection("nguoi_dung").document(myUid)
+                                    .collection("nguoi_dang_theo_doi").document(ownerUid).get()
+                                    .addOnSuccessListener(followDoc -> {
+                                        comment.setFollowing(followDoc.exists());
+                                        finish.run();
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        comment.setFollowing(false);
+                                        finish.run();
+                                    });
+                        };
+
+                        Runnable checkLike = () -> {
+                            if (myUid == null || finalPostId == null) {
+                                comment.setLikedByMe(false);
+                                checkFollow.run();
+                                return;
+                            }
+                            db.collection("bai_viet").document(finalPostId)
+                                    .collection("binh_luan").document(comment.getDocumentId())
+                                    .collection("luot_thich").document(myUid).get()
+                                    .addOnSuccessListener(likeDoc -> {
+                                        comment.setLikedByMe(likeDoc.exists());
+                                        checkFollow.run(); // ← xong like mới check follow
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        comment.setLikedByMe(false);
+                                        checkFollow.run();
+                                    });
                         };
 
                         if (ownerUid != null) {
@@ -374,19 +604,13 @@ public class UserProfileActivity extends AppCompatActivity {
                                             comment.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
                                             comment.setVerified(Boolean.TRUE.equals(userDoc.getBoolean("verified")));
                                         }
-                                        if (myUid != null && finalPostId != null) {
-                                            db.collection("bai_viet").document(finalPostId)
-                                                    .collection("binh_luan").document(comment.getDocumentId())
-                                                    .collection("luot_thich").document(myUid).get()
-                                                    .addOnSuccessListener(likeDoc -> { comment.setLikedByMe(likeDoc.exists()); finish.run(); })
-                                                    .addOnFailureListener(e -> finish.run());
-                                        } else finish.run();
-                                    }).addOnFailureListener(e -> finish.run());
-                        } else finish.run();
+                                        checkLike.run();
+                                    })
+                                    .addOnFailureListener(e -> checkLike.run());
+                        } else checkLike.run();
                     }
                 });
     }
-
     // ════════════════════════════════════════════════════════
     //  FOLLOWING AVATARS
     // ════════════════════════════════════════════════════════

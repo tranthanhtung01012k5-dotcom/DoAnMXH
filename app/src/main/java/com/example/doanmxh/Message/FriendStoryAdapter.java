@@ -80,9 +80,11 @@ public class FriendStoryAdapter extends RecyclerView.Adapter<FriendStoryAdapter.
             if (listener != null) listener.onClick(item);
         });
     }
-
+    // Trong FriendStoryAdapter.java
     @Override
-    public int getItemCount() { return list.size(); }
+    public int getItemCount() {
+        return list == null ? 0 : list.size(); // ← thêm null check
+    }
 
     static class VH extends RecyclerView.ViewHolder {
         ShapeableImageView imgAvatar;

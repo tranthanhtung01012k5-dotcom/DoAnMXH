@@ -28,17 +28,24 @@ import java.util.Map;
 import android.content.Intent;
 public class FollowAdapter
         extends RecyclerView.Adapter<FollowAdapter.ViewHolder> {
+    public interface OnFollowChangedListener {
+        void onFollowChanged();
+    }
 
+    private OnFollowChangedListener listener;
     private final List<FollowModel> list;
     private final FirebaseFirestore db =
             FirebaseFirestore.getInstance();
 
     private final String currentUid =
             FirebaseAuth.getInstance().getCurrentUser().getUid();
-    public FollowAdapter(List<FollowModel> list) {
+    public FollowAdapter(
+            List<FollowModel> list,
+            OnFollowChangedListener listener
+    ) {
         this.list = list;
+        this.listener = listener;
     }
-
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(
@@ -245,6 +252,9 @@ public class FollowAdapter
                     );
 
                     holder.btnFollow.setTextColor(Color.BLACK);
+                    if (listener != null) {
+                        listener.onFollowChanged();
+                    }
                 });
     }
     private void followUser(
@@ -254,7 +264,7 @@ public class FollowAdapter
 
         // dữ liệu follow
         Map<String, Object> followData = new HashMap<>();
-        followData.put("nguoi_dung_id", currentUid);
+        followData.put("nguoi_dung_id", model.getUid());
         followData.put("ngay_theo_doi", new Date());
 
         // currentUid follow model.getUid()
@@ -265,18 +275,21 @@ public class FollowAdapter
                 .set(followData)
 
                 .addOnSuccessListener(unused -> {
-
+                    Map<String, Object> followData1 = new HashMap<>();
+                    followData1.put("nguoi_dung_id", currentUid);
+                    followData1.put("ngay_theo_doi", new Date());
                     // thêm vào danh sách follower của người kia
                     db.collection("nguoi_dung")
                             .document(model.getUid())
                             .collection("nguoi_theo_doi")
                             .document(currentUid)
-                            .set(followData);
+                            .set(followData1);
 
                     // cập nhật PostModel
                     if (model != null) {
                         model.setFollowing(true);
                     }
+
 
                     // current user tăng số đang theo dõi
                     db.collection("nguoi_dung")
@@ -304,6 +317,9 @@ public class FollowAdapter
                     );
 
                     holder.btnFollow.setTextColor(Color.WHITE);
+                    if (listener != null) {
+                        listener.onFollowChanged();
+                    }
                 });
     }
     @Override

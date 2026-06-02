@@ -6,6 +6,16 @@ public class FriendStoryItem {
         NEW,        // Có story mới chưa xem  → ring gradient
         SEEN        // Story đã xem            → ring xám
     }
+    private String uid;
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
     private String name;
     private String avatarRes;
     private boolean online;
@@ -55,12 +65,19 @@ public class FriendStoryItem {
     // BẮT BUỘC cho Firebase
     public FriendStoryItem() {
     }
+    private com.google.firebase.Timestamp lastActive;
 
-    public FriendStoryItem(String name,
+    public com.google.firebase.Timestamp getLastActive() { return lastActive; }
+    public void setLastActive(com.google.firebase.Timestamp lastActive) {
+        this.lastActive = lastActive;
+    }
+    public FriendStoryItem(
+            String uid,String name,
                            String avatarRes,
                            boolean online,
                            StoryState storyState,
                            String statusPreview) {
+        this.uid = uid;
         this.name = name;
         this.avatarRes = avatarRes;
         this.online = online;

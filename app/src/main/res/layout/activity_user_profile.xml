@@ -29,13 +29,13 @@
             app:tint="#FFFFFF" />
 
         <ImageView
-            android:id="@+id/btnMenu"
+            android:id="@+id/btnShareProfile"
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:layout_alignParentEnd="true"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="2dp"
-            android:src="@drawable/ic_menu"
+            android:src="@drawable/ic_circle_more"
             app:tint="#FFFFFF" />
 
     </RelativeLayout>
@@ -153,6 +153,46 @@
             android:textColor="#8E8E93"
             android:textSize="14sp" />
 
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFollow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:backgroundTint="#1C1C1E"
+            android:paddingVertical="10dp"
+            android:text="Follow"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:cornerRadius="9dp"
+            app:strokeColor="#2C2C2E"
+            app:strokeWidth="0.5dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:backgroundTint="#1C1C1E"
+            android:paddingVertical="10dp"
+            android:text="Nhắn tin"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:cornerRadius="9dp"
+            app:strokeColor="#2C2C2E"
+            app:strokeWidth="0.5dp" />
     </LinearLayout>
 
     <!-- ================================================= -->

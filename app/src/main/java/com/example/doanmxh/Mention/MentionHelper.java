@@ -183,7 +183,7 @@ public class MentionHelper {
                 .get()
                 .addOnSuccessListener(snap -> {
                     for (DocumentSnapshot doc : snap.getDocuments()) {
-                        String uid = doc.getString("nguoi_dung_id");
+                        String uid = doc.getId();
                         if (uid == null) continue;
                         db.collection("nguoi_dung").document(uid).get()
                                 .addOnSuccessListener(uDoc -> {

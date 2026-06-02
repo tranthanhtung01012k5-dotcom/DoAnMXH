@@ -4,37 +4,65 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="#101010"
-    android:paddingVertical="10dp"
-    android:paddingHorizontal="4dp"
-    android:clickable="true"
-    android:focusable="true">
+    android:padding="8dp">
 
-    <androidx.cardview.widget.CardView
-        android:id="@+id/layoutAvatar"
+    <!-- Avatar + Online -->
+    <FrameLayout
+        android:id="@+id/avatarContainer"
         android:layout_width="54dp"
         android:layout_height="54dp"
         android:layout_alignParentStart="true"
+        android:layout_centerVertical="true">
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/layoutAvatar"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            app:cardCornerRadius="27dp"
+            app:cardElevation="0dp">
+
+            <ImageView
+                android:id="@+id/demoAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:background="@drawable/bg_status_online"
+                android:src="@android:drawable/sym_def_app_icon" />
+
+        </androidx.cardview.widget.CardView>
+
+        <View
+            android:id="@+id/viewOnline"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_gravity="bottom|end"
+            android:translationX="2dp"
+            android:translationY="2dp"
+            android:background="@drawable/bg_online_dot" />
+
+    </FrameLayout>
+
+    <!-- Menu -->
+    <ImageView
+        android:id="@+id/btnMenu"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_alignParentEnd="true"
         android:layout_centerVertical="true"
-        app:cardCornerRadius="27dp"
-        app:cardBackgroundColor="#222222"
-        app:cardElevation="0dp">
+        android:padding="4dp"
+        android:contentDescription="Menu"
+        android:src="@drawable/ic_menu"
+        app:tint="#FFFFFF" />
 
-        <ImageView
-            android:id="@+id/demoAvatar"
-            android:layout_width="match_parent"
-            android:layout_height="49dp"
-            android:scaleType="centerCrop"
-            android:src="@android:drawable/sym_def_app_icon" />
-    </androidx.cardview.widget.CardView>
-
+    <!-- Nội dung -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_toEndOf="@id/layoutAvatar"
+        android:layout_toEndOf="@id/avatarContainer"
+        android:layout_toStartOf="@id/btnMenu"
+        android:layout_marginStart="12dp"
         android:layout_centerVertical="true"
-        android:orientation="vertical"
-        android:paddingStart="14dp"
-        android:paddingEnd="8dp">
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/txtUsername"
@@ -42,25 +70,35 @@
             android:layout_height="wrap_content"
             android:text="tung_trv"
             android:textColor="#FFFFFF"
-            android:textStyle="bold"
-            android:textSize="15sp" />
+            android:textSize="15sp"
+            android:textStyle="bold" />
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:layout_marginTop="3dp"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/txtNguoiGui"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/txtLastMessageContent"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="🤫🤫"
-                android:textColor="#FFFFFF"
+                android:paddingStart="4dp"
+                android:text="Tin nhắn đã bị xóa"
+                android:textColor="#BDBDBD"
                 android:textSize="14sp" />
 
             <TextView
@@ -74,10 +112,12 @@
                 android:id="@+id/txtChatTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="bây giờ"
+                android:text="12:30"
                 android:textColor="#777777"
-                android:textSize="14sp" />
+                android:textSize="13sp" />
+
         </LinearLayout>
+
     </LinearLayout>
 
 </RelativeLayout>

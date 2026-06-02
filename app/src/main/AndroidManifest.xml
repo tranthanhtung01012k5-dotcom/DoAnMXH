@@ -6,6 +6,13 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <queries>
         <package android:name="com.google.android.gms" />
     </queries>
@@ -37,7 +44,7 @@
         <activity android:name=".ProfilePage.EditProfileActivity" />
         <activity android:name=".ProfilePage.UserProfileActivity" />
         <activity android:name=".HomePage.EditPostActivity" />
-<!--        <activity android:name=".Message.MessageFragment" />-->
+        <activity android:name=".Message.ChatActivity" />
         <activity
             android:name=".HomePage.FullScreenImageActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar" />

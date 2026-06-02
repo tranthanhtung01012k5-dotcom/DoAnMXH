@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/shareSheet"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_bottom_sheet"
+    android:padding="16dp">
+
+    <!-- Handle -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="5dp"
+        android:layout_gravity="center"
+        android:background="#666"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- Search -->
+    <EditText
+        android:id="@+id/edtSearch"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:hint="Tìm kiếm trang cá nhân"
+        android:paddingHorizontal="12dp"
+        android:background="@drawable/bg_search"
+        android:textColor="#fff"
+        android:textColorHint="#aaa"/>
+
+    <!-- Recent users -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gần đây"
+        android:textColor="#fff"
+        android:textStyle="bold"
+        android:layout_marginTop="12dp"/>
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/layoutRecentUsers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"/>
+    </HorizontalScrollView>
+
+    <!-- Grid Share -->
+    <GridView
+        android:id="@+id/gridShare"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:numColumns="4"
+        android:verticalSpacing="12dp"
+        android:horizontalSpacing="12dp"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:scrollbars="none"/>
+</LinearLayout>

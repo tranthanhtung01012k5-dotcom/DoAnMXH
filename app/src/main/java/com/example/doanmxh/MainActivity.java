@@ -7,8 +7,12 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.DefaultLifecycleObserver;
+import androidx.lifecycle.LifecycleOwner;
+import androidx.lifecycle.ProcessLifecycleOwner;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
@@ -31,6 +35,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        ProcessLifecycleOwner.get().getLifecycle()
+                .addObserver(new DefaultLifecycleObserver()  {
+                    @Override
+                    public void onStart(@NonNull LifecycleOwner owner) {
+//                        super.onStart(owner);
+                        updateOnlineStatus(true);
+                    }
+                    @Override
+                    public void onStop(@NonNull LifecycleOwner owner) {
+//                        super.onStop(owner);
+                        updateOnlineStatus(false);
+                    }
+                });
 
         // Check login
         auth = FirebaseAuth.getInstance();
@@ -113,13 +131,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        updateOnlineStatus(true);
+//        updateOnlineStatus(true);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        updateOnlineStatus(false);
+//        updateOnlineStatus(false);
     }
     private void updateOnlineStatus(boolean trangThaiHoatDong) {
 

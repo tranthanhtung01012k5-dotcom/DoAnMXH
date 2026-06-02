@@ -930,7 +930,9 @@ public class ProfileFragment extends Fragment {
 
                         CommentModel comment =
                                 doc.toObject(CommentModel.class);
-
+                        Long soLikeLong = doc.getLong("so_like");
+                        comment.setSoLike(soLikeLong != null ? soLikeLong.intValue() : 0);
+                        Log.d("COMMENT", "comment: " + comment.getSoLike());
                         if (comment == null) {
 
                             pending[0]--;

@@ -62,8 +62,19 @@ public class FollowBottomSheet extends BottomSheetDialogFragment {
 
         db = FirebaseFirestore.getInstance();
 
-        adapter = new FollowAdapter(list);
+        adapter = new FollowAdapter(
+                list,
+                () -> {
 
+                    loadTabCounts();
+
+                    if (tabLayout.getSelectedTabPosition() == 0) {
+                        loadFollowing();
+                    } else {
+                        loadFollowers();
+                    }
+                }
+        );
         rvFollow.setLayoutManager(new LinearLayoutManager(getContext()));
         rvFollow.setAdapter(adapter);
 
@@ -154,6 +165,7 @@ public class FollowBottomSheet extends BottomSheetDialogFragment {
 
     private void loadTabCounts() {
 
+        // Người theo dõi
         db.collection("nguoi_dung")
                 .document(userId)
                 .collection("nguoi_dang_theo_doi")
@@ -165,10 +177,13 @@ public class FollowBottomSheet extends BottomSheetDialogFragment {
                     TabLayout.Tab tab = tabLayout.getTabAt(0);
 
                     if (tab != null) {
-                        tab.setText("Người theo dõi (" + count + ")");
+                        tab.setText(
+                                "Người theo dõi (" + count + ")"
+                        );
                     }
                 });
 
+        // Đang theo dõi
         db.collection("nguoi_dung")
                 .document(userId)
                 .collection("nguoi_theo_doi")
@@ -180,11 +195,12 @@ public class FollowBottomSheet extends BottomSheetDialogFragment {
                     TabLayout.Tab tab = tabLayout.getTabAt(1);
 
                     if (tab != null) {
-                        tab.setText("Đang theo dõi (" + count + ")");
+                        tab.setText(
+                                "Đang theo dõi (" + count + ")"
+                        );
                     }
                 });
     }
-
     private void loadFollowers() {
 
         list.clear();

@@ -345,10 +345,12 @@ public class HomeFragment extends Fragment {
             }
             @Override
             public void onShareClick(PostModel post, int position) {
-                if (getContext() != null)
-                    Toast.makeText(getContext(), "Chia sẻ", Toast.LENGTH_SHORT).show();
-            }
+                if (post == null) return;
+                if (!isAdded()) return;
 
+                ShareBottom sheet = ShareBottom.newInstance("Xem bài này nè!", post.getDocumentId());
+                sheet.show(getParentFragmentManager(), "ShareBottom");
+            }
             @Override
             public void onMoreOptionsClick(PostModel post, int position) {
                 PostOptionBottomSheet sheet = new PostOptionBottomSheet(post.getDocumentId());
@@ -817,16 +819,16 @@ public class HomeFragment extends Fragment {
                                                     userDoc.getString(
                                                             "anh_dai_dien"));
                                         }
-                                        Log.d(
-                                                "ALL_COMMENT",
-                                                "id = " + comment.getDocumentId()
-                                                        + "\nparent = " + comment.getBinhLuanChaId()
-                                                        + "\nuid = " + comment.getNguoiDungId()
-                                                        + "\nname = " + comment.getHoVaTen()
-                                                        + "\navatar = " + comment.getAnhDaiDien()
-                                                        + "\nlike = " + comment.getSo_like()
-                                                        + "\ncontent = " + comment.getNoiDung()
-                                        );
+//                                        Log.d(
+//                                                "ALL_COMMENT",
+//                                                "id = " + comment.getDocumentId()
+//                                                        + "\nparent = " + comment.getBinhLuanChaId()
+//                                                        + "\nuid = " + comment.getNguoiDungId()
+//                                                        + "\nname = " + comment.getHoVaTen()
+//                                                        + "\navatar = " + comment.getAnhDaiDien()
+//                                                        + "\nlike = " + comment.getSoLike()
+//                                                        + "\ncontent = " + comment.getNoiDung()
+//                                        );
                                         loaded[0]++;
 
                                         if (loaded[0] == total) {
@@ -893,7 +895,7 @@ public class HomeFragment extends Fragment {
         for (CommentModel c : allComments.values()) {
 
             if (mostLiked == null
-                    || c.getSo_like() > mostLiked.getSo_like()) {
+                    || c.getSoLike() > mostLiked.getSoLike()) {
 
                 mostLiked = c;
             }
@@ -986,7 +988,10 @@ public class HomeFragment extends Fragment {
         post.put("ngay_tao", com.google.firebase.Timestamp.now());
         post.put("so_like", 0);
         post.put("so_binh_luan", 0);
+        post.put("so_repost", 0);
+        post.put("so_share", 0);
         post.put("da_xoa", false);
+        post.put("is_repost", false);
         post.put("hinh_anh", new ArrayList<>());
 
         db.collection("bai_viet")

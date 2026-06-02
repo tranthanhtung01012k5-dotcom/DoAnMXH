@@ -1,5 +1,7 @@
 package com.example.doanmxh.Mention;
 
+import com.google.firebase.firestore.PropertyName;
+
 public class MentionUser {
     public String uid;
     public String hoVaTen;

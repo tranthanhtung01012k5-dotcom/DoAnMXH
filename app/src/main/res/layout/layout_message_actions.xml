@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Reaction bar -->
+    <LinearLayout
+        android:id="@+id/layoutReactions"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/bg_reaction_bar"
+        android:paddingHorizontal="12dp">
+
+        <TextView
+            android:id="@+id/reactLove"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="❤️"
+            android:textSize="26sp"
+            android:padding="6dp"/>
+
+        <TextView
+            android:id="@+id/reactHaha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="😂"
+            android:textSize="26sp"
+            android:padding="6dp"/>
+
+        <TextView
+            android:id="@+id/reactFire"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔥"
+            android:textSize="26sp"
+            android:padding="6dp"/>
+
+        <TextView
+            android:id="@+id/reactEye"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="👀"
+            android:textSize="26sp"
+            android:padding="6dp"/>
+
+        <TextView
+            android:id="@+id/reactLike"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="👍"
+            android:textSize="26sp"
+            android:padding="6dp"/>
+
+    </LinearLayout>
+
+    <!-- Menu -->
+    <LinearLayout
+        android:layout_width="220dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:orientation="vertical"
+        android:background="@drawable/bg_menu_dark">
+
+        <TextView
+            android:id="@+id/btnReply"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="↩ Trả lời"
+            android:textColor="@android:color/white"
+            android:padding="16dp"/>
+
+        <TextView
+            android:id="@+id/btnCopy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📋 Sao chép"
+            android:textColor="@android:color/white"
+            android:padding="16dp"/>
+
+        <TextView
+            android:id="@+id/btnEdit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="✏️ Chỉnh sửa"
+            android:textColor="@android:color/white"
+            android:padding="16dp"/>
+
+        <TextView
+            android:id="@+id/btnDelete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🗑 Xóa"
+            android:textColor="#FF5555"
+            android:padding="16dp"/>
+
+    </LinearLayout>
+
+</LinearLayout>

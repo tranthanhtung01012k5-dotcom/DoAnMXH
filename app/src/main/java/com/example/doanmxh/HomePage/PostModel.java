@@ -64,7 +64,15 @@ public class PostModel {
 
     @PropertyName("liked_by_me")
     private boolean likedByMe = false;
+    private boolean expanded = false;
 
+    public boolean isExpanded() {
+        return expanded;
+    }
+
+    public void setExpanded(boolean expanded) {
+        this.expanded = expanded;
+    }
     @PropertyName("is_following")
     private boolean isFollowing = false;
 
