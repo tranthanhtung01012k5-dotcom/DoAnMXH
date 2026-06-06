@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="@color/bg_primary">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -21,6 +21,7 @@
             android:layout_gravity="center"
             android:layout_marginTop="64dp"
             android:src="@drawable/thread_logo_white"
+            app:tint="@color/text_primary"
             android:contentDescription="Logo" />
 
         <!-- Tiêu đề -->
@@ -30,7 +31,7 @@
             android:text="Đăng nhập"
             android:textSize="26sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:fontFamily="@font/inter_bold"
             android:layout_marginTop="40dp" />
 
@@ -39,7 +40,7 @@
             android:layout_height="wrap_content"
             android:text="Chào mừng quay trở lại"
             android:textSize="15sp"
-            android:textColor="#888888"
+            android:textColor="@color/text_secondary"
             android:fontFamily="@font/inter_regular"
             android:layout_marginTop="6dp" />
 
@@ -51,11 +52,11 @@
             android:layout_marginTop="32dp"
             android:hint="Email"
             app:startIconDrawable="@drawable/ic_person_outline_24"
-            app:startIconTint="#888888"
+            app:startIconTint="@color/text_secondary"
             app:boxStrokeColor="#333333"
             app:boxStrokeWidth="1dp"
-            app:boxBackgroundColor="#111111"
-            app:hintTextColor="#888888"
+            app:boxBackgroundColor="@color/bg_surface"
+            app:hintTextColor="@color/text_hint"
             app:shapeAppearanceOverlay="@style/RoundedEditText">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -63,7 +64,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:textSize="15sp"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:fontFamily="@font/inter_regular"
                 android:inputType="textEmailAddress" />
 
@@ -77,21 +78,21 @@
             android:layout_marginTop="12dp"
             android:hint="Mật khẩu"
             app:startIconDrawable="@drawable/ic_search_24"
-            app:startIconTint="#888888"
+            app:startIconTint="@color/text_secondary"
             app:boxStrokeColor="#333333"
             app:boxStrokeWidth="1dp"
-            app:boxBackgroundColor="#111111"
-            app:hintTextColor="#888888"
+            app:boxBackgroundColor="@color/bg_surface"
+            app:hintTextColor="@color/text_hint"
             app:endIconMode="password_toggle"
             app:shapeAppearanceOverlay="@style/RoundedEditText"
-            app:endIconTint="#888888">
+            app:endIconTint="@color/text_secondary">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtPassword"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:textSize="15sp"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:fontFamily="@font/inter_regular"
                 android:inputType="textPassword" />
 
@@ -111,10 +112,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Ghi nhớ đăng nhập"
-                android:textColor="#888888"
+                android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:fontFamily="@font/inter_regular"
-                android:buttonTint="#888888" />
+                android:buttonTint="@color/text_secondary" />
 
             <!-- Forgot Password -->
             <TextView
@@ -122,7 +123,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Quên mật khẩu?"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:fontFamily="@font/inter_semibold"
@@ -137,7 +138,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="#1A1A1A"
+            android:background="@color/bg_surface"
             android:layout_marginTop="28dp" />
 
         <!-- Login Button -->
@@ -151,20 +152,20 @@
             android:textSize="16sp"
             android:textStyle="bold"
             android:fontFamily="@font/inter_semibold"
-            android:backgroundTint="#FFFFFF"
-            android:textColor="#000000"
+            android:backgroundTint="@color/button_primary_bg"
+            android:textColor="@color/button_primary_text"
             android:stateListAnimator="@null" />
 
         <!-- Register -->
         <TextView
             android:id="@+id/txtRegister"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:fontFamily="@font/inter_regular"
+            android:layout_height="18dp"
             android:layout_gravity="center"
             android:layout_marginTop="24dp"
-            android:textColor="#888888"/>
+            android:fontFamily="@font/inter_regular"
+            android:textColor="@color/text_secondary"
+            android:textSize="14sp" />
 
     </LinearLayout>
 

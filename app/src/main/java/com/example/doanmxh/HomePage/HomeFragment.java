@@ -32,6 +32,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import android.widget.EditText;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.WriteBatch;
 public class HomeFragment extends Fragment {
     private com.google.android.material.imageview.ShapeableImageView ivUserAvatarPost;
@@ -270,9 +272,16 @@ public class HomeFragment extends Fragment {
                                     "Đã theo dõi @" + post.getTenDangNhap(),
                                     Toast.LENGTH_SHORT).show();
 
-                            post.setFollowing(true);
-                            adapter.notifyItemChanged(position, "LIKE_UPDATE");
-                            adapter.notifyItemChanged(position);
+//                            String authorUid = post.getNguoiDungId();
+
+                            for (int i = 0; i < postList.size(); i++) {
+                                PostModel item = postList.get(i);
+
+                                if (authorUid.equals(item.getNguoiDungId())) {
+                                    item.setFollowing(true);
+                                    adapter.notifyItemChanged(i);
+                                }
+                            }
                         })
                         .addOnFailureListener(e -> {
 
@@ -349,14 +358,38 @@ public class HomeFragment extends Fragment {
                 if (!isAdded()) return;
 
                 ShareBottom sheet = ShareBottom.newInstance("Xem bài này nè!", post.getDocumentId());
+
+                // ✅ Thêm listener reload
+                sheet.setOnShareDoneListener(() -> {
+                    if (!isAdded()) return;
+                    postList.clear();
+                    adapter.notifyDataSetChanged();
+                    if (listenerRegistration != null) listenerRegistration.remove();
+                    listenerRegistration = null;
+                    loadFromFirestore();
+                });
+
                 sheet.show(getParentFragmentManager(), "ShareBottom");
             }
             @Override
             public void onMoreOptionsClick(PostModel post, int position) {
                 PostOptionBottomSheet sheet = new PostOptionBottomSheet(post.getDocumentId());
+
                 sheet.setOnPostDeletedListener(deletedId -> {
                     // Firestore listener tự bắt REMOVED event, không cần làm thêm
                 });
+
+                // ✅ Thêm listener xóa bài bị hạn chế ngay lập tức
+                sheet.setOnPostHiddenListener(hiddenPostId -> {
+                    for (int i = 0; i < postList.size(); i++) {
+                        if (postList.get(i).getDocumentId().equals(hiddenPostId)) {
+                            postList.remove(i);
+                            adapter.notifyItemRemoved(i);
+                            break;
+                        }
+                    }
+                });
+
                 sheet.show(getChildFragmentManager(), "post_options");
             }
 
@@ -419,6 +452,9 @@ public class HomeFragment extends Fragment {
 
         listenerRegistration = db.collection("bai_viet")
                 .whereEqualTo("da_xoa", false)
+                .whereIn("che_do_xem",
+                        Arrays.asList("public", ""))
+                .orderBy("ngay_tao", Query.Direction.DESCENDING)
                 .addSnapshotListener((snapshots, error) -> {
 
                     if (error != null) {
@@ -458,13 +494,23 @@ public class HomeFragment extends Fragment {
                             String nguoiDungId = dc.getDocument().getString("nguoi_dung_id");
 
                             Runnable finishTask = () -> {
-                                loadTopComment(post, () -> {
-                                    tempList.add(post);
-                                    pendingCount[0]--;
-                                    if (pendingCount[0] == 0) {
-                                        sortAndRefresh(tempList);
-                                    }
-                                });
+                                // ✅ Kiểm tra hạn chế TRƯỚC khi load comment và thêm vào list
+                                checkBiHanChe(post.getDocumentId(), myUid,
+                                        /* onNotRestricted */ () -> loadTopComment(post, () -> {
+                                            tempList.add(post);
+                                            pendingCount[0]--;
+                                            if (pendingCount[0] == 0) {
+                                                sortAndRefresh(tempList);
+                                            }
+                                        }),
+                                        /* onRestricted */ () -> {
+                                            // Bỏ qua bài này, vẫn phải giảm counter để không bị treo
+                                            pendingCount[0]--;
+                                            if (pendingCount[0] == 0) {
+                                                sortAndRefresh(tempList);
+                                            }
+                                        }
+                                );
                             };
 
                             if (nguoiDungId != null && !nguoiDungId.isEmpty()) {
@@ -500,24 +546,21 @@ public class HomeFragment extends Fragment {
                                                             if (authorUid != null && !authorUid.equals(myUid)) {
 
                                                                 db.collection("nguoi_dung")
-                                                                        .document(myUid)                    // ✅ sửa
-                                                                        .collection("nguoi_dang_theo_doi")  // ✅ sửa
+                                                                        .document(myUid)
+                                                                        .collection("nguoi_dang_theo_doi")
                                                                         .document(authorUid)
-                                                                        .get()
-                                                                        .addOnSuccessListener(followDoc -> {
-                                                                            post.setFollowing(followDoc.exists());
+                                                                        .addSnapshotListener((followDoc, e) -> {
 
-                                                                            // ✅ check repost SAU KHI có đủ thông tin
+                                                                            boolean isFollowing =
+                                                                                    followDoc != null && followDoc.exists();
+
+                                                                            post.setFollowing(isFollowing);
                                                                             String chaId = post.getBaiVietChaId();
                                                                             if (chaId != null && !chaId.isEmpty()) {
                                                                                 loadBaiVietCha(post, chaId, finishTask);
                                                                             } else {
                                                                                 finishTask.run();
                                                                             }
-                                                                        })
-                                                                        .addOnFailureListener(e -> {
-                                                                            post.setFollowing(false);
-                                                                            finishTask.run();
                                                                         });
 
                                                             } else {
@@ -590,11 +633,18 @@ public class HomeFragment extends Fragment {
                                     String nguoiDungId = dc.getDocument().getString("nguoi_dung_id");
 
                                     Runnable insertTask = () -> {
-                                        loadTopComment(post, () -> {
-                                            postList.add(0, post);
-                                            adapter.notifyItemInserted(0);
-                                            rvFeed.scrollToPosition(0);
-                                        });
+                                        // ✅ Kiểm tra hạn chế TRƯỚC khi chèn vào feed
+                                        checkBiHanChe(post.getDocumentId(), myUid,
+                                                /* onNotRestricted */ () -> loadTopComment(post, () -> {
+                                                    postList.add(0, post);
+                                                    adapter.notifyItemInserted(0);
+                                                    rvFeed.scrollToPosition(0);
+                                                }),
+                                                /* onRestricted */ () -> {
+                                                    // Bỏ qua bài này hoàn toàn
+                                                    Log.d("HomeFragment", "Bài bị hạn chế, bỏ qua: " + post.getDocumentId());
+                                                }
+                                        );
                                     };
 
                                     if (nguoiDungId != null && !nguoiDungId.isEmpty()) {
@@ -678,7 +728,26 @@ public class HomeFragment extends Fragment {
                     Log.d("HomeFragment", "Feed: " + postList.size() + " bài");
                 });
     }
-
+    // ─── Helper: kiểm tra xem myUid có bị hạn chế không ───
+    private void checkBiHanChe(String postDocId, String myUid, Runnable onNotRestricted, Runnable onRestricted) {
+        if (myUid == null || postDocId == null) {
+            onNotRestricted.run();
+            return;
+        }
+        db.collection("bai_viet")
+                .document(postDocId)
+                .collection("nguoi_dang_han_che")
+                .document(myUid)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        onRestricted.run();   // bị hạn chế → bỏ qua bài này
+                    } else {
+                        onNotRestricted.run(); // không bị → hiển thị bình thường
+                    }
+                })
+                .addOnFailureListener(e -> onNotRestricted.run()); // lỗi → cho hiển thị
+    }
     private void sortAndRefresh(List<PostModel> newPosts) {
         Collections.sort(newPosts, (a, b) -> {
             Timestamp dateA = a.getNgayTao();
@@ -983,17 +1052,30 @@ public class HomeFragment extends Fragment {
         btnQuickPost.setEnabled(false);
 
         Map<String, Object> post = new HashMap<>();
+//        post.put("nguoi_dung_id", myUid);
+//        post.put("noi_dung", content);
+//        post.put("ngay_tao", com.google.firebase.Timestamp.now());
+//        post.put("so_like", 0);
+//        post.put("so_binh_luan", 0);
+//        post.put("so_repost", 0);
+//        post.put("so_share", 0);
+//        post.put("da_xoa", false);
+//        post.put("is_repost", false);
+//        post.put("danh_sach_anh", new ArrayList<>());
+
         post.put("nguoi_dung_id", myUid);
         post.put("noi_dung", content);
-        post.put("ngay_tao", com.google.firebase.Timestamp.now());
+        post.put("ngay_tao", Timestamp.now());
+        post.put("da_xoa", false);
+        post.put("che_do_xem", "public");
         post.put("so_like", 0);
         post.put("so_binh_luan", 0);
-        post.put("so_repost", 0);
+        post.put("so_repost",0);
         post.put("so_share", 0);
-        post.put("da_xoa", false);
+        post.put("danh_sach_anh", new ArrayList<>());
+        post.put("bai_viet_cha_id", "");
         post.put("is_repost", false);
-        post.put("hinh_anh", new ArrayList<>());
-
+//        post.put("danh_sach_video", new ArrayList<>());
         db.collection("bai_viet")
                 .add(post)
                 .addOnSuccessListener(ref -> {

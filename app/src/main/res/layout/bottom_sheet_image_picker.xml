@@ -26,7 +26,7 @@
         android:text="Chọn ảnh"
         android:textSize="16sp"
         android:textStyle="bold"
-        android:textColor="#FFFFFF"/>
+        android:textColor="@color/text_primary"/>
 
     <!-- Nút mở Camera -->
     <LinearLayout
@@ -40,17 +40,18 @@
         android:paddingHorizontal="16dp">
 
         <ImageView
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="14dp"
             android:src="@drawable/ic_photo"
-            android:layout_marginEnd="14dp"/>
+            android:tint="@color/text_primary"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Mở Camera"
             android:textSize="15sp"
-            android:textColor="#FFFFFF"/>
+            android:textColor="@color/text_primary"/>
     </LinearLayout>
 
     <!-- Nút mở Thư viện -->
@@ -68,6 +69,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:src="@drawable/ic_picture"
+            android:tint="@color/text_primary"
             android:layout_marginEnd="14dp"/>
 
         <TextView
@@ -75,7 +77,7 @@
             android:layout_height="wrap_content"
             android:text="Thư viện ảnh"
             android:textSize="15sp"
-            android:textColor="#FFFFFF"/>
+            android:textColor="@color/text_primary"/>
     </LinearLayout>
 
     <!-- Nút Hủy -->

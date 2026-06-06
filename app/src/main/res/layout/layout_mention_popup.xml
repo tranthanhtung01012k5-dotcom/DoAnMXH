@@ -3,7 +3,7 @@
     android:id="@+id/layoutMentionPopup"
     android:layout_width="280dp"
     android:layout_height="wrap_content"
-    android:background="@drawable/bg_mention_popup"
+    android:background="@color/bg_primary"
     android:orientation="vertical">
 
     <androidx.recyclerview.widget.RecyclerView

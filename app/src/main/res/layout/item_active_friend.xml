@@ -44,7 +44,7 @@
         android:layout_width="60dp"
         android:layout_height="wrap_content"
         android:text="alex_dev"
-        android:textColor="#FFFFFF"
+        android:textColor="@color/text_primary"
         android:textSize="11sp"
         android:gravity="center"
         android:ellipsize="end"

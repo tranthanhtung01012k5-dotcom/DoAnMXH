@@ -1,6 +1,7 @@
 package com.example.doanmxh.Message;
 
 import android.content.ClipData;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -27,6 +28,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.doanmxh.BaseActivity;
 import com.example.doanmxh.CreatePage.ImageRepository;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
@@ -44,21 +46,39 @@ import com.google.firebase.firestore.Query;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class ChatActivity extends AppCompatActivity {
+public class ChatActivity extends BaseActivity {
 
     // ── Views ────────────────────────────────────────────
     private ShapeableImageView imgAvatar;
     private ListenerRegistration userInfoListener;
     private TextView txtChatName, txtOnlineStatus;
-    private ImageView pointOnline, btnBack, btnCall, btnMore, btnAttach, btnMic, btnSend;
+    private ImageView pointOnline, btnBack, btnCall, btnSearch, btnAttach, btnMic, btnSend,btnTimNhanh;
     private EditText etMessage;
     private RecyclerView rvMessages;
+    private boolean isPinnedExpanded = false;
 
+    // thêm field
+    private RecyclerView rvPinnedMessages;
+    private TextView txtPinnedCount;
+    private ImageView btnExpandPinned;
+    private LinearLayout layoutPinnedContainer;
+    private final List<Map<String,Object>> pinnedMessages = new ArrayList<>();
+
+    private List<Integer> searchResultIndexes = new ArrayList<>();
+    private int currentSearchIndex = -1;
+    private final SimpleDateFormat searchTimeFormat =
+            new SimpleDateFormat("HH:mm dd/MM/yyyy", Locale.getDefault());
+    private PinnedMessageAdapter pinnedAdapter;
+
+
+    private Context content ;
+    private ImageView btnUnpin;
     // ── Reply bar views (thuộc Activity, nằm phía trên input) ───
     private LinearLayout layoutReply;
     private TextView txtReplyName, txtReplyContent;
@@ -131,7 +151,6 @@ public class ChatActivity extends AppCompatActivity {
 
         db              = FirebaseFirestore.getInstance();
         imageRepository = new ImageRepository();
-
         conversationId = myUid.compareTo(targetUid) < 0
                 ? myUid + "_" + targetUid
                 : targetUid + "_" + myUid;
@@ -140,8 +159,11 @@ public class ChatActivity extends AppCompatActivity {
         setupRecyclerView();
         setupReplyBar();
         loadTargetUserInfo();
-        listenMessages();
         setupInputBehavior();
+        setupPinnedRecycler();
+        listenMessages();
+        listenPinnedMessage();
+
         imgAvatar.setOnClickListener( v -> {
             Intent intent = new Intent(ChatActivity.this, UserProfileActivity.class);
             intent.putExtra("user_uid", targetUid);
@@ -154,11 +176,17 @@ public class ChatActivity extends AppCompatActivity {
             Log.d("target_uid", targetUid);
             startActivity(intent);
         });
+        btnTimNhanh.setOnClickListener(v -> {
+            sendTimNhanh();
+        });
         btnBack.setOnClickListener(v -> finish());
         btnAttach.setOnClickListener(v -> checkPermissionAndShowSheet());
 //        btnCall.setOnClickListener(v -> { /* TODO */ });
-        btnMore.setOnClickListener(v -> { /* TODO */ });
+        btnSearch.setOnClickListener(v -> openSearchSheet());
         btnSend.setOnClickListener(v -> sendMessage());
+        btnExpandPinned.setOnClickListener(v -> {
+            togglePinnedList();
+        });
     }
 
     @Override
@@ -178,12 +206,17 @@ public class ChatActivity extends AppCompatActivity {
         pointOnline     = findViewById(R.id.point_active);
         btnBack         = findViewById(R.id.btnBack);
 //        btnCall         = findViewById(R.id.btnCall);
-        btnMore    = findViewById(R.id.btnMore);
+        btnSearch    = findViewById(R.id.btnSearch);
+        btnTimNhanh = findViewById(R.id.btnTimNhanh);
         btnAttach       = findViewById(R.id.btnAttach);
         btnMic          = findViewById(R.id.btnMic);
         btnSend         = findViewById(R.id.btnSend);
         etMessage       = findViewById(R.id.etMessage);
         rvMessages      = findViewById(R.id.rvMessages);
+        rvPinnedMessages = findViewById(R.id.rvPinnedMessages);
+        txtPinnedCount = findViewById(R.id.txtPinnedCount);
+        btnExpandPinned = findViewById(R.id.btnExpandPinned);
+        layoutPinnedContainer = findViewById(R.id.layoutPinnedContainer);
 
         // Reply bar — những view này nằm trong activity_chat.xml, phía trên input row
         layoutReply     = findViewById(R.id.layoutReply);
@@ -195,8 +228,28 @@ public class ChatActivity extends AppCompatActivity {
     // ════════════════════════════════════════════════════
     //  RECYCLERVIEW
     // ════════════════════════════════════════════════════
+    private void setupPinnedRecycler() {
+
+        pinnedAdapter = new PinnedMessageAdapter(
+                pinnedMessages,
+                pin -> {
+
+                    String messageId =
+                            (String) pin.get("message_id");
+                    Log.d("PIN", "messageId = " + messageId);
+                    if (messageId != null) {
+                        scrollToMessage(messageId);
+                        chatAdapter.highlightMessage(messageId);
+                    }
+                });
+
+        rvPinnedMessages.setLayoutManager(
+                new LinearLayoutManager(this));
+
+        rvPinnedMessages.setAdapter(pinnedAdapter);
+    }
     private void setupRecyclerView() {
-        chatAdapter = new ChatAdapter(messageList, myUid, conversationId, msg -> {
+        chatAdapter = new ChatAdapter(this,messageList, myUid, conversationId, msg -> {
             // Callback từ Adapter khi user nhấn "Trả lời"
             replyingMessage = msg;
             showReplyBar(msg);
@@ -235,7 +288,76 @@ public class ChatActivity extends AppCompatActivity {
         // Nút X đóng reply bar
         btnCloseReply.setOnClickListener(v -> clearReply());
     }
+    private void sendTimNhanh()
+    {   String content = "❤\uFE0F";
 
+        if (content.isEmpty()) return;
+
+        etMessage.setText("");
+
+        Map<String, Object> message = new HashMap<>();
+        message.put("nguoi_gui_id", myUid);
+        message.put("noi_dung", content);
+        message.put("thoi_gian", com.google.firebase.firestore.FieldValue.serverTimestamp());
+        message.put("da_doc", false);
+        message.put("loai", "tim");
+
+        // ────────────────
+        // CASE 1: KHÔNG REPLY
+        // ────────────────
+        if (replyingMessage == null) {
+
+            db.collection("cuoc_tro_chuyen")
+                    .document(conversationId)
+                    .collection("tin_nhan")
+                    .add(message)
+                    .addOnSuccessListener(ref ->
+                            updateLastMessage(content, ref.getId(), "tim"));
+
+            return;
+        }
+
+        // ────────────────
+        // CASE 2: CÓ REPLY
+        // ────────────────
+        String replyId = replyingMessage.getMessageId();
+
+        db.collection("cuoc_tro_chuyen")
+                .document(conversationId)
+                .collection("tin_nhan")
+                .document(replyId)
+                .get()
+                .addOnSuccessListener(replyDoc -> {
+
+                    String replySenderUid = replyDoc.getString("nguoi_gui_id");
+
+                    db.collection("nguoi_dung")
+                            .document(replySenderUid)
+                            .get()
+                            .addOnSuccessListener(userDoc -> {
+
+                                String senderName = userDoc.getString("ten_dang_nhap");
+
+                                message.put("reply_to_id", replyId);
+                                message.put("reply_to_content",
+                                        replyingMessage.getNoiDung() != null
+                                                ? replyingMessage.getNoiDung()
+                                                : "[Hình ảnh]");
+
+                                message.put("reply_to_sender_name",
+                                        senderName != null ? senderName : "");
+
+                                clearReply();
+
+                                db.collection("cuoc_tro_chuyen")
+                                        .document(conversationId)
+                                        .collection("tin_nhan")
+                                        .add(message)
+                                        .addOnSuccessListener(ref ->
+                                                updateLastMessage(content, ref.getId(), "tim"));
+                            });
+                });
+    }
     private void showReplyBar(ChatMessage msg) {
         db.collection("nguoi_dung").document(msg.getNguoiGuiId())
                         .get()
@@ -304,23 +426,31 @@ public class ChatActivity extends AppCompatActivity {
                 .addSnapshotListener((snapshots, e) -> {
                     if (e != null || snapshots == null) return;
 
+                    boolean hasNewMessage = false; // ✅ flag theo dõi
+
                     for (DocumentChange dc : snapshots.getDocumentChanges()) {
                         if (dc.getType() == DocumentChange.Type.ADDED) {
                             ChatMessage msg = dc.getDocument().toObject(ChatMessage.class);
                             if (msg != null) {
                                 msg.setMessageId(dc.getDocument().getId());
-
-                                // Thêm log này
-                                Log.d("MSG_RAW", "loai=" + dc.getDocument().getString("loai")
-                                        + " post_id=" + dc.getDocument().getString("post_id")
-                                        + " obj_loai=" + msg.getLoai()
-                                        + " obj_postId=" + msg.getPostId());
+                                msg.setDaDoc(Boolean.TRUE.equals(
+                                        dc.getDocument().getBoolean("da_doc")));
                                 if (msg.getNoiDung() == null)
                                     msg.setNoiDung(dc.getDocument().getString("noi_dung"));
                                 if (msg.getNguoiGuiId() == null)
                                     msg.setNguoiGuiId(dc.getDocument().getString("nguoi_gui_id"));
+
+                                int prevLastIndex = messageList.size() - 1; // ✅ lưu index cũ
+
                                 messageList.add(msg);
+                                hasNewMessage = true;
+
+                                // ✅ notify item cũ để nó ẩn timestamp đi
+                                if (prevLastIndex >= 0) {
+                                    chatAdapter.notifyItemChanged(prevLastIndex);
+                                }
                             }
+
                         } else if (dc.getType() == DocumentChange.Type.MODIFIED) {
                             String id = dc.getDocument().getId();
                             for (int i = 0; i < messageList.size(); i++) {
@@ -330,35 +460,103 @@ public class ChatActivity extends AppCompatActivity {
                                         updated.setMessageId(id);
                                         updated.setNoiDung(dc.getDocument().getString("noi_dung"));
                                         updated.setNguoiGuiId(dc.getDocument().getString("nguoi_gui_id"));
+                                        updated.setDaDoc(Boolean.TRUE.equals(
+                                                dc.getDocument().getBoolean("da_doc")));
                                         messageList.set(i, updated);
-                                        if (i == messageList.size() - 1)
-                                            db.collection("cuoc_tro_chuyen").document(conversationId)
-                                                    .update("tin_nhan_cuoi", updated.getNoiDung());
+                                        // ✅ Chỉ notify item đó, KHÔNG scroll
+                                        chatAdapter.notifyItemChanged(i);
                                     }
                                     break;
                                 }
                             }
+
                         } else if (dc.getType() == DocumentChange.Type.REMOVED) {
                             String id = dc.getDocument().getId();
                             for (int i = 0; i < messageList.size(); i++) {
                                 if (id.equals(messageList.get(i).getMessageId())) {
                                     if (i == messageList.size() - 1)
-                                        db.collection("cuoc_tro_chuyen").document(conversationId)
+                                        db.collection("cuoc_tro_chuyen")
+                                                .document(conversationId)
                                                 .update("tin_nhan_cuoi", "Tin nhắn đã bị xóa");
                                     messageList.remove(i);
+                                    chatAdapter.notifyItemRemoved(i);
                                     break;
                                 }
                             }
                         }
                     }
 
-                    chatAdapter.notifyDataSetChanged();
-                    if (!messageList.isEmpty())
+                    // ✅ Chỉ scroll xuống cuối khi có tin nhắn MỚI THÊM VÀO
+                    if (hasNewMessage) {
+                        chatAdapter.notifyDataSetChanged();
                         rvMessages.scrollToPosition(messageList.size() - 1);
+                    }
+
                     markMessagesAsRead();
                 });
     }
 
+    private void listenPinnedMessage() {
+
+        db.collection("cuoc_tro_chuyen")
+                .document(conversationId)
+                .collection("tin_nhan_ghim")
+                .orderBy(
+                        "thoi_gian_ghim",
+                        Query.Direction.DESCENDING)
+                .addSnapshotListener((value, error) -> {
+
+                    if (error != null || value == null)
+                        return;
+
+                    pinnedMessages.clear();
+
+                    for (DocumentSnapshot doc : value.getDocuments()) {
+
+                        Map<String,Object> data = doc.getData();
+
+                        if (data != null) {
+                            pinnedMessages.add(data);
+                        }
+                    }
+
+                    updatePinnedUI();
+                });
+    }
+    private void updatePinnedUI() {
+
+        if (pinnedMessages.isEmpty()) {
+            layoutPinnedContainer.setVisibility(View.GONE);
+            return;
+        }
+
+        layoutPinnedContainer.setVisibility(View.VISIBLE);
+
+        txtPinnedCount.setText(pinnedMessages.size() + " tin nhắn ghim");
+
+        Log.d("PIN_TEST", "size = " + pinnedMessages.size());
+
+        if (pinnedAdapter != null) {
+            pinnedAdapter.notifyDataSetChanged();
+        }
+
+        // optional: giữ trạng thái hiện tại
+        rvPinnedMessages.setVisibility(
+                isPinnedExpanded ? View.VISIBLE : View.GONE
+        );
+    }
+    private void togglePinnedList() {
+
+        isPinnedExpanded = !isPinnedExpanded;
+
+        rvPinnedMessages.setVisibility(
+                isPinnedExpanded ? View.VISIBLE : View.GONE
+        );
+
+        btnExpandPinned.setRotation(
+                isPinnedExpanded ? 180f : 0f
+        );
+    }
     // ════════════════════════════════════════════════════
     //  GỬI TIN NHẮN TEXT
     // ════════════════════════════════════════════════════
@@ -705,7 +903,143 @@ public class ChatActivity extends AppCompatActivity {
                             });
                 });
     }
+    private void searchMessages(String keyword) {
+        searchResultIndexes.clear();
+        currentSearchIndex = -1;
 
+        if (keyword == null || keyword.trim().isEmpty()) {
+            chatAdapter.highlightMessage(null);
+            chatAdapter.notifyDataSetChanged();
+            return;
+        }
+
+        String lowerKey = keyword.toLowerCase(Locale.ROOT);
+
+        for (int i = 0; i < messageList.size(); i++) {
+            ChatMessage msg = messageList.get(i);
+
+            if (msg.getNoiDung() != null &&
+                    msg.getNoiDung().toLowerCase(Locale.ROOT).contains(lowerKey)) {
+
+                searchResultIndexes.add(i);
+            }
+        }
+
+        if (searchResultIndexes.isEmpty()) {
+            Toast.makeText(this, "Không tìm thấy tin nhắn", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // nhảy tới kết quả đầu tiên
+        goToSearchResult(0);
+    }
+
+    private void goToSearchResult(int index) {
+
+        if (searchResultIndexes.isEmpty()) return;
+
+        if (index < 0 || index >= searchResultIndexes.size()) return;
+
+        currentSearchIndex = index;
+
+        int position = searchResultIndexes.get(index);
+
+        rvMessages.scrollToPosition(position);
+
+        chatAdapter.highlightMessage(
+                messageList.get(position).getMessageId()
+        );
+    }
+    private void nextSearchResult() {
+        if (searchResultIndexes.isEmpty()) return;
+
+        int next = currentSearchIndex + 1;
+
+        if (next >= searchResultIndexes.size()) {
+            next = 0; // vòng lại đầu
+        }
+
+        goToSearchResult(next);
+    }
+    private void previousSearchResult() {
+        if (searchResultIndexes.isEmpty()) return;
+
+        int prev = currentSearchIndex - 1;
+
+        if (prev < 0) {
+            prev = searchResultIndexes.size() - 1;
+        }
+
+        goToSearchResult(prev);
+    }
+    private void openSearchSheet() {
+
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater()
+                .inflate(R.layout.bottom_sheet_search_message, null);
+
+        EditText edtSearch = view.findViewById(R.id.edtSearch);
+        RecyclerView rv = view.findViewById(R.id.rvSearchResult);
+
+        List<SearchItem> results = new ArrayList<>();
+        SearchMessageAdapter adapter = new SearchMessageAdapter(results, item -> {
+            dialog.dismiss();
+            scrollToPosition(item.position);
+            chatAdapter.highlightMessage(item.messageId);
+
+        });
+
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        rv.setAdapter(adapter);
+
+        edtSearch.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void afterTextChanged(Editable s) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
+
+                String key = s.toString().toLowerCase(Locale.ROOT);
+                results.clear();
+
+                for (int i = 0; i < messageList.size(); i++) {
+
+                    ChatMessage msg = messageList.get(i);
+
+                    if (msg.getNoiDung() != null &&
+                            msg.getNoiDung().toLowerCase(Locale.ROOT).contains(key)) {
+
+                        Date ts =  msg.getThoiGian();
+
+                        String timeStr = "";
+                        if (ts != null) {
+                            timeStr = searchTimeFormat.format(ts);
+                        }
+
+                        results.add(new SearchItem(
+                                msg.getMessageId(),
+                                msg.getNoiDung(),
+                                ts,
+                                i
+                        ));
+                    }
+                }
+
+                adapter.notifyDataSetChanged();
+            }
+        });
+
+        dialog.setContentView(view);
+        dialog.show();
+    }
+    private void scrollToPosition(int position) {
+        LinearLayoutManager lm =
+                (LinearLayoutManager) rvMessages.getLayoutManager();
+
+        if (lm != null) {
+            lm.scrollToPositionWithOffset(position, 100);
+        }
+    }
     // ════════════════════════════════════════════════════
     //  TOGGLE MIC / SEND
     // ════════════════════════════════════════════════════
@@ -714,7 +1048,7 @@ public class ChatActivity extends AppCompatActivity {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
                 boolean hasText = s.toString().trim().length() > 0;
-                btnMic.setVisibility(hasText ? View.GONE  : View.VISIBLE);
+                btnTimNhanh.setVisibility(hasText ? View.GONE  : View.VISIBLE);
                 btnSend.setVisibility(hasText ? View.VISIBLE : View.GONE);
             }
             @Override public void afterTextChanged(Editable s) {}

@@ -1,5 +1,12 @@
-<!-- res/drawable/bg_search.xml -->
+<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#F1F1F1"/>
-    <corners android:radius="16dp"/>
+
+    <solid android:color="@color/bg_surface"/>
+
+    <corners android:radius="22dp"/>
+
+    <stroke
+        android:width="1dp"
+        android:color="@color/divider"/>
+
 </shape>

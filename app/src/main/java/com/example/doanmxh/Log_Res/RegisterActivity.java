@@ -20,6 +20,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.doanmxh.BaseActivity;
 import com.example.doanmxh.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -29,7 +30,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-public class RegisterActivity extends AppCompatActivity {
+public class RegisterActivity extends BaseActivity {
 
     EditText edtFullname, edtUsername, edtEmail, edtPassword;
     Button btnRegister;
@@ -67,7 +68,7 @@ public class RegisterActivity extends AppCompatActivity {
             @Override
             public void updateDrawState(@NonNull TextPaint ds) {
                 super.updateDrawState(ds);
-                ds.setColor(Color.WHITE);
+                ds.setColor(getResources().getColor(R.color.text_primary));
                 ds.setUnderlineText(false);
                 ds.setFakeBoldText(true);
             }
@@ -183,7 +184,8 @@ public class RegisterActivity extends AppCompatActivity {
                                                     nguoiDung.put("ngay_tao",    new Date());
                                                     nguoiDung.put("verified",    false);
                                                     nguoiDung.put("private",     false);
-                                                    nguoiDung.put("lan_hoat_dong_cuoi   ",new Date());
+                                                    nguoiDung.put("lan_hoat_dong_cuoi",new Date());
+                                                    nguoiDung.put("ngay_cap_nhat_mat_khau",new Date());
                                                     nguoiDung.put("uid",         uid);
                                                     nguoiDung.put("so_nguoi_theo_doi",       0);
                                                     nguoiDung.put("trang_thai_hoat_dong",  false);

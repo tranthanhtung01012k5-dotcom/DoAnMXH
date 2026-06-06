@@ -79,6 +79,16 @@
             android:textSize="14sp"
             android:includeFontPadding="false"/>
 
+        <!-- IMAGE MESSAGE -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imgMessageContent"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:layout_marginTop="4dp"
+            app:shapeAppearanceOverlay="@style/RoundedImageStyle" />
+
         <!-- REACTION -->
         <TextView
             android:id="@+id/txtReaction"
@@ -92,15 +102,6 @@
             android:textSize="14sp"
             android:visibility="gone"/>
 
-        <!-- IMAGE MESSAGE -->
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/imgMessageContent"
-            android:layout_width="220dp"
-            android:layout_height="220dp"
-            android:scaleType="centerCrop"
-            android:visibility="gone"
-            android:layout_marginTop="4dp"
-            app:shapeAppearanceOverlay="@style/RoundedImageStyle" />
 
         <!-- TIME + READ STATUS -->
         <LinearLayout

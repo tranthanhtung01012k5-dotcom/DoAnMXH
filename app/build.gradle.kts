@@ -50,6 +50,8 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
+    implementation ("com.google.firebase:firebase-database")
+
 
     // UI
     implementation("androidx.recyclerview:recyclerview:1.3.2")
@@ -79,4 +81,7 @@ dependencies {
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     //ChayNgam
     implementation("androidx.lifecycle:lifecycle-process:2.6.1")
+    //
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }

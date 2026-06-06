@@ -2,6 +2,7 @@ package com.example.doanmxh.ProfilePage;
 
 import android.app.Dialog;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -46,6 +47,7 @@ import java.util.List;
 
 public class ProfileFragment extends Fragment {
     private List<CommentModel> myCommentList = new ArrayList<>();
+    private View profileRoot;
     private CommentAdapter commentAdapter;
     private String myUid;
     private boolean isLoaded = false; // ← chống load lại
@@ -58,7 +60,7 @@ public class ProfileFragment extends Fragment {
     private PostAdapter postAdapter;
     private List<PostModel> myPostList = new ArrayList<>();
 
-    private TextView txtName, txtUsername, txtTitle, txtSoNguoiTheoDoi;
+    private TextView txtName, txtUsername, txtTitle, txtSoNguoiTheoDoi,txtEmptyMessage;
     private ShapeableImageView imgProfile;
     private ImageView btnLanguage, btnMenu;
     private Button editProfile, shareProfile;
@@ -144,7 +146,7 @@ public class ProfileFragment extends Fragment {
                 );
             }
         });
-        btnMenu.setOnClickListener(v -> logout());
+        btnMenu.setOnClickListener(v -> new SettingsDialog(this, auth, db).show());
 
         imgProfile.setOnClickListener(v -> {
             if (currentAvatarUrl != null && !currentAvatarUrl.isEmpty())
@@ -377,7 +379,7 @@ public class ProfileFragment extends Fragment {
                     layoutFollowingAvatars.setOnClickListener(v -> openFollowSheet(uid));
 
                     currentAvatarUrl = avatar;
-                    Glide.with(requireContext()).load(avatar)
+                    Glide.with(requireContext()).load(currentAvatarUrl)
                             .placeholder(R.drawable.ic_placeholder_avatar)
                             .error(R.drawable.ic_placeholder_avatar)
                             .circleCrop().into(imgProfile);
@@ -401,6 +403,7 @@ public class ProfileFragment extends Fragment {
 
                     loadUserInfo();
                      loadMyThreads(uid);
+                     loadFollowingAvatars(uid);
 
                 });
 
@@ -496,19 +499,41 @@ public class ProfileFragment extends Fragment {
                 });
     }
 
-    private void loadFollowingAvatars(String uid) {
-        db.collection("nguoi_dung").document(uid)
-                .collection("nguoi_dang_theo_doi").limit(5).get()
-                .addOnSuccessListener(querySnapshot -> {
-                    if (querySnapshot.isEmpty()) return;
-                    List<String> followingUids = new ArrayList<>();
-                    for (var doc : querySnapshot.getDocuments()) {
-                        String followingUid = doc.getString("nguoi_dung_id");
-                        if (followingUid != null) followingUids.add(followingUid);
+//    private void loadFollowingAvatars(String uid) {
+//        db.collection("nguoi_dung").document(uid)
+//                .collection("nguoi_dang_theo_doi").limit(5).get()
+//                .addOnSuccessListener(querySnapshot -> {
+//                    if (querySnapshot.isEmpty()) return;
+//                    List<String> followingUids = new ArrayList<>();
+//                    for (var doc : querySnapshot.getDocuments()) {
+//                        String followingUid = doc.getString("nguoi_dung_id");
+//                        if (followingUid != null) followingUids.add(followingUid);
+//                    }
+//                    loadAvatarsIntoLayout(followingUids);
+//                });
+//    }
+private void loadFollowingAvatars(String uid) {
+
+    db.collection("nguoi_dung")
+            .document(uid)
+            .collection("nguoi_dang_theo_doi")
+            .limit(5)
+            .get()
+            .addOnSuccessListener(querySnapshot -> {
+
+                List<String> followingUids = new ArrayList<>();
+
+                for (DocumentSnapshot doc : querySnapshot.getDocuments()) {
+                    String followingUid = doc.getString("nguoi_dung_id");
+
+                    if (followingUid != null) {
+                        followingUids.add(followingUid);
                     }
-                    loadAvatarsIntoLayout(followingUids);
-                });
-    }
+                }
+
+                loadAvatarsIntoLayout(followingUids);
+            });
+}
 
     private void loadAvatarsIntoLayout(List<String> uids) {
         layoutFollowingAvatars.removeAllViews();
@@ -633,40 +658,37 @@ public class ProfileFragment extends Fragment {
         }
     }
     private void setActiveTab(int tab) {
+        int colorActive = resolveColor(com.google.android.material.R.attr.colorOnSurface);
+        int colorInactive = resolveColor(com.google.android.material.R.attr.colorOutline);
 
-        // reset line
-        linePost.setBackgroundColor(Color.parseColor("#1C1C1E"));
-        lineComment.setBackgroundColor(Color.parseColor("#1C1C1E"));
-        lineRepost.setBackgroundColor(Color.parseColor("#1C1C1E"));
-
-        // reset text
-        txtTabPost.setTextColor(Color.parseColor("#636366"));
-        txtTabComment.setTextColor(Color.parseColor("#636366"));
-        txtTabRepost.setTextColor(Color.parseColor("#636366"));
+        // reset
+        linePost.setBackgroundColor(colorInactive);
+        lineComment.setBackgroundColor(colorInactive);
+        lineRepost.setBackgroundColor(colorInactive);
+        txtTabPost.setTextColor(colorInactive);
+        txtTabComment.setTextColor(colorInactive);
+        txtTabRepost.setTextColor(colorInactive);
 
         switch (tab) {
-
             case 0:
-
-                linePost.setBackgroundColor(Color.WHITE);
-                txtTabPost.setTextColor(Color.WHITE);
-
+                linePost.setBackgroundColor(colorActive);
+                txtTabPost.setTextColor(colorActive);
                 break;
             case 1:
-
-                lineRepost.setBackgroundColor(Color.WHITE);
-                txtTabRepost.setTextColor(Color.WHITE);
-
+                lineRepost.setBackgroundColor(colorActive);
+                txtTabRepost.setTextColor(colorActive);
                 break;
             case 2:
-
-                lineComment.setBackgroundColor(Color.WHITE);
-                txtTabComment.setTextColor(Color.WHITE);
-
+                lineComment.setBackgroundColor(colorActive);
+                txtTabComment.setTextColor(colorActive);
                 break;
-
-
         }
+    }
+
+    private int resolveColor(int attr) {
+        android.util.TypedValue tv = new android.util.TypedValue();
+        getContext().getTheme().resolveAttribute(attr, tv, true);
+        return tv.data;
     }
     private void loadRepostThreads(String uid) {
 
@@ -1062,4 +1084,29 @@ public class ProfileFragment extends Fragment {
                     }
                 });
     }
+//    private void applyProfileTheme() {
+//        if (getContext() == null) return;
+//
+//        boolean darkMode = SettingsDialog.isDarkModeEnabled(requireContext());
+//        int backgroundColor = Color.parseColor(darkMode ? "#000000" : "#FFFFFF");
+//        int primaryTextColor = Color.parseColor(darkMode ? "#FFFFFF" : "#111111");
+//        int secondaryTextColor = Color.parseColor(darkMode ? "#E5E5EA" : "#333333");
+//        int mutedTextColor = Color.parseColor(darkMode ? "#8E8E93" : "#6E6E73");
+//        int buttonColor = Color.parseColor(darkMode ? "#1C1C1E" : "#F2F2F7");
+//        int iconColor = primaryTextColor;
+//
+//        profileRoot.setBackgroundColor(backgroundColor);
+//        txtName.setTextColor(primaryTextColor);
+//        txtUsername.setTextColor(secondaryTextColor);
+//        txtTitle.setTextColor(secondaryTextColor);
+//        txtSoNguoiTheoDoi.setTextColor(mutedTextColor);
+//        txtEmptyMessage.setTextColor(mutedTextColor);
+//        btnLanguage.setColorFilter(iconColor);
+//        btnMenu.setColorFilter(iconColor);
+//        editProfile.setBackgroundTintList(ColorStateList.valueOf(buttonColor));
+//        editProfile.setTextColor(primaryTextColor);
+//        shareProfile.setBackgroundTintList(ColorStateList.valueOf(buttonColor));
+//        shareProfile.setTextColor(primaryTextColor);
+//        setActiveTab(0);
+//    }
 }

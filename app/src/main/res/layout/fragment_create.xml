@@ -6,7 +6,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#101010">
+    android:background="@color/bg_primary">
 
     <ScrollView
         android:layout_width="match_parent"
@@ -40,7 +40,7 @@
                 android:layout_marginStart="14dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="Tên người dùng"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold"
                 app:layout_constraintStart_toEndOf="@id/imgAvatar"
@@ -60,8 +60,8 @@
                 android:importantForAutofill="no"
                 android:inputType="textMultiLine"
                 android:minHeight="120dp"
-                android:textColor="#FFFFFF"
-                android:textColorHint="#666666"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
                 android:textSize="16sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="@id/txtUsername"
@@ -100,7 +100,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Ảnh"
                     android:src="@drawable/ic_picture"
-                    app:tint="#888888" />
+                    app:tint="@color/text_secondary" />
 
                 <ImageButton
                     android:id="@+id/btnCamera"
@@ -110,7 +110,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Camera"
                     android:src="@drawable/ic_photo"
-                    app:tint="#888888" />
+                    app:tint="@color/text_secondary" />
 
                 <ImageButton
                     android:id="@+id/btnMic"
@@ -120,7 +120,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Mic"
                     android:src="@drawable/ic_micro"
-                    app:tint="#888888" />
+                    app:tint="@color/text_secondary" />
 
                 <ImageButton
                     android:id="@+id/btnHastag"
@@ -129,7 +129,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Hashtag"
                     android:src="@drawable/ic_hastag"
-                    app:tint="#888888" />
+                    app:tint="@color/text_secondary" />
 
             </LinearLayout>
 
@@ -141,12 +141,12 @@
                 android:layout_height="40dp"
                 android:layout_marginTop="24dp"
                 android:layout_marginBottom="100dp"
-                android:backgroundTint="#FFFFFF"
+                android:backgroundTint="@color/button_primary_bg"
                 android:paddingStart="22dp"
                 android:paddingEnd="22dp"
                 android:text="Đăng"
                 android:textAllCaps="false"
-                android:textColor="#000000"
+                android:textColor="@color/button_primary_text"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 app:cornerRadius="20dp"

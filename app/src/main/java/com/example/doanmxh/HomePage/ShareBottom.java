@@ -106,11 +106,21 @@ public class ShareBottom extends BottomSheetDialogFragment {
                     intent.putExtra(Intent.EXTRA_TEXT,
                             shareText != null ? shareText : "");
                     startActivity(Intent.createChooser(intent, "Chia sẻ qua"));
+                    dismiss();
                     break;
             }
         });
 
         return view;
+    }
+    public interface OnShareDoneListener {
+        void onShareDone();
+    }
+
+    private OnShareDoneListener shareListener;
+
+    public void setOnShareDoneListener(OnShareDoneListener listener) {
+        this.shareListener = listener;
     }
     private void loadRecentUsers(View view) {
         LinearLayout layout = view.findViewById(R.id.layoutRecentUsers);
@@ -215,9 +225,13 @@ public class ShareBottom extends BottomSheetDialogFragment {
 
                     db.collection("cuoc_tro_chuyen").document(conversationId)
                             .set(conv, com.google.firebase.firestore.SetOptions.merge())
-                            .addOnSuccessListener(unused ->
-                                    Toast.makeText(getContext(), "Đã chia sẻ!", Toast.LENGTH_SHORT).show()
-                            );
+                            .addOnSuccessListener(unused -> {
+                                if (getContext() != null)
+                                    Toast.makeText(getContext(), "Đã chia sẻ!", Toast.LENGTH_SHORT).show();
+                                dismiss(); // ✅ đóng bottom sheet
+                                if (shareListener != null) shareListener.onShareDone(); // ✅ reload fragment
+                            });
                 });
+
     }
 }

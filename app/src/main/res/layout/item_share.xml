@@ -11,14 +11,15 @@
         android:id="@+id/imgIcon"
         android:layout_width="35dp"
         android:layout_height="49dp"
-        android:src="@drawable/ic_person_outline_24" />
+        android:src="@drawable/ic_person_outline_24"
+        android:textColor="@color/text_primary" />
 
     <TextView
         android:id="@+id/txtName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Liên kết"
-        android:textColor="#fff"
+        android:textColor="@color/text_primary"
         android:textSize="12sp"
         android:layout_marginTop="4dp"/>
 </LinearLayout>

@@ -3,11 +3,11 @@ package com.example.doanmxh.Message;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
@@ -20,11 +20,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
 import android.graphics.Color;
 import android.os.Handler;
 import android.os.Looper;
@@ -32,11 +36,14 @@ import android.os.Looper;
 public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHolder> {
     private String highlightMessageId;
     private String selectedMessageId = null;
-    private static final int TYPE_ME             = 1;
-    private static final int TYPE_OTHER          = 2;
-    private static final int TYPE_SHARE_ME       = 3;
-    private static final int TYPE_SHARE_OTHER    = 4;
-
+    private final Context conversationContext;
+    private FirebaseAuth auth;
+    private static final int TYPE_ME          = 1;
+    private static final int TYPE_OTHER       = 2;
+    private static final int TYPE_SHARE_ME    = 3;
+    private static final int TYPE_SHARE_OTHER = 4;
+    private static final int TYPE_HEART_ME = 5;
+    private static final int TYPE_HEART_OTHER = 6;
     public interface OnReplySelectedListener {
         void onReplySelected(ChatMessage message);
     }
@@ -53,16 +60,17 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     private final SimpleDateFormat timeFormat =
             new SimpleDateFormat("HH:mm", Locale.getDefault());
 
-    public ChatAdapter(List<ChatMessage> messageList,
+    public ChatAdapter(Context conversationContext,List<ChatMessage> messageList,
                        String myUid,
                        String conversationId,
                        OnReplySelectedListener replyListener,
                        OnMessageClickListener messageClickListener) {
-        this.messageList        = messageList;
-        this.myUid              = myUid;
-        this.conversationId     = conversationId;
-        this.db                 = FirebaseFirestore.getInstance();
-        this.replyListener      = replyListener;
+        this.conversationContext = conversationContext;
+        this.messageList          = messageList;
+        this.myUid                = myUid;
+        this.conversationId       = conversationId;
+        this.db                   = FirebaseFirestore.getInstance();
+        this.replyListener        = replyListener;
         this.messageClickListener = messageClickListener;
     }
 
@@ -73,9 +81,15 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     public int getItemViewType(int position) {
         ChatMessage msg = messageList.get(position);
         boolean isMe = myUid.equals(msg.getNguoiGuiId());
+
         if ("share_bai_viet".equals(msg.getLoai())) {
             return isMe ? TYPE_SHARE_ME : TYPE_SHARE_OTHER;
         }
+
+        if ("tim".equals(msg.getLoai())) {
+            return isMe ? TYPE_HEART_ME : TYPE_HEART_OTHER;
+        }
+
         return isMe ? TYPE_ME : TYPE_OTHER;
     }
 
@@ -87,6 +101,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             case TYPE_SHARE_ME:    layout = R.layout.item_message_share_me;    break;
             case TYPE_SHARE_OTHER: layout = R.layout.item_message_share_other; break;
             case TYPE_ME:          layout = R.layout.item_message_me;          break;
+            case TYPE_HEART_ME:
+                layout = R.layout.item_message_heart_me;
+                break; case TYPE_HEART_OTHER:
+                layout = R.layout.item_message_heart_other;
+                break;
             default:               layout = R.layout.item_message_other;       break;
         }
         View view = LayoutInflater.from(parent.getContext()).inflate(layout, parent, false);
@@ -110,33 +129,53 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
 
         // ── ALPHA STATE ──
         boolean isSelected     = selectedMessageId != null;
-        boolean isThisSelected = msg.getMessageId() != null && msg.getMessageId().equals(selectedMessageId);
+        boolean isThisSelected = msg.getMessageId() != null
+                && msg.getMessageId().equals(selectedMessageId);
         holder.itemView.setAlpha(isSelected && !isThisSelected ? 0.3f : 1f);
 
         // ── LONG CLICK ──
         holder.itemView.setOnLongClickListener(v -> {
             selectedMessageId = msg.getMessageId();
+            showMessageOptions(v, msg);
             notifyDataSetChanged();
-            showMessageOptions(holder.itemView, msg);
             return true;
         });
 
         // ════════════════════════════════════════════════
-        //  SHARE BAI VIET — layout riêng, bind riêng
+        //  SHARE BAI VIET — bind riêng, không xử lý reaction
         // ════════════════════════════════════════════════
         if (viewType == TYPE_SHARE_ME || viewType == TYPE_SHARE_OTHER) {
-            bindSharePost(holder, msg);
-            // TIME
-            if (holder.txtTime != null && msg.getThoiGian() != null) {
-                holder.txtTime.setText(timeFormat.format(msg.getThoiGian()));
-            }
+            bindSharePost(holder, msg,position);
+//            if (holder.txtTime != null && msg.getThoiGian() != null) {
+//                holder.txtTime.setText(timeFormat.format(msg.getThoiGian()));
+//            }
             return;
         }
+        if (viewType == TYPE_HEART_ME || viewType == TYPE_HEART_OTHER) {
 
+            ImageView imgHeart = holder.itemView.findViewById(R.id.imgHeart);
+            TextView txtTime = holder.itemView.findViewById(R.id.txtTime);
+
+            holder.itemView.setBackground(null);
+            imgHeart.setImageResource(R.drawable.ic_heart_red);
+
+            if (txtTime != null) {
+                boolean isLast = position == messageList.size() - 1;
+
+                if (isLast && msg.getThoiGian() != null) {
+                    txtTime.setVisibility(View.VISIBLE);
+                    txtTime.setText(timeFormat.format(msg.getThoiGian()));
+                } else {
+                    txtTime.setVisibility(View.GONE);
+                }
+            }
+
+            return;
+        }
         // ════════════════════════════════════════════════
         //  TIN NHẮN THƯỜNG
         // ════════════════════════════════════════════════
-        TextView tvMessage    = holder.itemView.findViewById(R.id.txtMessageContent);
+        TextView tvMessage = holder.itemView.findViewById(R.id.txtMessageContent);
         ShapeableImageView imgMessage = holder.itemView.findViewById(R.id.imgMessageContent);
 
         // ── REPLY PREVIEW ──
@@ -158,33 +197,55 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             if (holder.txtContent != null) holder.txtContent.setTranslationY(0f);
         }
 
-        // ── REACTION ──
-        if (holder.txtReaction != null) {
-            String reaction = msg.getReaction();
-            if (reaction != null && !reaction.trim().isEmpty()) {
-                holder.txtReaction.setVisibility(View.VISIBLE);
-                holder.txtReaction.setText(reaction);
-            } else {
-                holder.txtReaction.setVisibility(View.GONE);
-            }
-        }
-    //KIỂM TRA XEM TIN NHẮN ĐƯỢC XÓA CHUA
+        // ── TIN NHẮN BỊ XÓA ──
         if (msg.isDa_xoa()) {
-
             tvMessage.setVisibility(View.VISIBLE);
             imgMessage.setVisibility(View.GONE);
-
             tvMessage.setText("Tin nhắn đã bị xóa");
-            tvMessage.setTextColor(Color.DKGRAY);
+            tvMessage.setTextColor(Color.GRAY);
             tvMessage.setTypeface(null, android.graphics.Typeface.ITALIC);
-
-            if (holder.txtReaction != null) {
+            if (holder.txtReaction != null)
                 holder.txtReaction.setVisibility(View.GONE);
+            // TIME
+            if (holder.txtTime != null) {
+                boolean isLast = position == messageList.size() - 1;
+                if (isLast && msg.getThoiGian() != null) {
+                    holder.txtTime.setVisibility(View.VISIBLE);
+                    holder.txtTime.setText(timeFormat.format(msg.getThoiGian()));
+                } else {
+                    holder.txtTime.setVisibility(View.GONE);
+                }
             }
-
             return;
         }
-        // ── CONTENT ──
+
+        // ── READ RECEIPT ──
+        if (holder.txtReadReceipt != null) {
+            boolean isMe = myUid.equals(msg.getNguoiGuiId());
+            if (isMe) {
+                int lastMyMsgIndex = -1;
+                for (int i = messageList.size() - 1; i >= 0; i--) {
+                    if (myUid.equals(messageList.get(i).getNguoiGuiId())) {
+                        lastMyMsgIndex = i;
+                        break;
+                    }
+                }
+                if (position == lastMyMsgIndex) {
+                    holder.txtReadReceipt.setVisibility(View.VISIBLE);
+                    holder.txtReadReceipt.setText(msg.isDaDoc() ? "Đã xem" : "Đã gửi");
+                } else {
+                    holder.txtReadReceipt.setVisibility(View.GONE);
+                }
+            } else {
+                holder.txtReadReceipt.setVisibility(View.GONE);
+            }
+        }
+
+        // ── CONTENT + REACTION ──  ← chỉ giữ block này
+        String reaction = msg.getReaction();
+        boolean hasReaction = reaction != null && !reaction.trim().isEmpty();
+        boolean isMyMsg = myUid.equals(msg.getNguoiGuiId());
+
         if ("image".equals(msg.getLoai())) {
             tvMessage.setVisibility(View.GONE);
             imgMessage.setVisibility(View.VISIBLE);
@@ -193,6 +254,29 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                     .placeholder(R.drawable.ic_placeholder_avatar)
                     .centerCrop()
                     .into(imgMessage);
+            imgMessage.setOnLongClickListener(v -> {
+                selectedMessageId = msg.getMessageId();
+                showMessageOptions(v, msg);
+                notifyDataSetChanged();
+                return true;
+            });
+            if (holder.txtReaction != null) {
+                if (hasReaction) {
+                    holder.txtReaction.setVisibility(View.VISIBLE);
+                    holder.txtReaction.setText(reaction);
+                    if (holder.txtReaction.getLayoutParams()
+                            instanceof FrameLayout.LayoutParams) {
+                        FrameLayout.LayoutParams lp =
+                                (FrameLayout.LayoutParams) holder.txtReaction.getLayoutParams();
+                        lp.gravity = isMyMsg
+                                ? (android.view.Gravity.BOTTOM | android.view.Gravity.END)
+                                : (android.view.Gravity.BOTTOM | android.view.Gravity.START);
+                        holder.txtReaction.setLayoutParams(lp);
+                    }
+                } else {
+                    holder.txtReaction.setVisibility(View.GONE);
+                }
+            }
         } else {
             tvMessage.setVisibility(View.VISIBLE);
             imgMessage.setVisibility(View.GONE);
@@ -201,21 +285,38 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                     & ~android.graphics.Paint.UNDERLINE_TEXT_FLAG);
             tvMessage.setText(msg.getNoiDung());
             tvMessage.setOnClickListener(null);
+            tvMessage.setOnLongClickListener(v -> {
+                selectedMessageId = msg.getMessageId();
+                showMessageOptions(v, msg);
+                notifyDataSetChanged();
+                return true;
+            });
+            if (holder.txtReaction != null) {
+                if (hasReaction) {
+                    holder.txtReaction.setVisibility(View.VISIBLE);
+                    holder.txtReaction.setText(reaction);
+                } else {
+                    holder.txtReaction.setVisibility(View.GONE);
+                }
+            }
         }
 
-        // ── TIME ──
+        // ── TIME ──  chỉ hiện ở tin nhắn cuối
         if (holder.txtTime != null) {
-            if (msg.getThoiGian() != null)
+            boolean isLast = position == messageList.size() - 1;
+            if (isLast && msg.getThoiGian() != null) {
+                holder.txtTime.setVisibility(View.VISIBLE);
                 holder.txtTime.setText(timeFormat.format(msg.getThoiGian()));
-            else
-                holder.txtTime.setText("");
+            } else {
+                holder.txtTime.setVisibility(View.GONE);
+            }
         }
     }
 
     // ════════════════════════════════════════════════════
     //  BIND SHARE POST CARD
     // ════════════════════════════════════════════════════
-    private void bindSharePost(@NonNull MessageViewHolder holder, ChatMessage msg) {
+    private void bindSharePost(@NonNull MessageViewHolder holder, ChatMessage msg, int position) {
         String postId = msg.getPostId();
         if (postId == null || postId.isEmpty()) return;
 
@@ -224,7 +325,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         TextView tvContent          = holder.itemView.findViewById(R.id.tvPostContent);
         ImageView ivImage           = holder.itemView.findViewById(R.id.ivPostImage);
 
-        // Reset trước khi load để tránh ViewHolder tái sử dụng hiện dữ liệu cũ
         if (tvAuthor  != null) tvAuthor.setText("");
         if (tvContent != null) tvContent.setText("");
         if (ivImage   != null) ivImage.setVisibility(View.GONE);
@@ -265,20 +365,39 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                                     }
                                 });
                     }
+
                 });
 
-        // Click → mở PostDetailActivity
         holder.itemView.setOnClickListener(v -> {
             android.content.Intent intent = new android.content.Intent(
                     v.getContext(),
-                    com.example.doanmxh.HomePage.PostDetailActivity.class
-            );
+                    com.example.doanmxh.HomePage.PostDetailActivity.class);
             intent.putExtra(
                     com.example.doanmxh.HomePage.PostDetailActivity.EXTRA_POST_ID,
-                    postId
-            );
+                    postId);
             v.getContext().startActivity(intent);
         });
+
+        // ✅ Thêm phần bind reaction cho share post
+        if (holder.txtReaction != null) {
+            String reaction = msg.getReaction();
+            boolean hasReaction = reaction != null && !reaction.trim().isEmpty();
+            if (hasReaction) {
+                holder.txtReaction.setVisibility(View.VISIBLE);
+                holder.txtReaction.setText(reaction);
+            } else {
+                holder.txtReaction.setVisibility(View.GONE);
+            }
+        }
+        if (holder.txtTime != null) {
+            boolean isLast = position == messageList.size() - 1;
+            if (isLast && msg.getThoiGian() != null) {
+                holder.txtTime.setVisibility(View.VISIBLE);
+                holder.txtTime.setText(timeFormat.format(msg.getThoiGian()));
+            } else {
+                holder.txtTime.setVisibility(View.GONE);
+            }
+        }
     }
 
     private void clearSelection() {
@@ -300,8 +419,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                 popupView,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-                true
-        );
+                true);
         popupWindow.setElevation(20f);
         popupWindow.setOnDismissListener(this::clearSelection);
 
@@ -340,22 +458,63 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             popupWindow.dismiss();
             showEditDialog(anchor, msg);
         });
+        View btnGhimView = popupView.findViewById(R.id.btnGhim);
+
+        if (btnGhimView != null) {
+
+            String messageId = msg.getMessageId();
+
+            db.collection("cuoc_tro_chuyen")
+                    .document(conversationId)
+                    .collection("tin_nhan_ghim")
+                    .document(messageId)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+
+                        TextView tv = btnGhimView.findViewById(android.R.id.text1);
+
+                        if (doc.exists()) {
+                            // đang ghim → đổi thành Bỏ ghim
+                            if (btnGhimView instanceof TextView) {
+                                ((TextView) btnGhimView).setText("❌ Bỏ ghim");
+                            }
+
+                            btnGhimView.setOnClickListener(v -> {
+                                popupWindow.dismiss();
+                                unpinMessage(msg);
+                            });
+
+                        } else {
+                            // chưa ghim → Ghim
+                            if (btnGhimView instanceof TextView) {
+                                ((TextView) btnGhimView).setText("\uD83D\uDCCC Ghim");
+                            }
+
+                            btnGhimView.setOnClickListener(v -> {
+                                popupWindow.dismiss();
+                                pinMessage(msg);
+                            });
+                        }
+                    });
+        }
         popupView.findViewById(R.id.btnDelete).setOnClickListener(v -> {
             popupWindow.dismiss();
             confirmDelete(anchor, msg);
         });
-        if (msg.isDa_xoa()) {
 
+        if (msg.isDa_xoa()) {
             popupView.findViewById(R.id.btnReply).setVisibility(View.GONE);
             popupView.findViewById(R.id.btnCopy).setVisibility(View.GONE);
             popupView.findViewById(R.id.btnEdit).setVisibility(View.GONE);
             popupView.findViewById(R.id.btnDelete).setVisibility(View.GONE);
-            emojiLike.findViewById(R.id.reactLike).setVisibility(View.GONE);
-            emojiHaha.findViewById(R.id.reactHaha).setVisibility(View.GONE);
-            emojiFire.findViewById(R.id.reactFire).setVisibility(View.GONE);
-            emojiWow.findViewById(R.id.reactEye).setVisibility(View.GONE);
-            emojiLove.findViewById(R.id.reactLove).setVisibility(View.GONE);
+            btnGhimView.setVisibility(View.GONE); // ✅ thêm dòng này
+            emojiLike.setVisibility(View.GONE);
+            emojiHaha.setVisibility(View.GONE);
+            emojiFire.setVisibility(View.GONE);
+            emojiWow.setVisibility(View.GONE);
+            emojiLove.setVisibility(View.GONE);
         }
+
         int[] location = new int[2];
         anchor.getLocationOnScreen(location);
         popupView.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
@@ -370,9 +529,84 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                 .document(conversationId)
                 .collection("tin_nhan")
                 .document(msg.getMessageId())
-                .update("reaction", (current != null && current.equals(emoji)) ? null : emoji);
+                .update("reaction",
+                        (current != null && current.equals(emoji)) ? null : emoji);
     }
+    private void pinMessage(ChatMessage msg) {
+        if (FirebaseAuth.getInstance().getCurrentUser() == null) return;
 
+        String myUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        Map<String, Object> pinData = new HashMap<>();
+        pinData.put("message_id", msg.getMessageId());
+        pinData.put("noi_dung",
+                msg.getNoiDung() != null ? msg.getNoiDung() : "[Hình ảnh]");
+        pinData.put("nguoi_ghim_id", myUid);
+        pinData.put("thoi_gian_ghim",
+                com.google.firebase.Timestamp.now());
+
+        db.collection("cuoc_tro_chuyen")
+                .document(conversationId)
+                .collection("tin_nhan_ghim")
+                .document(msg.getMessageId())
+                .set(pinData)
+                .addOnSuccessListener(unused -> {
+                    if (conversationContext != null) {
+                        Toast.makeText(
+                                conversationContext,
+                                "Đã ghim",
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    if (conversationContext != null) {
+                        Toast.makeText(
+                                conversationContext,
+                                "Lỗi: " + e.getMessage(),
+                                Toast.LENGTH_SHORT
+                        ).show();
+                    }
+                });
+    }
+    private void togglePin(ChatMessage msg) {
+
+        String messageId = msg.getMessageId();
+
+        db.collection("cuoc_tro_chuyen")
+                .document(conversationId)
+                .collection("tin_nhan_ghim")
+                .document(messageId)
+                .get()
+                .addOnSuccessListener(doc -> {
+
+                    if (doc.exists()) {
+                        unpinMessage(msg);
+                    } else {
+                        pinMessage(msg);
+                    }
+                });
+    }
+    private void unpinMessage(ChatMessage msg) {
+
+        db.collection("cuoc_tro_chuyen")
+                .document(conversationId)
+                .collection("tin_nhan_ghim")
+                .document(msg.getMessageId())
+                .delete()
+                .addOnSuccessListener(unused -> {
+
+                    Toast.makeText(conversationContext,
+                            "Đã bỏ ghim",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .addOnFailureListener(e -> {
+
+                    Toast.makeText(conversationContext,
+                            "Lỗi: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
     public void highlightMessage(String messageId) {
         highlightMessageId = messageId;
         notifyDataSetChanged();
@@ -394,7 +628,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         root.setOrientation(android.widget.LinearLayout.VERTICAL);
         root.setPadding(56, 48, 56, 40);
 
-        android.graphics.drawable.GradientDrawable rootBg = new android.graphics.drawable.GradientDrawable();
+        android.graphics.drawable.GradientDrawable rootBg =
+                new android.graphics.drawable.GradientDrawable();
         rootBg.setColor(android.graphics.Color.parseColor("#1E1E1E"));
         rootBg.setCornerRadius(32f);
         root.setBackground(rootBg);
@@ -424,7 +659,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         input.setMaxLines(5);
         input.setGravity(android.view.Gravity.TOP);
 
-        android.graphics.drawable.GradientDrawable inputBg = new android.graphics.drawable.GradientDrawable();
+        android.graphics.drawable.GradientDrawable inputBg =
+                new android.graphics.drawable.GradientDrawable();
         inputBg.setColor(android.graphics.Color.parseColor("#2A2A2A"));
         inputBg.setCornerRadius(16f);
         inputBg.setStroke(1, android.graphics.Color.parseColor("#444444"));
@@ -449,7 +685,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             @Override public void afterTextChanged(android.text.Editable s) {}
         });
 
-        android.widget.LinearLayout btnRow = new android.widget.LinearLayout(anchor.getContext());
+        android.widget.LinearLayout btnRow =
+                new android.widget.LinearLayout(anchor.getContext());
         btnRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
         btnRow.setGravity(android.view.Gravity.END);
         btnRow.setPadding(0, 32, 0, 0);
@@ -467,7 +704,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         btnSave.setTextColor(android.graphics.Color.WHITE);
         btnSave.setPadding(40, 20, 40, 20);
 
-        android.graphics.drawable.GradientDrawable saveBg = new android.graphics.drawable.GradientDrawable();
+        android.graphics.drawable.GradientDrawable saveBg =
+                new android.graphics.drawable.GradientDrawable();
         saveBg.setColor(android.graphics.Color.parseColor("#6C63FF"));
         saveBg.setCornerRadius(24f);
         btnSave.setBackground(saveBg);
@@ -483,12 +721,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                     .update("noi_dung", newContent, "da_chinh_sua", true)
                     .addOnSuccessListener(unused -> {
                         popup.dismiss();
-                        Toast.makeText(anchor.getContext(), "Đã chỉnh sửa", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(anchor.getContext(),
+                                "Đã chỉnh sửa", Toast.LENGTH_SHORT).show();
                     })
                     .addOnFailureListener(err -> {
                         btnSave.setEnabled(true);
                         btnSave.setText("Lưu");
-                        Toast.makeText(anchor.getContext(), "Lỗi: " + err.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(anchor.getContext(),
+                                "Lỗi: " + err.getMessage(), Toast.LENGTH_SHORT).show();
                     });
         });
 
@@ -499,13 +739,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         popup.setContentView(root);
         if (popup.getWindow() != null) {
             popup.getWindow().setBackgroundDrawable(
-                    new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                    new android.graphics.drawable.ColorDrawable(
+                            android.graphics.Color.TRANSPARENT));
             popup.getWindow().setGravity(android.view.Gravity.CENTER);
-            android.view.WindowManager.LayoutParams params = popup.getWindow().getAttributes();
-            params.width = (int)(anchor.getContext().getResources()
+            android.view.WindowManager.LayoutParams params =
+                    popup.getWindow().getAttributes();
+            params.width = (int) (anchor.getContext().getResources()
                     .getDisplayMetrics().widthPixels * 0.88f);
             popup.getWindow().setAttributes(params);
-            popup.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            popup.getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
             popup.getWindow().getAttributes().dimAmount = 0.6f;
         }
         popup.show();
@@ -519,11 +762,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                 android.R.style.Theme_Material_Light_Dialog_NoActionBar);
         popup.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE);
 
-        android.widget.LinearLayout root = new android.widget.LinearLayout(anchor.getContext());
+        android.widget.LinearLayout root =
+                new android.widget.LinearLayout(anchor.getContext());
         root.setOrientation(android.widget.LinearLayout.VERTICAL);
         root.setPadding(56, 48, 56, 40);
 
-        android.graphics.drawable.GradientDrawable rootBg = new android.graphics.drawable.GradientDrawable();
+        android.graphics.drawable.GradientDrawable rootBg =
+                new android.graphics.drawable.GradientDrawable();
         rootBg.setColor(android.graphics.Color.parseColor("#1E1E1E"));
         rootBg.setCornerRadius(32f);
         root.setBackground(rootBg);
@@ -544,7 +789,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         desc.setPadding(0, 0, 0, 32);
         root.addView(desc);
 
-        android.widget.LinearLayout btnRow = new android.widget.LinearLayout(anchor.getContext());
+        android.widget.LinearLayout btnRow =
+                new android.widget.LinearLayout(anchor.getContext());
         btnRow.setOrientation(android.widget.LinearLayout.HORIZONTAL);
         btnRow.setGravity(android.view.Gravity.END);
 
@@ -561,7 +807,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         btnDelete.setTextColor(android.graphics.Color.WHITE);
         btnDelete.setPadding(40, 20, 40, 20);
 
-        android.graphics.drawable.GradientDrawable deleteBg = new android.graphics.drawable.GradientDrawable();
+        android.graphics.drawable.GradientDrawable deleteBg =
+                new android.graphics.drawable.GradientDrawable();
         deleteBg.setColor(android.graphics.Color.parseColor("#CC3333"));
         deleteBg.setCornerRadius(24f);
         btnDelete.setBackground(deleteBg);
@@ -575,16 +822,17 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                             "noi_dung", "Tin nhắn đã bị xóa",
                             "da_xoa", true,
                             "reaction", null,
-                            "loai","text"
-                    )
+                            "loai", "text")
                     .addOnSuccessListener(unused -> {
                         popup.dismiss();
-                        Toast.makeText(anchor.getContext(), "Đã xóa tin nhắn", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(anchor.getContext(),
+                                "Đã xóa tin nhắn", Toast.LENGTH_SHORT).show();
                     })
                     .addOnFailureListener(err -> {
                         btnDelete.setEnabled(true);
                         btnDelete.setText("Xóa");
-                        Toast.makeText(anchor.getContext(), "Lỗi: " + err.getMessage(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(anchor.getContext(),
+                                "Lỗi: " + err.getMessage(), Toast.LENGTH_SHORT).show();
                     });
         });
 
@@ -595,13 +843,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         popup.setContentView(root);
         if (popup.getWindow() != null) {
             popup.getWindow().setBackgroundDrawable(
-                    new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+                    new android.graphics.drawable.ColorDrawable(
+                            android.graphics.Color.TRANSPARENT));
             popup.getWindow().setGravity(android.view.Gravity.CENTER);
-            android.view.WindowManager.LayoutParams params = popup.getWindow().getAttributes();
-            params.width = (int)(anchor.getContext().getResources()
+            android.view.WindowManager.LayoutParams params =
+                    popup.getWindow().getAttributes();
+            params.width = (int) (anchor.getContext().getResources()
                     .getDisplayMetrics().widthPixels * 0.85f);
             popup.getWindow().setAttributes(params);
-            popup.getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            popup.getWindow().addFlags(
+                    android.view.WindowManager.LayoutParams.FLAG_DIM_BEHIND);
             popup.getWindow().getAttributes().dimAmount = 0.6f;
         }
         popup.show();
@@ -624,6 +875,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             layoutReplyPreview     = itemView.findViewById(R.id.layoutReplyPreview);
             txtReplyPreviewName    = itemView.findViewById(R.id.txtReplyPreviewName);
             txtReplyPreviewContent = itemView.findViewById(R.id.txtReplyPreviewContent);
+
         }
     }
 }

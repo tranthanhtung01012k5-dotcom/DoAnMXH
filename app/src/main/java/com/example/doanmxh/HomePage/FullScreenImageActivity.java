@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.example.doanmxh.BaseActivity;
 import com.example.doanmxh.R;
 
 import java.util.ArrayList;
@@ -24,7 +25,7 @@ import java.util.List;
  *
  * Layout cần: activity_fullscreen_image.xml
  */
-public class FullScreenImageActivity extends AppCompatActivity {
+public class FullScreenImageActivity extends BaseActivity {
 
     private static final String EXTRA_IMAGES = "extra_images";
     private static final String EXTRA_INDEX  = "extra_index";

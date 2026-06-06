@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
+    android:background="@color/bg_primary"
     android:orientation="vertical"
     android:paddingHorizontal="16dp"
     android:paddingTop="10dp"
@@ -22,7 +22,7 @@
             android:gravity="center"
             android:paddingHorizontal="8dp"
             android:text="Hủy"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="16sp"
             android:background="?attr/selectableItemBackgroundBorderless"/>
 
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:text="Chỉnh sửa hồ sơ"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="17sp"
             android:textStyle="bold"
             android:letterSpacing="-0.01"/>
@@ -55,7 +55,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:background="@drawable/bg_profile_card"
+        android:background="@color/bg_primary"
         android:orientation="vertical"
         android:padding="16dp">
 
@@ -87,7 +87,7 @@
                     android:background="@null"
                     android:paddingVertical="4dp"
                     android:text="Keng Nguyễn"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="15sp"
                     android:importantForAutofill="no"
                     android:inputType="textPersonName"
@@ -127,7 +127,7 @@
             android:background="@null"
             android:paddingVertical="4dp"
             android:text="Tình yêu thật\nThế giới ảo"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="15sp"
             android:inputType="textMultiLine"
             android:lineSpacingMultiplier="1.1"
@@ -164,7 +164,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:background="@drawable/bg_profile_card"
+        android:background="@color/bg_primary"
+        android:outlineSpotShadowColor="@color/text_secondary"
         android:padding="16dp">
 
         <TextView
@@ -175,7 +176,7 @@
             android:layout_toStartOf="@id/switch_private"
             android:layout_marginEnd="16dp"
             android:text="Trang cá nhân riêng tư"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="15sp"
             android:textStyle="bold" />
 

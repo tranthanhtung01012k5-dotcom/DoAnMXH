@@ -3,13 +3,19 @@
     <style name="Base.Theme.DoAnMXH" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
         <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:statusBarColor">@color/bg_primary</item>
+        <item name="android:navigationBarColor">@color/bg_primary</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="colorSurface">@color/bg_primary</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:windowFullscreen">true</item>
+
     </style>
 
     <style name="Theme.DoAnMXH" parent="Base.Theme.DoAnMXH">
         <item name="bottomNavigationStyle">@style/CustomBottomNav</item>
-        parent="Theme.Material3.DayNight.NoActionBar">
     </style>
-
     <style name="CustomBottomNav" parent="Widget.Material3.BottomNavigationView">
         <item name="itemActiveIndicatorStyle">@style/CustomBottomIndicator</item>
     </style>

@@ -7,27 +7,48 @@
     android:orientation="vertical"
     android:paddingHorizontal="20dp"
     android:paddingTop="12dp"
-    android:paddingBottom="24dp">
+    android:paddingBottom="28dp">
 
     <View
-        android:layout_width="40dp"
+        android:layout_width="42dp"
         android:layout_height="4dp"
         android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="32dp"
-        android:background="#40FFFFFF" />
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/bg_qr_handle" />
+
+    <TextView
+        android:id="@+id/tvSheetTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Chia sẻ hồ sơ"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvProfileLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
 
     <FrameLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal">
+        android:layout_width="252dp"
+        android:layout_height="252dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="22dp"
+        android:background="@drawable/bg_qr_frame">
 
         <ImageView
             android:id="@+id/ivQrCode"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
             android:layout_gravity="center"
-            android:src="@drawable/ic_threads_qr_placeholder"
-            app:tint="@android:color/white" />
+            android:contentDescription="Mã QR hồ sơ"
+            android:src="@drawable/ic_threads_qr_placeholder" />
     </FrameLayout>
 
     <TextView
@@ -36,70 +57,77 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="16dp"
-        android:text="trantung0102"
-        android:textColor="@android:color/white"
+        android:textColor="@color/text_primary"
         android:textSize="20sp"
         android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:gravity="center"
+        android:text="Quét mã để mở hồ sơ"
+        android:textColor="@color/text_secondary"
+        android:textSize="13sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="28dp"
         android:orientation="horizontal">
 
         <LinearLayout
             android:id="@+id/btnDownload"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="76dp"
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
-            android:background="@drawable/bg_button_dark"
+            android:background="@drawable/bg_qr_action"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:orientation="vertical"
-            android:paddingVertical="16dp">
+            android:orientation="vertical">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:src="@drawable/ic_download"
-                app:tint="@android:color/white" />
+                app:tint="@color/text_primary" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="Tải xuống"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
         </LinearLayout>
 
         <LinearLayout
             android:id="@+id/btnScan"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="76dp"
             android:layout_marginStart="6dp"
             android:layout_weight="1"
-            android:background="@drawable/bg_button_dark"
+            android:background="@drawable/bg_qr_action"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:orientation="vertical"
-            android:paddingVertical="16dp">
+            android:orientation="vertical">
 
             <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:src="@drawable/ic_scan_qr"
-                app:tint="@android:color/white" />
+                app:tint="@color/text_primary" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="Quét"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
@@ -107,8 +135,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/bg_button_dark"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_qr_action"
         android:orientation="vertical">
 
         <LinearLayout
@@ -127,20 +155,21 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Sao chép liên kết"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:src="@drawable/ic_copy_link"
-                app:tint="@android:color/white" />
+                app:tint="@color/text_primary" />
         </LinearLayout>
 
         <View
             android:layout_width="match_parent"
-            android:layout_height="0.5dp"
-            android:background="#20FFFFFF" />
+            android:layout_height="1dp"
+            android:layout_marginStart="16dp"
+            android:background="@color/divider" />
 
         <LinearLayout
             android:id="@+id/btnShare"
@@ -158,15 +187,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Chia sẻ"
-                android:textColor="@android:color/white"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
             <ImageView
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:src="@drawable/ic_share"
-                app:tint="@android:color/white" />
+                app:tint="@color/text_primary" />
         </LinearLayout>
     </LinearLayout>
-
 </LinearLayout>

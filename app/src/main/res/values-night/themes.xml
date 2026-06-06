@@ -1,7 +1,66 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme. -->
     <style name="Base.Theme.DoAnMXH" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Customize your light theme here. -->
+        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:statusBarColor">@color/bg_primary</item>
+        <item name="android:navigationBarColor">@color/bg_primary</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="colorSurface">@color/bg_primary</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:windowFullscreen">true</item>
+
+    </style>
+
+    <style name="Theme.DoAnMXH" parent="Base.Theme.DoAnMXH">
+        <item name="bottomNavigationStyle">@style/CustomBottomNav</item>
+        parent="Theme.Material3.DayNight.NoActionBar">
+    </style>
+
+    <style name="CustomBottomNav" parent="Widget.Material3.BottomNavigationView">
+        <item name="itemActiveIndicatorStyle">@style/CustomBottomIndicator</item>
+    </style>
+
+
+    <style name="DarkAlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="colorSurface">#1E1E1E</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="android:textColorPrimary">#FFFFFF</item>
+        <item name="android:textColorSecondary">#AAAAAA</item>
+        <item name="buttonBarPositiveButtonStyle">@style/DarkDialog.Button.Positive</item>
+        <item name="buttonBarNegativeButtonStyle">@style/DarkDialog.Button.Negative</item>
+    </style>
+
+    <style name="DarkDialog.Button.Positive" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">#FFFFFF</item>
+    </style>
+
+    <style name="DarkDialog.Button.Negative" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">#888888</item>
+    </style>
+    <style name="CustomBottomIndicator">
+        <item name="android:width">56dp</item>
+        <item name="android:height">56dp</item>
+        <item name="shapeAppearance">@style/CircleShape</item>
+        <item name="android:color">#6C63FF</item>
+    </style>
+
+    <style name="CircleShape">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">28dp</item>
+    </style>
+    <style name="DarkAlertDialog1" parent="Theme.MaterialComponents.Dialog.Alert">
+        <item name="android:background">#1C1C1E</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="colorOnSurface">#FFFFFF</item>
+        <item name="colorSurface">#FFFFFF</item>
+        <item name="buttonBarPositiveButtonStyle">@style/DarkDialogButton2</item>
+        <item name="buttonBarNegativeButtonStyle">@style/DarkDialogButton2</item>
+        <item name="buttonBarNeutralButtonStyle">@style/DarkDialogButton2</item>
+    </style>
+
+    <style name="DarkDialogButton2" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
+        <item name="android:textColor">#FFFFFF</item>
     </style>
 </resources>

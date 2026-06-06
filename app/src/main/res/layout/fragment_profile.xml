@@ -4,7 +4,7 @@
     android:id="@+id/profileFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
+    android:background="@color/bg_primary"
     android:orientation="vertical"
     android:paddingHorizontal="20dp"
     android:paddingTop="16dp"
@@ -24,7 +24,7 @@
             android:layout_centerInParent="true"
             android:contentDescription="Web Icon"
             android:src="@drawable/ic_language"
-            app:tint="#FFFFFF" />
+            app:tint="@color/action_icon" />
 
         <ImageView
             android:id="@+id/btnMenu"
@@ -34,7 +34,7 @@
             android:layout_centerInParent="true"
             android:contentDescription="Menu Icon"
             android:src="@drawable/ic_menu"
-            app:tint="#FFFFFF" />
+            app:tint="@color/action_icon" />
     </RelativeLayout>
 
     <!-- Khu vực Thông tin cá nhân (Tên, Username, Avatar) -->
@@ -57,7 +57,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Keng Nguyễn"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="24sp"
                 android:textStyle="bold"
                 android:letterSpacing="-0.02" />
@@ -74,7 +74,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="phaidaucuoctinh_005"
-                    android:textColor="#F5F5F5"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp" />
 
                 <TextView
@@ -99,7 +99,7 @@
             android:scaleType="centerCrop"
             android:src="@drawable/ic_placeholder_avatar"
             app:shapeAppearanceOverlay="@style/CircleImageView"
-            app:strokeColor="#1C1C1E"
+            app:strokeColor="@color/divider"
             app:strokeWidth="1dp" />
     </RelativeLayout>
 
@@ -152,11 +152,11 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
-            android:backgroundTint="#1C1C1E"
+            android:backgroundTint="@color/bg_surface"
             android:paddingVertical="10dp"
             android:text="Chỉnh sửa hồ sơ"
             android:textAllCaps="false"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="9dp"
@@ -169,11 +169,11 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
             android:layout_weight="1"
-            android:backgroundTint="#1C1C1E"
+            android:backgroundTint="@color/bg_surface"
             android:paddingVertical="10dp"
             android:text="Chia sẻ hồ sơ"
             android:textAllCaps="false"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="9dp"
@@ -203,7 +203,7 @@
                 android:layout_height="wrap_content"
                 android:paddingVertical="10dp"
                 android:text="Threads"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -211,7 +211,7 @@
                 android:id="@+id/linePost"
                 android:layout_width="match_parent"
                 android:layout_height="1.5dp"
-                android:background="#FFFFFF" />
+                android:background="@color/text_primary" />
         </LinearLayout>
 
         <!-- Tab Câu trả lời -->
@@ -229,7 +229,7 @@
                 android:layout_height="wrap_content"
                 android:paddingVertical="10dp"
                 android:text="Câu trả lời"
-                android:textColor="#636366"
+                android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -237,7 +237,7 @@
                 android:id="@+id/lineComment"
                 android:layout_width="match_parent"
                 android:layout_height="1.5dp"
-                android:background="#1C1C1E" />
+                android:background="@color/divider" />
         </LinearLayout>
 
         <!-- Tab Đăng lại -->
@@ -255,7 +255,7 @@
                 android:layout_height="wrap_content"
                 android:paddingVertical="10dp"
                 android:text="Đăng lại"
-                android:textColor="#636366"
+                android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -263,7 +263,7 @@
                 android:id="@+id/lineRepost"
                 android:layout_width="match_parent"
                 android:layout_height="1.5dp"
-                android:background="#1C1C1E" />
+                android:background="@color/divider" />
         </LinearLayout>
 
     </LinearLayout>
@@ -280,7 +280,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:text="Bạn chưa đăng Thread nào."
-            android:textColor="#636366"
+            android:textColor="@color/text_secondary"
             android:textSize="15sp" />
 
         <!--

@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.doanmxh.BaseActivity;
 import com.example.doanmxh.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -28,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-public class ForgotPassActivity extends AppCompatActivity {
+public class ForgotPassActivity extends BaseActivity {
 
     // ── Views ──────────────────────────────────────────────
     private LinearLayout layoutEmail, layoutOtp;

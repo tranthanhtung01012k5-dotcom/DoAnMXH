@@ -1,28 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <!-- Nền -->
-    <color name="bg_primary">#000000</color>
-    <color name="bg_surface">#111111</color>
-    <color name="placeholder_bg">#222222</color>
+    <color name="bg_primary">#FFFFFF</color>
+    <color name="bg_surface">#F8F8F8</color>
+    <color name="placeholder_bg">#EEEEEE</color>
+    <color name="bg_elevated">#FFFFFF</color>
 
     <!-- Text -->
-    <color name="text_primary">#FFFFFF</color>
-    <color name="text_secondary">#888888</color>
-    <color name="text_hint">#555555</color>
+    <color name="text_primary">#111111</color>
+    <color name="text_secondary">#666666</color>
+    <color name="text_hint">#999999</color>
+    <color name="search">#C0C0C0</color>
 
     <!-- UI Elements -->
-    <color name="divider">#1A1A1A</color>
-    <color name="thread_line">#333333</color>
-    <color name="ripple_nav">#1AFFFFFF</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="thread_line">#D0D0D0</color>
+    <color name="ripple_nav">#22000000</color>
+    <color name="button_primary_bg">#111111</color>
+    <color name="button_primary_text">#FFFFFF</color>
+    <color name="action_icon">#111111</color>
+    <color name="bg_secondary">#F0F0F0</color>  <!-- hoặc màu phù hợp với theme -->
+    <color name="colorPrimary">#0F0F0F</color>  <!-- hoặc màu phù hợp với theme -->
 
     <!-- Icon nav -->
-    <color name="nav_icon_active">#FFFFFF</color>
-    <color name="nav_icon_inactive">#555555</color>
+    <color name="nav_icon_active">#111111</color>
+    <color name="nav_icon_inactive">#888888</color>
 
     <!-- Accent -->
     <color name="like_active">#E53E3E</color>
     <color name="verified_blue">#3B82F6</color>
     <color name="online_green">#22C55E</color>
-
 
 </resources>

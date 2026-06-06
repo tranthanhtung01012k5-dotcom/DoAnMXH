@@ -79,6 +79,16 @@
             android:textColor="#FFFFFF"
             android:textSize="14sp" />
 
+
+
+        <!-- Image -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imgMessageContent"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            app:shapeAppearanceOverlay="@style/RoundedImageStyle" />
         <TextView
             android:id="@+id/txtReaction"
             android:layout_width="24dp"
@@ -89,16 +99,6 @@
             android:gravity="center"
             android:textSize="14sp"
             android:visibility="gone"/>
-
-        <!-- Image -->
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/imgMessageContent"
-            android:layout_width="220dp"
-            android:layout_height="220dp"
-            android:scaleType="centerCrop"
-            android:visibility="gone"
-            app:shapeAppearanceOverlay="@style/RoundedImageStyle" />
-
         <!-- Time -->
         <TextView
             android:id="@+id/txtMessageTime"

@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.doanmxh.BaseActivity;
 import com.example.doanmxh.HomePage.CommentAdapter;
 import com.example.doanmxh.HomePage.CommentModel;
 import com.example.doanmxh.HomePage.PostAdapter;
@@ -45,7 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class UserProfileActivity extends AppCompatActivity {
+public class UserProfileActivity extends BaseActivity {
 
     private ShapeableImageView imgProfile;
     private TextView txtName, txtUsername, txtBio, txtSoLuongTheoDoi;
@@ -159,28 +160,91 @@ public class UserProfileActivity extends AppCompatActivity {
 
         rvPosts.setLayoutManager(new LinearLayoutManager(this));
         rvPosts.setAdapter(postAdapter);
+        db.collection("nguoi_dung")
+                .document(targetUid)
+                .get()
+                .addOnSuccessListener(doc -> {
 
-        btnPost.setOnClickListener(v    -> { setActiveTab(0); rvPosts.setAdapter(postAdapter);    loadPosts(); });
-        btnRepost.setOnClickListener(v  -> { setActiveTab(1); rvPosts.setAdapter(postAdapter);    loadReposts(); });
-        btnComment.setOnClickListener(v -> { setActiveTab(2); rvPosts.setAdapter(commentAdapter); loadComments(); });
+                    boolean isPrivate =
+                            Boolean.TRUE.equals(doc.getBoolean("private"));
 
+                    // Nếu là chủ tài khoản thì luôn xem được
+                    boolean canView =
+                            !isPrivate ||
+                                    (myUid != null && myUid.equals(targetUid)) ||
+                                    isFollowingTarget;
+
+                    if (canView) {
+
+                        btnPost.setOnClickListener(v -> {
+                            setActiveTab(0);
+                            rvPosts.setAdapter(postAdapter);
+                            loadPosts();
+                        });
+
+                        btnRepost.setOnClickListener(v -> {
+                            setActiveTab(1);
+                            rvPosts.setAdapter(postAdapter);
+                            loadReposts();
+                        });
+
+                        btnComment.setOnClickListener(v -> {
+                            setActiveTab(2);
+                            rvPosts.setAdapter(commentAdapter);
+                            loadComments();
+                        });
+
+
+
+                        setActiveTab(0);
+                        loadPosts();
+
+                    } else {
+
+                        btnPost.setVisibility(View.GONE);
+                        btnRepost.setVisibility(View.GONE);
+                        btnComment.setVisibility(View.GONE);
+
+                        rvPosts.setVisibility(View.GONE);
+                    }
+                });
         loadUserInfo();
-        setActiveTab(0);
-        loadPosts();
-    }
+        }
+
 
     // ════════════════════════════════════════════════════════
     //  CHECK & CẬP NHẬT TRẠNG THÁI FOLLOW (btnFollow trên profile)
     // ════════════════════════════════════════════════════════
     private void checkFollowStatus() {
         if (myUid == null) return;
-        db.collection("nguoi_dung").document(myUid)
-                .collection("nguoi_dang_theo_doi").document(targetUid)
+
+        db.collection("nguoi_dung")
+                .document(targetUid)
                 .get()
-                .addOnSuccessListener(doc -> {
-                    isFollowingTarget = doc.exists();
-                    updateFollowButton(isFollowingTarget);
-                    setupFollowButtonListeners();
+                .addOnSuccessListener(userDoc -> {
+
+                    boolean isPrivate =
+                            Boolean.TRUE.equals(userDoc.getBoolean("private"));
+
+                    if (!isPrivate) {
+                        // Tài khoản public
+                        isFollowingTarget = true;
+                        updateFollowButton(true);
+                        setupFollowButtonListeners();
+                        return;
+                    }
+
+                    // Tài khoản private -> kiểm tra follow
+                    db.collection("nguoi_dung")
+                            .document(myUid)
+                            .collection("nguoi_dang_theo_doi")
+                            .document(targetUid)
+                            .get()
+                            .addOnSuccessListener(doc -> {
+                                isFollowingTarget = doc.exists();
+                                updateFollowButton(isFollowingTarget);
+                                setupFollowButtonListeners();
+                            });
                 });
     }
 
@@ -266,16 +330,51 @@ public class UserProfileActivity extends AppCompatActivity {
         db.collection("nguoi_dung").document(targetUid).get()
                 .addOnSuccessListener(doc -> {
                     if (!doc.exists()) return;
+
                     avatarUrl = doc.getString("anh_dai_dien");
-                    txtName.setText(doc.getString("ho_va_ten") != null ? doc.getString("ho_va_ten") : "No Name");
-                    txtUsername.setText(doc.getString("ten_dang_nhap") != null ? doc.getString("ten_dang_nhap") : "@user");
-                    txtBio.setText(doc.getString("tieu_su") != null ? doc.getString("tieu_su") : "");
-                    Long theodoi = doc.getLong("so_nguoi_theo_doi");
-                    txtSoLuongTheoDoi.setText((theodoi != null ? theodoi : 0) + " người theo dõi");
-                    Glide.with(this).load(avatarUrl)
+
+                    txtName.setText(
+                            doc.getString("ho_va_ten") != null
+                                    ? doc.getString("ho_va_ten")
+                                    : "No Name");
+
+                    txtUsername.setText(
+                            doc.getString("ten_dang_nhap") != null
+                                    ? doc.getString("ten_dang_nhap")
+                                    : "@user");
+
+                    txtBio.setText(
+                            doc.getString("tieu_su") != null
+                                    ? doc.getString("tieu_su")
+                                    : "");
+
+                    Glide.with(this)
+                            .load(avatarUrl)
                             .placeholder(R.drawable.ic_placeholder_avatar)
-                            .circleCrop().into(imgProfile);
-                    loadFollowingAvatars();
+                            .circleCrop()
+                            .into(imgProfile);
+
+                    boolean isPrivate =
+                            Boolean.TRUE.equals(doc.getBoolean("private"));
+
+                    if (!isPrivate) {
+
+                        Long theodoi = doc.getLong("so_nguoi_theo_doi");
+
+                        txtSoLuongTheoDoi.setVisibility(View.VISIBLE);
+                        layoutFollowingAvatars.setVisibility(View.VISIBLE);
+
+                        txtSoLuongTheoDoi.setText(
+                                (theodoi != null ? theodoi : 0)
+                                        + " người theo dõi");
+
+                        loadFollowingAvatars();
+
+                    } else {
+
+                        txtSoLuongTheoDoi.setVisibility(View.GONE);
+                        layoutFollowingAvatars.setVisibility(View.GONE);
+                    }
                 });
     }
 
@@ -719,18 +818,51 @@ public class UserProfileActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    private void setActiveTab(int tab) {
-        linePost.setBackgroundColor(Color.parseColor("#1C1C1E"));
-        lineRepost.setBackgroundColor(Color.parseColor("#1C1C1E"));
-        lineComment.setBackgroundColor(Color.parseColor("#1C1C1E"));
-        txtTabPost.setTextColor(Color.parseColor("#636366"));
-        txtTabRepost.setTextColor(Color.parseColor("#636366"));
-        txtTabComment.setTextColor(Color.parseColor("#636366"));
-        switch (tab) {
-            case 0: linePost.setBackgroundColor(Color.WHITE);    txtTabPost.setTextColor(Color.WHITE);    break;
-            case 1: lineRepost.setBackgroundColor(Color.WHITE);  txtTabRepost.setTextColor(Color.WHITE);  break;
-            case 2: lineComment.setBackgroundColor(Color.WHITE); txtTabComment.setTextColor(Color.WHITE); break;
-        }
+//    private void setActiveTab(int tab) {
+//        linePost.setBackgroundColor(Color.parseColor("#1C1C1E"));
+//        lineRepost.setBackgroundColor(Color.parseColor("#1C1C1E"));
+//        lineComment.setBackgroundColor(Color.parseColor("#1C1C1E"));
+//        txtTabPost.setTextColor(Color.parseColor("#636366"));
+//        txtTabRepost.setTextColor(Color.parseColor("#636366"));
+//        txtTabComment.setTextColor(Color.parseColor("#636366"));
+//        switch (tab) {
+//            case 0: linePost.setBackgroundColor(Color.WHITE);    txtTabPost.setTextColor(Color.WHITE);    break;
+//            case 1: lineRepost.setBackgroundColor(Color.WHITE);  txtTabRepost.setTextColor(Color.WHITE);  break;
+//            case 2: lineComment.setBackgroundColor(Color.WHITE); txtTabComment.setTextColor(Color.WHITE); break;
+//        }
+//    }
+private void setActiveTab(int tab) {
+    int colorActive = resolveColor(com.google.android.material.R.attr.colorOnSurface);
+    int colorInactive = resolveColor(com.google.android.material.R.attr.colorOutline);
+
+    // reset
+    linePost.setBackgroundColor(colorInactive);
+    lineComment.setBackgroundColor(colorInactive);
+    lineRepost.setBackgroundColor(colorInactive);
+    txtTabPost.setTextColor(colorInactive);
+    txtTabComment.setTextColor(colorInactive);
+    txtTabRepost.setTextColor(colorInactive);
+
+    switch (tab) {
+        case 0:
+            linePost.setBackgroundColor(colorActive);
+            txtTabPost.setTextColor(colorActive);
+            break;
+        case 1:
+            lineRepost.setBackgroundColor(colorActive);
+            txtTabRepost.setTextColor(colorActive);
+            break;
+        case 2:
+            lineComment.setBackgroundColor(colorActive);
+            txtTabComment.setTextColor(colorActive);
+            break;
+    }
+}
+
+    private int resolveColor(int attr) {
+        android.util.TypedValue tv = new android.util.TypedValue();
+        this.getTheme().resolveAttribute(attr, tv, true);
+        return tv.data;
     }
 
     private void showFullImage(String url) {
@@ -755,19 +887,19 @@ public class UserProfileActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private void enableImmersiveMode() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(false);
-            WindowInsetsController c = getWindow().getInsetsController();
-            if (c != null) {
-                c.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
-                c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
-            }
-        } else {
-            getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
-        }
-    }
+//    private void enableImmersiveMode() {
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+//            getWindow().setDecorFitsSystemWindows(false);
+//            WindowInsetsController c = getWindow().getInsetsController();
+//            if (c != null) {
+//                c.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+//                c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+//            }
+//        } else {
+//            getWindow().getDecorView().setSystemUiVisibility(
+//                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+//                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+//                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_FULLSCREEN);
+//        }
+//    }
 }

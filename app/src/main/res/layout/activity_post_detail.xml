@@ -4,20 +4,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="@color/bg_primary">
 
     <!-- Toolbar -->
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#000000"
+        android:background="@color/bg_primary"
         app:elevation="0dp">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:background="#000000">
+            android:background="@color/bg_primary">
 
             <ImageButton
                 android:id="@+id/btnBack"
@@ -26,7 +26,7 @@
                 android:layout_gravity="start"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_arrow_back_24"
-                app:tint="#FFFFFF" />
+                app:tint="@color/action_icon" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -34,7 +34,7 @@
                 android:layout_gravity="center"
                 android:fontFamily="@font/inter_semibold"
                 android:text="Bài viết"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp" />
 
         </androidx.appcompat.widget.Toolbar>
@@ -42,7 +42,7 @@
         <View
             android:layout_width="match_parent"
             android:layout_height="0.5dp"
-            android:background="#1A1A1A" />
+            android:background="@color/divider" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -51,7 +51,7 @@
         android:id="@+id/rvDetail"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#000000"
+        android:background="@color/bg_primary"
         android:clipToPadding="false"
         android:overScrollMode="never"
         android:paddingBottom="80dp"
@@ -63,7 +63,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
-        android:background="#111111"
+        android:background="@color/bg_elevated"
         android:elevation="8dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
@@ -73,7 +73,7 @@
             android:id="@+id/ivMyAvatar"
             android:layout_width="32dp"
             android:layout_height="32dp"
-            android:background="#222222"
+            android:background="@color/placeholder_bg"
             android:scaleType="centerCrop"
             app:shapeAppearanceOverlay="@style/ShapeCircle" />
 
@@ -88,8 +88,8 @@
             android:hint="Thêm bình luận..."
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#555555"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint"
             android:textSize="14sp" />
 
         <ImageButton
@@ -99,7 +99,7 @@
             android:layout_marginStart="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_send_outline_24"
-            app:tint="#FFFFFF" />
+            app:tint="@color/action_icon" />
 
     </LinearLayout>
 

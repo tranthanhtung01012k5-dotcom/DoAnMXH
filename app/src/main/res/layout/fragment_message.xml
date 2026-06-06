@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#101010">
+    android:background="@color/bg_primary">
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -15,7 +15,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- ===== HEADER ===== -->
+            <!-- HEADER -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -29,7 +29,7 @@
                     android:layout_height="wrap_content"
                     android:layout_centerVertical="true"
                     android:text="Tin nhắn"
-                    android:textColor="#FFFFFF"
+                    android:textColor="@color/text_primary"
                     android:textSize="26sp"
                     android:textStyle="bold" />
 
@@ -40,17 +40,18 @@
                     android:layout_alignParentEnd="true"
                     android:layout_centerVertical="true"
                     android:src="@android:drawable/ic_menu_edit"
-                    app:tint="#FFFFFF" />
+                    app:tint="@color/action_icon" />
             </RelativeLayout>
 
-            <!-- ===== THANH TÌM KIẾM ===== -->
+            <!-- SEARCH -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="44dp"
                 android:layout_marginStart="16dp"
                 android:layout_marginEnd="16dp"
                 android:layout_marginBottom="16dp"
-                android:background="@drawable/bg_search_threads"
+                android:radius="18dp"
+                android:background="@drawable/bg_search"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
                 android:paddingStart="12dp"
@@ -60,7 +61,7 @@
                     android:layout_width="18dp"
                     android:layout_height="18dp"
                     android:src="@android:drawable/ic_menu_search"
-                    app:tint="#666666" />
+                    app:tint="@color/text_secondary" />
 
                 <EditText
                     android:id="@+id/edtSearch"
@@ -72,12 +73,12 @@
                     android:inputType="text"
                     android:paddingStart="8dp"
                     android:paddingEnd="8dp"
-                    android:textColor="#FFFFFF"
-                    android:textColorHint="#666666"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_secondary"
                     android:textSize="15sp" />
             </LinearLayout>
 
-            <!-- ===== HÀNG STORY + ONLINE GỘP CHUNG ===== -->
+            <!-- STORY -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -93,7 +94,6 @@
                     android:orientation="horizontal"
                     android:gravity="top">
 
-                    <!-- Avatar BẢN THÂN -->
                     <LinearLayout
                         android:id="@+id/layoutMyStory"
                         android:layout_width="72dp"
@@ -129,10 +129,9 @@
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
                                     android:text="+"
-                                    android:textColor="#FFFFFF"
+                                    android:textColor="@color/button_primary_text"
                                     android:textSize="14sp"
-                                    android:textStyle="bold"
-                                    android:includeFontPadding="false" />
+                                    android:textStyle="bold" />
                             </FrameLayout>
                         </FrameLayout>
 
@@ -141,14 +140,13 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Tạo tin"
-                            android:textColor="#CCCCCC"
+                            android:textColor="@color/text_secondary"
                             android:textSize="11sp"
                             android:maxLines="1"
                             android:ellipsize="end"
                             android:gravity="center" />
                     </LinearLayout>
 
-                    <!-- Story + online bạn bè -->
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rvFriendStories"
                         android:layout_width="wrap_content"
@@ -160,15 +158,15 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <!-- ===== ĐƯỜNG KẺ PHÂN CÁCH ===== -->
+            <!-- Divider -->
             <View
                 android:layout_width="match_parent"
                 android:layout_height="0.5dp"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="4dp"
-                android:background="#2A2A2A" />
+                android:background="@color/divider" />
 
-            <!-- ===== BỘ LỌC CHIP ===== -->
+            <!-- Chips -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -176,7 +174,6 @@
                 android:layout_marginBottom="8dp"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
-                android:clipToPadding="false"
                 android:scrollbars="none">
 
                 <LinearLayout
@@ -188,44 +185,42 @@
                         android:layout_width="36dp"
                         android:layout_height="36dp"
                         android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_chip_threads">
+                        android:background="@color/bg_primary">
 
                         <ImageView
                             android:layout_width="16dp"
                             android:layout_height="16dp"
                             android:layout_gravity="center"
                             android:src="@android:drawable/ic_menu_sort_by_size"
-                            app:tint="#FFFFFF" />
+                            app:tint="@color/text_primary" />
                     </FrameLayout>
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
                         android:layout_marginEnd="8dp"
-                        android:background="@drawable/bg_chip_threads"
+                        android:background="@color/bg_primary"
                         android:gravity="center"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
+                        android:paddingHorizontal="16dp"
                         android:text="Hộp thư"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
                     <TextView
+                        android:id="@+id/btnUnread"
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
-                        android:background="@drawable/bg_chip_threads"
+                        android:background="@color/bg_primary"
                         android:gravity="center"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
+                        android:paddingHorizontal="16dp"
                         android:text="Tin nhắn đang chờ"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <!-- ===== DANH SÁCH ĐOẠN CHAT CHÍNH (dọc) ===== -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvChatList"
                 android:layout_width="match_parent"
@@ -234,6 +229,7 @@
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
         </LinearLayout>
+
     </androidx.core.widget.NestedScrollView>
 
 </RelativeLayout>

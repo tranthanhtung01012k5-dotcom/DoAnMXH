@@ -5,6 +5,16 @@ import com.google.firebase.firestore.PropertyName;
 
 public class ChatUser {
     private String username;
+
+    public Boolean isDaDoc() {
+        return daDoc;
+    }
+
+    public void setDaDoc(Boolean daDoc) {
+        this.daDoc = daDoc;
+    }
+
+    private Boolean daDoc;
     @PropertyName("ten_dang_nhap")
     private String TenNguoiGui;
     @PropertyName("ten_dang_nhap")

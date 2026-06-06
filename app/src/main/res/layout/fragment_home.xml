@@ -3,43 +3,46 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000"
+    android:background="@color/bg_primary"
     android:orientation="vertical">
-
-    <!-- ===== HEADER: Logo Threads ở giữa + nút Search bên phải ===== -->
-    <!--
-        SỬA LỖI CHÍNH: đổi layout_height từ "match_parent" → "56dp"
-        để header không chiếm toàn màn hình
-    -->
-    <RelativeLayout
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp">
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/bg_primary"
+        app:contentInsetStart="0dp"
+        app:layout_scrollFlags="scroll|enterAlways|snap">
 
-        <ImageView
-            android:id="@+id/ivThreadsLogo"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:layout_centerInParent="true"
-            android:src="@drawable/thread_logo_white"
-            android:scaleType="fitCenter"
-            android:contentDescription="@string/app_name" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
 
-        <ImageButton
-            android:id="@+id/btn_search"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:src="@drawable/ic_search_24"
-            android:contentDescription="Tìm kiếm"
-            app:tint="#FFFFFF" />
+            <ImageView
+                android:id="@+id/ivThreadsLogo"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_centerInParent="true"
+                android:src="@drawable/thread_logo_white"
+                app:tint="@color/text_primary"
+                android:scaleType="fitCenter"
+                android:contentDescription="@string/app_name" />
 
-    </RelativeLayout>
+            <ImageButton
+                android:id="@+id/btnSearch"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_search_24"
+                android:contentDescription="Mở Search"
+                app:tint="@color/action_icon" />
 
-    <!-- ===== KHU VỰC TẠO BÀI ĐĂNG (giống Threads) ===== -->
+        </RelativeLayout>
+
+    </androidx.appcompat.widget.Toolbar>
     <LinearLayout
         android:id="@+id/layoutCreatePost"
         android:layout_width="match_parent"
@@ -47,20 +50,17 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="16dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="12dp"
-        android:background="#000000">
+        android:paddingVertical="12dp"
+        android:background="@color/bg_primary">
 
-        <!-- Avatar người dùng -->
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivUserAvatarPost"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_placeholder_avatar"
             app:shapeAppearanceOverlay="@style/CircleImageView" />
 
-        <!-- Ô gõ nhanh -->
         <EditText
             android:id="@+id/tvQuickPostHint"
             android:layout_width="0dp"
@@ -68,42 +68,44 @@
             android:layout_weight="1"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="12dp"
+
             android:hint="Có gì mới?"
-            android:textColorHint="#555558"
-            android:textColor="#FFFFFF"
+            android:textColorHint="@color/text_hint"
+
+            android:textColor="@color/text_primary"
             android:textSize="15sp"
+
             android:background="@null"
+
             android:inputType="textShortMessage"
             android:maxLines="3" />
 
-        <!-- Nút Đăng -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnQuickPost"
             android:layout_width="wrap_content"
-            android:layout_height="34dp"
+            android:layout_height="32dp"
             android:insetTop="0dp"
             android:insetBottom="0dp"
             android:text="Đăng"
             android:textAllCaps="false"
-            android:textColor="#000000"
+            android:textColor="@color/button_primary_text"
             android:textSize="13sp"
             android:textStyle="bold"
-            app:backgroundTint="#FFFFFF"
-            app:cornerRadius="17dp"
+            app:backgroundTint="@color/button_primary_bg"
+            app:cornerRadius="16dp"
+
             app:icon="@drawable/ic_send_outline_24"
-            app:iconTint="#000000"
+            app:iconTint="@color/button_primary_text"
             app:iconSize="16dp"
             app:iconGravity="start" />
 
     </LinearLayout>
 
-    <!-- ===== ĐƯỜNG KẺ PHÂN CÁCH ===== -->
     <View
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:background="#222222" />
+        android:background="@color/divider" />
 
-    <!-- ===== FEED BÀI ĐĂNG (chiếm phần còn lại của màn hình) ===== -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
@@ -114,7 +116,7 @@
             android:id="@+id/rvFeed"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#000000"
+            android:background="@color/bg_primary"
             android:clipToPadding="false"
             android:paddingBottom="80dp"
             android:overScrollMode="never"

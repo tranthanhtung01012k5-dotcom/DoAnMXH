@@ -39,7 +39,7 @@ public class MessageFragment extends Fragment {
     private FirebaseFirestore db;
     private ListenerRegistration friendStoryListener;
     private FirebaseAuth auth;
-    private ImageView    btnNewMessage, imgMyAvatar;
+    private ImageView    btnNewMessage,btnUnread, imgMyAvatar;
     private LinearLayout layoutMyStory;
     private RecyclerView rvFriendStories, rvChatList;
     private TextView tvMyStory;
@@ -82,6 +82,7 @@ public class MessageFragment extends Fragment {
 
     private void initViews(View view) {
         btnNewMessage    = view.findViewById(R.id.btnNewMessage);
+//        btnUnread    = view.findViewById(R.id.btnUnread);
         imgMyAvatar      = view.findViewById(R.id.imgMyAvatar);
         layoutMyStory    = view.findViewById(R.id.layoutMyStory);
         rvFriendStories  = view.findViewById(R.id.rvFriendStories);
@@ -469,7 +470,9 @@ public class MessageFragment extends Fragment {
         btnNewMessage.setOnClickListener(v ->
                 Toast.makeText(requireContext(), "Tạo cuộc hội thoại mới", Toast.LENGTH_SHORT).show()
         );
-
+//        btnUnread.setOnClickListener(v -> {
+//            Toast.makeText(requireContext(), "Xem tin nhắn chưa đọc", Toast.LENGTH_SHORT).show();
+//        });
         layoutMyStory.setOnClickListener(v ->
                 Toast.makeText(requireContext(), "Tạo tin mới", Toast.LENGTH_SHORT).show()
         );

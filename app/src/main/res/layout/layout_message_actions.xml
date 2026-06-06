@@ -72,6 +72,13 @@
             android:text="↩ Trả lời"
             android:textColor="@android:color/white"
             android:padding="16dp"/>
+        <TextView
+            android:id="@+id/btnGhim"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="📍 Ghim"
+            android:textColor="@android:color/white"
+            android:padding="16dp"/>
 
         <TextView
             android:id="@+id/btnCopy"

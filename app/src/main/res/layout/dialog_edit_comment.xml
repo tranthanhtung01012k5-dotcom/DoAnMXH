@@ -7,7 +7,7 @@
     android:layout_height="wrap_content"
     android:layout_margin="12dp"
 
-    app:cardBackgroundColor="#000000"
+    app:cardBackgroundColor="@color/bg_primary"
     app:cardCornerRadius="22dp"
     app:cardElevation="6dp"
     app:strokeColor="#1F1F1F"
@@ -24,7 +24,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Chỉnh sửa bình luận"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold"
             android:layout_marginBottom="14dp"/>
@@ -37,7 +37,7 @@
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
 
             app:boxBackgroundMode="outline"
-            app:boxBackgroundColor="#121212"
+            app:boxBackgroundColor="@color/bg_surface"
             app:boxStrokeColor="#3B82F6"
             app:hintTextColor="#9E9E9E"
 
@@ -64,7 +64,7 @@
                 android:paddingTop="14dp"
                 android:paddingBottom="14dp"
 
-                android:textColor="#FFFFFF"
+                android:textColor="@color/text_primary"
                 android:textColorHint="#777777"
                 android:textCursorDrawable="@null"
                 android:textSize="15sp"/>
@@ -88,7 +88,7 @@
 
                 android:text="Huỷ"
                 android:textAllCaps="false"
-                android:textColor="#B0B0B0"/>
+                android:textColor="@color/text_primary" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSave"
