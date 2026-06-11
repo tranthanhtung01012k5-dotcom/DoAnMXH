@@ -100,7 +100,10 @@ public class ChatMessage {
     public String getNoiDung()                 { return noiDung; }
     @PropertyName("noi_dung")
     public void   setNoiDung(String v)         { noiDung = v; }
+    private String avatarUrl; // thêm field này
 
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
     @ServerTimestamp
     @PropertyName("thoi_gian")
     public Date   getThoiGian()                { return thoiGian; }

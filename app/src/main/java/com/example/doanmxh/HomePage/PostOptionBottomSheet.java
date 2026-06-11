@@ -28,7 +28,7 @@ public class PostOptionBottomSheet extends BottomSheetDialogFragment {
 //    private String cheDoXem = "cong_khai"; // mặc định
 
     public interface OnPostDeletedListener {
-        void onPostDeleted(String postId);
+        void onPostDeleted(String postId, @Nullable String originalPostId);
     }
     public interface OnPostHiddenListener {
         void onPostHidden(String postId);
@@ -183,51 +183,113 @@ public class PostOptionBottomSheet extends BottomSheetDialogFragment {
         return view;
     }
 
-    private void deletePost() {
-        // Kiểm tra quyền — chỉ chủ bài mới được xóa
-        String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
-                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                : null;
+//    private void deletePost() {
+//        // Kiểm tra quyền — chỉ chủ bài mới được xóa
+//        String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
+//                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+//                : null;
+//
+//        if (myUid == null) {
+//            Toast.makeText(getContext(), "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//
+//        FirebaseFirestore db = FirebaseFirestore.getInstance();
+//
+//        // Kiểm tra bài có phải của mình không
+//        db.collection("bai_viet").document(postId).get()
+//                .addOnSuccessListener(doc -> {
+//                    if (!doc.exists()) {
+//                        Toast.makeText(getContext(), "Bài viết không tồn tại", Toast.LENGTH_SHORT).show();
+//                        dismiss();
+//                        return;
+//                    }
+//
+//                    String authorId = doc.getString("nguoi_dung_id");
+//                    if (!myUid.equals(authorId)) {
+//                        Toast.makeText(getContext(), "Bạn không có quyền xóa bài này", Toast.LENGTH_SHORT).show();
+//                        dismiss();
+//                        return;
+//                    }
+//
+//                    // Soft delete — chỉ set da_xoa = true
+//                    db.collection("bai_viet").document(postId)
+//                            .update("da_xoa", true)
+//                            .addOnSuccessListener(unused -> {
+//                                Toast.makeText(getContext(), "Đã xóa bài viết", Toast.LENGTH_SHORT).show();
+//                                if (deleteListener != null) {
+//                                    deleteListener.onPostDeleted(postId);
+//                                }
+//                                dismiss();
+//                            })
+//                            .addOnFailureListener(e -> {
+//                                Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+//                            });
+//                })
+//                .addOnFailureListener(e -> {
+//                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+//                });
+//    }
+private void deletePost() {
+    String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
+            ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+            : null;
 
-        if (myUid == null) {
-            Toast.makeText(getContext(), "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-        // Kiểm tra bài có phải của mình không
-        db.collection("bai_viet").document(postId).get()
-                .addOnSuccessListener(doc -> {
-                    if (!doc.exists()) {
-                        Toast.makeText(getContext(), "Bài viết không tồn tại", Toast.LENGTH_SHORT).show();
-                        dismiss();
-                        return;
-                    }
-
-                    String authorId = doc.getString("nguoi_dung_id");
-                    if (!myUid.equals(authorId)) {
-                        Toast.makeText(getContext(), "Bạn không có quyền xóa bài này", Toast.LENGTH_SHORT).show();
-                        dismiss();
-                        return;
-                    }
-
-                    // Soft delete — chỉ set da_xoa = true
-                    db.collection("bai_viet").document(postId)
-                            .update("da_xoa", true)
-                            .addOnSuccessListener(unused -> {
-                                Toast.makeText(getContext(), "Đã xóa bài viết", Toast.LENGTH_SHORT).show();
-                                if (deleteListener != null) {
-                                    deleteListener.onPostDeleted(postId);
-                                }
-                                dismiss();
-                            })
-                            .addOnFailureListener(e -> {
-                                Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                            });
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+    if (myUid == null) {
+        Toast.makeText(getContext(), "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+        return;
     }
+
+    FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+    db.collection("bai_viet").document(postId).get()
+            .addOnSuccessListener(doc -> {
+                if (!doc.exists()) {
+                    Toast.makeText(getContext(), "Bài viết không tồn tại", Toast.LENGTH_SHORT).show();
+                    dismiss();
+                    return;
+                }
+
+                String authorId = doc.getString("nguoi_dung_id");
+                if (!myUid.equals(authorId)) {
+                    Toast.makeText(getContext(), "Bạn không có quyền xóa bài này", Toast.LENGTH_SHORT).show();
+                    dismiss();
+                    return;
+                }
+
+                // ✅ Nếu là bài repost → thông báo cho HomeFragment reset trạng thái
+                Boolean isRepost = doc.getBoolean("is_repost");
+                String baiVietChaId = doc.getString("bai_viet_cha_id");
+                boolean needResetRepost = Boolean.TRUE.equals(isRepost)
+                        && baiVietChaId != null
+                        && !baiVietChaId.isEmpty();
+
+                db.collection("bai_viet").document(postId)
+                        .update("da_xoa", true)
+                        .addOnSuccessListener(unused -> {
+                            Toast.makeText(getContext(), "Đã xóa bài viết", Toast.LENGTH_SHORT).show();
+
+                            // ✅ Giảm so_repost và báo reset UI nếu là repost
+                            if (needResetRepost) {
+                                db.collection("bai_viet")
+                                        .document(baiVietChaId)
+                                        .update("so_repost", FieldValue.increment(-1));
+
+                                if (deleteListener != null) {
+                                    deleteListener.onPostDeleted(postId, baiVietChaId); // truyền thêm baiVietChaId
+                                }
+                            } else {
+                                if (deleteListener != null) {
+                                    deleteListener.onPostDeleted(postId, null);
+                                }
+                            }
+
+                            dismiss();
+                        })
+                        .addOnFailureListener(e ->
+                                Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+            })
+            .addOnFailureListener(e ->
+                    Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+}
 }

@@ -2,6 +2,7 @@ package com.example.doanmxh.ProfilePage;
 
 import static android.app.PendingIntent.getActivity;
 
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.res.ColorStateList;
@@ -17,6 +18,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -34,19 +36,25 @@ import com.example.doanmxh.MainActivity;
 import com.example.doanmxh.Message.ChatActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class UserProfileActivity extends BaseActivity {
+    private final Set<String> repostedByMe = new HashSet<>();
 
     private ShapeableImageView imgProfile;
     private TextView txtName, txtUsername, txtBio, txtSoLuongTheoDoi;
@@ -137,7 +145,155 @@ public class UserProfileActivity extends BaseActivity {
         postAdapter = new PostAdapter(postList, new PostAdapter.OnPostActionListener() {
             @Override public void onLikeClick(PostModel post, int position)        { handleLike(post, position); }
             @Override public void onCommentClick(PostModel post, int position)     { openPostDetail(post.getDocumentId()); }
-            @Override public void onRepostClick(PostModel post, int position)      {}
+            @Override
+            public void onRepostClick(PostModel post, int position) {
+
+                if (myUid == null) {
+                    Toast.makeText(UserProfileActivity.this,
+                            "Vui lòng đăng nhập",
+                            Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                String originalDocId = post.getDocumentId();
+
+                // Đã repost -> cho hủy
+                if (repostedByMe.contains(originalDocId)) {
+
+                    new AlertDialog.Builder(UserProfileActivity.this)
+                            .setTitle("Hủy đăng lại")
+                            .setMessage("Bạn muốn xóa bài đăng lại này?")
+                            .setPositiveButton("Xóa", (dialog, which) -> {
+
+                                db.collection("bai_viet")
+                                        .whereEqualTo("nguoi_dung_id", myUid)
+                                        .whereEqualTo("bai_viet_cha_id", originalDocId)
+                                        .whereEqualTo("is_repost", true)
+                                        .whereEqualTo("da_xoa", false)
+                                        .get()
+                                        .addOnSuccessListener(snap -> {
+
+                                            if (snap.isEmpty()) return;
+
+                                            WriteBatch batch = db.batch();
+
+                                            for (DocumentSnapshot doc : snap.getDocuments()) {
+                                                batch.update(doc.getReference(),
+                                                        "da_xoa",
+                                                        true);
+                                            }
+
+                                            DocumentReference baiGocRef =
+                                                    db.collection("bai_viet")
+                                                            .document(originalDocId);
+
+                                            batch.update(
+                                                    baiGocRef,
+                                                    "so_repost",
+                                                    FieldValue.increment(-1)
+                                            );
+
+                                            batch.commit()
+                                                    .addOnSuccessListener(unused -> {
+
+                                                        repostedByMe.remove(originalDocId);
+
+                                                        post.setRepostedByMe(false);
+                                                        post.setSoRepost(
+                                                                Math.max(0,
+                                                                        post.getSoRepost() - 1)
+                                                        );
+
+                                                        postAdapter.notifyItemChanged(
+                                                                position,
+                                                                "REPOST_UPDATE"
+                                                        );
+
+                                                        Toast.makeText(
+                                                                UserProfileActivity.this,
+                                                                "Đã xóa bài đăng lại",
+                                                                Toast.LENGTH_SHORT
+                                                        ).show();
+                                                    });
+                                        });
+                            })
+                            .setNegativeButton("Hủy", null)
+                            .show();
+
+                    return;
+                }
+
+                // Chưa repost -> đăng lại
+                new AlertDialog.Builder(UserProfileActivity.this)
+                        .setTitle("Đăng lại bài viết")
+                        .setMessage("Bạn muốn đăng lại bài này?")
+                        .setPositiveButton("Đăng lại", (dialog, which) -> {
+
+                            Map<String, Object> repost = new HashMap<>();
+
+                            repost.put("nguoi_dung_id", myUid);
+                            repost.put("noi_dung", "");
+                            repost.put("ngay_tao", Timestamp.now());
+                            repost.put("so_like", 0);
+                            repost.put("so_binh_luan", 0);
+                            repost.put("so_repost", 0);
+                            repost.put("so_share", 0);
+                            repost.put("da_xoa", false);
+                            repost.put("che_do_xem", "public");
+                            repost.put("hinh_anh", new ArrayList<>());
+                            repost.put("danh_sach_anh", new ArrayList<>());
+                            repost.put("bai_viet_cha_id", originalDocId);
+                            repost.put("is_repost", true);
+
+                            DocumentReference baiGocRef =
+                                    db.collection("bai_viet")
+                                            .document(originalDocId);
+
+                            WriteBatch batch = db.batch();
+
+                            DocumentReference repostRef =
+                                    db.collection("bai_viet")
+                                            .document();
+
+                            batch.set(repostRef, repost);
+
+                            batch.update(
+                                    baiGocRef,
+                                    "so_repost",
+                                    FieldValue.increment(1)
+                            );
+
+                            batch.commit()
+                                    .addOnSuccessListener(unused -> {
+
+                                        repostedByMe.add(originalDocId);
+
+                                        post.setRepostedByMe(true);
+                                        post.setSoRepost(
+                                                post.getSoRepost() + 1
+                                        );
+
+                                        postAdapter.notifyItemChanged(
+                                                position,
+                                                "REPOST_UPDATE"
+                                        );
+
+                                        Toast.makeText(
+                                                UserProfileActivity.this,
+                                                "Đã đăng lại!",
+                                                Toast.LENGTH_SHORT
+                                        ).show();
+                                    })
+                                    .addOnFailureListener(e ->
+                                            Toast.makeText(
+                                                    UserProfileActivity.this,
+                                                    "Lỗi: " + e.getMessage(),
+                                                    Toast.LENGTH_SHORT
+                                            ).show());
+                        })
+                        .setNegativeButton("Hủy", null)
+                        .show();
+            }
             @Override public void onShareClick(PostModel post, int position)       {}
             @Override public void onMoreOptionsClick(PostModel post, int position) {}
             @Override public void onAvatarClick(PostModel post, int position)      { openPostDetail(post.getDocumentId()); }
@@ -223,27 +379,32 @@ public class UserProfileActivity extends BaseActivity {
                 .get()
                 .addOnSuccessListener(userDoc -> {
 
-                    boolean isPrivate =
-                            Boolean.TRUE.equals(userDoc.getBoolean("private"));
+//                    boolean isPrivate =
+//                            Boolean.TRUE.equals(userDoc.getBoolean("private"));
 
-                    if (!isPrivate) {
-                        // Tài khoản public
-                        isFollowingTarget = true;
-                        updateFollowButton(true);
-                        setupFollowButtonListeners();
-                        return;
-                    }
+//                    if (!isPrivate) {
+//
+//                        isFollowingTarget = false; // chưa follow
+//
+//                        updateFollowButton(false);
+//                        setupFollowButtonListeners();
+//                        checkProfileAccess();
+//
+//                        return;
+//                    }
 
-                    // Tài khoản private -> kiểm tra follow
                     db.collection("nguoi_dung")
                             .document(myUid)
                             .collection("nguoi_dang_theo_doi")
                             .document(targetUid)
                             .get()
                             .addOnSuccessListener(doc -> {
+
                                 isFollowingTarget = doc.exists();
+
                                 updateFollowButton(isFollowingTarget);
                                 setupFollowButtonListeners();
+                                checkProfileAccess();
                             });
                 });
     }
@@ -251,12 +412,29 @@ public class UserProfileActivity extends BaseActivity {
     private void updateFollowButton(boolean following) {
         if (following) {
             btnFollow.setText("Đang theo dõi");
-            btnFollow.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#1E1E1E")));
-            btnFollow.setTextColor(Color.WHITE);
+
+            btnFollow.setBackgroundTintList(
+                    ColorStateList.valueOf(
+                            getColor(R.color.bg_primary)
+                    )
+            );
+
+            btnFollow.setTextColor(
+                    getColor(R.color.text_primary)
+            );
+
         } else {
             btnFollow.setText("Theo dõi");
-            btnFollow.setBackgroundTintList(ColorStateList.valueOf(Color.WHITE));
-            btnFollow.setTextColor(Color.BLACK);
+
+            btnFollow.setBackgroundTintList(
+                    ColorStateList.valueOf(
+                            getColor(R.color.text_primary)
+                    )
+            );
+
+            btnFollow.setTextColor(
+                    getColor(R.color.bg_primary)
+            );
         }
     }
 
@@ -377,6 +555,57 @@ public class UserProfileActivity extends BaseActivity {
                     }
                 });
     }
+    private void checkProfileAccess() {
+        db.collection("nguoi_dung")
+                .document(targetUid)
+                .get()
+                .addOnSuccessListener(doc -> {
+
+                    boolean isPrivate =
+                            Boolean.TRUE.equals(doc.getBoolean("private"));
+
+                    boolean canView =
+                            !isPrivate ||
+                                    (myUid != null && myUid.equals(targetUid)) ||
+                                    isFollowingTarget;
+
+                    if (canView) {
+
+                        btnPost.setVisibility(View.VISIBLE);
+                        btnRepost.setVisibility(View.VISIBLE);
+                        btnComment.setVisibility(View.VISIBLE);
+                        rvPosts.setVisibility(View.VISIBLE);
+
+                        btnPost.setOnClickListener(v -> {
+                            setActiveTab(0);
+                            rvPosts.setAdapter(postAdapter);
+                            loadPosts();
+                        });
+
+                        btnRepost.setOnClickListener(v -> {
+                            setActiveTab(1);
+                            rvPosts.setAdapter(postAdapter);
+                            loadReposts();
+                        });
+
+                        btnComment.setOnClickListener(v -> {
+                            setActiveTab(2);
+                            rvPosts.setAdapter(commentAdapter);
+                            loadComments();
+                        });
+
+                        setActiveTab(0);
+                        loadPosts();
+
+                    } else {
+
+                        btnPost.setVisibility(View.GONE);
+                        btnRepost.setVisibility(View.GONE);
+                        btnComment.setVisibility(View.GONE);
+                        rvPosts.setVisibility(View.GONE);
+                    }
+                });
+    }
 
     // ════════════════════════════════════════════════════════
     //  LOAD BÀI VIẾT
@@ -460,7 +689,75 @@ public class UserProfileActivity extends BaseActivity {
                     }
                 });
     }
+    private void checkRepost(PostModel post, Runnable onDone) {
 
+        if (myUid == null) {
+            continueLoadParent(post, onDone);
+            return;
+        }
+
+        db.collection("bai_viet")
+                .whereEqualTo("nguoi_dung_id", myUid)
+                .whereEqualTo("bai_viet_cha_id", post.getDocumentId())
+                .whereEqualTo("is_repost", true)
+                .whereEqualTo("da_xoa", false)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+
+                    boolean reposted = !snapshot.isEmpty();
+
+                    post.setRepostedByMe(reposted);
+
+                    if (reposted) {
+                        repostedByMe.add(post.getDocumentId());
+                    } else {
+                        repostedByMe.remove(post.getDocumentId());
+                    }
+
+                    continueLoadParent(post, onDone);
+                })
+                .addOnFailureListener(e ->
+                        continueLoadParent(post, onDone));
+    }
+
+    private void continueLoadParent(PostModel post, Runnable onDone) {
+
+        String chaId = post.getBaiVietChaId();
+
+        if (chaId == null || chaId.isEmpty()) {
+            onDone.run();
+        } else {
+            loadBaiVietCha(post, chaId, onDone);
+        }
+    }
+    private void loadBaiVietCha(PostModel post, String chaId, Runnable onDone) {
+        db.collection("bai_viet").document(chaId).get()
+                .addOnSuccessListener(chaDoc -> {
+                    if (!chaDoc.exists()) { onDone.run(); return; }
+                    PostModel postCha = chaDoc.toObject(PostModel.class);
+                    postCha.setDocumentId(chaDoc.getId());
+                    String chaUid = chaDoc.getString("nguoi_dung_id");
+                    if (chaUid != null && !chaUid.isEmpty()) {
+                        db.collection("nguoi_dung").document(chaUid).get()
+                                .addOnSuccessListener(userDoc -> {
+                                    if (userDoc.exists()) {
+                                        postCha.setHoVaTen(userDoc.getString("ho_va_ten"));
+                                        postCha.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
+                                        postCha.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+                                        postCha.setVerified(Boolean.TRUE.equals(userDoc.getBoolean("verified")));
+                                    }
+                                    post.setPostCha(postCha);
+                                    onDone.run();
+                                })
+                                .addOnFailureListener(e -> { post.setPostCha(postCha); onDone.run(); });
+                    } else {
+                        post.setPostCha(postCha);
+                        onDone.run();
+                    }
+                })
+                .addOnFailureListener(e -> onDone.run());
+    }
 
     // ════════════════════════════════════════════════════════
     //  LOAD REPOST

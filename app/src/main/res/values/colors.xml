@@ -31,5 +31,6 @@
     <color name="like_active">#E53E3E</color>
     <color name="verified_blue">#3B82F6</color>
     <color name="online_green">#22C55E</color>
+    <color name="bg_chip">#1C1C1E</color>
 
 </resources>

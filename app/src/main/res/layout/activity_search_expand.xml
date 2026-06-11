@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/activity_search_expand"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_primary">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Header Search -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="8dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_arrow_back_24"
+                app:tint="@color/text_secondary" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                app:boxBackgroundMode="filled"
+                app:boxBackgroundColor="#1C1C1E"
+                app:boxCornerRadiusTopStart="25dp"
+                app:boxCornerRadiusTopEnd="25dp"
+                app:boxCornerRadiusBottomStart="25dp"
+                app:boxCornerRadiusBottomEnd="25dp"
+                app:hintEnabled="false">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/edtSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="53dp"
+                    android:background="@color/bg_primary"
+                    android:drawableStart="@android:drawable/ic_menu_search"
+                    android:drawablePadding="12dp"
+                    android:hint="Tìm kiếm"
+                    android:inputType="text"
+                    android:imeOptions="actionSearch"
+                    android:paddingStart="16dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="#8E8E93" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <ImageView
+                android:id="@+id/btnFilter"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                app:tint="@color/text_secondary"/>
+
+        </LinearLayout>
+
+        <!-- Mới đây -->
+        <LinearLayout
+            android:id="@+id/layoutRecent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Mới đây"
+                    android:textColor="@color/text_primary"
+                    android:textSize="17sp"
+                    android:textStyle="bold"/>
+
+                <TextView
+                    android:id="@+id/btnEdit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Chỉnh sửa"
+                    android:textColor="#0095F6"
+                    android:textSize="15sp"/>
+
+            </LinearLayout>
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupRecent"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="12dp"
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="8dp">
+
+                <com.google.android.material.chip.Chip
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Orange singer"
+                    android:textColor="#FFFFFF"
+                    app:chipBackgroundColor="#1C1C1E"/>
+
+                <com.google.android.material.chip.Chip
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Hương Giang"
+                    android:textColor="#FFFFFF"
+                    app:chipBackgroundColor="#1C1C1E"/>
+
+                <com.google.android.material.chip.Chip
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sơn Tùng M-TP"
+                    android:textColor="#FFFFFF"
+                    app:chipBackgroundColor="#1C1C1E"/>
+
+                <com.google.android.material.chip.Chip
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Em Xinh Say Hi"
+                    android:textColor="#FFFFFF"
+                    app:chipBackgroundColor="#1C1C1E"/>
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </LinearLayout>
+
+        <!-- Chủ đề dành cho bạn -->
+        <LinearLayout
+            android:id="@+id/layoutTopics"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="8dp"
+                android:text="Hashtag thịnh hành"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold"/>
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupHashtags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="12dp"
+                app:chipSpacingHorizontal="8dp"
+                app:chipSpacingVertical="8dp"/>
+
+        </LinearLayout>
+        <LinearLayout
+            android:id="@+id/layoutTrending"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="16dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="16dp"
+                android:paddingBottom="4dp"
+                android:text="Tìm kiếm nhiều nhất"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp"
+                android:textStyle="bold"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvTrending"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
+
+        </LinearLayout>
+
+        <!-- Shimmer loading -->
+        <com.facebook.shimmer.ShimmerFrameLayout
+            android:id="@+id/shimmerLayout"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="8dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <include layout="@layout/item_user_shimmer"/>
+                <include layout="@layout/item_user_shimmer"/>
+                <include layout="@layout/item_user_shimmer"/>
+                <include layout="@layout/item_user_shimmer"/>
+                <include layout="@layout/item_user_shimmer"/>
+
+            </LinearLayout>
+
+        </com.facebook.shimmer.ShimmerFrameLayout>
+        <!-- Kết quả hashtag -->
+<!--        <LinearLayout-->
+<!--            android:id="@+id/layoutHashtags"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="vertical"-->
+<!--            android:visibility="gone">-->
+
+<!--            <TextView-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:paddingHorizontal="16dp"-->
+<!--                android:paddingTop="16dp"-->
+<!--                android:paddingBottom="8dp"-->
+<!--                android:text="Hashtag"-->
+<!--                android:textColor="@color/text_primary"-->
+<!--                android:textSize="17sp"-->
+<!--                android:textStyle="bold"/>-->
+
+<!--            <androidx.recyclerview.widget.RecyclerView-->
+<!--                android:id="@+id/rvHashtags"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:visibility="gone"/>-->
+
+<!--        </LinearLayout>-->
+        <!-- RecyclerView kết quả tìm kiếm -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvUsers"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingHorizontal="8dp"
+            android:visibility="gone"/>
+        <TextView
+            android:id="@+id/tvPostsHeader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp"
+            android:text="Bài viết"
+            android:textColor="@color/text_primary"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:visibility="gone"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvPosts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="8dp"
+            android:visibility="gone"/>
+        <!-- Trạng thái rỗng -->
+        <LinearLayout
+            android:id="@+id/layoutEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:src="@android:drawable/ic_menu_search"
+                android:alpha="0.5"
+                app:tint="#888888"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Không tìm thấy kết quả"
+                android:textColor="#888888"
+                android:textSize="15sp"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

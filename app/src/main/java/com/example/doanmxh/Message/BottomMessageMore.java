@@ -1,6 +1,8 @@
 package com.example.doanmxh.Message;
 
+import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,31 +34,55 @@ public class BottomMessageMore extends BottomSheetDialogFragment {
     private FirebaseAuth auth;
     private ChatMessage msg;
     private String username, lastMessage, avatarUrl,targetUid;
-
+//    private boolean isPinned = false;
     // Truyền đầy đủ thông tin từ ChatUser
-    public static BottomMessageMore newInstance(String uid, String username, String lastMessage, String avatarUrl) {
+    public static BottomMessageMore newInstance(
+            String uid,
+            String username,
+            String lastMessage,
+            String avatarUrl
+//            boolean isPinned
+    ) {
         BottomMessageMore fragment = new BottomMessageMore();
         Bundle args = new Bundle();
-        args.putString(ARG_UID_URL,   uid);
-        args.putString(ARG_USERNAME,   username);
-        args.putString(ARG_LAST_MSG,   lastMessage);
+
+        args.putString(ARG_UID_URL, uid);
+        args.putString(ARG_USERNAME, username);
+        args.putString(ARG_LAST_MSG, lastMessage);
         args.putString(ARG_AVATAR_URL, avatarUrl);
+//        args.putBoolean("isPinned", isPinned);
+
         fragment.setArguments(args);
         return fragment;
     }
+    public interface OnActionDoneListener {
+        void onActionDone();
+    }
 
+    private OnActionDoneListener actionDoneListener;
+
+    public void setOnActionDoneListener(OnActionDoneListener listener) {
+        Log.d("BOTTOM_TEST",
+                "SET LISTENER CALLED " + System.identityHashCode(this));
+
+        this.actionDoneListener = listener;
+    }
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            username    = getArguments().getString(ARG_USERNAME);
+            username = getArguments().getString(ARG_USERNAME);
             lastMessage = getArguments().getString(ARG_LAST_MSG);
-            avatarUrl   = getArguments().getString(ARG_AVATAR_URL);
-            targetUid   = getArguments().getString(ARG_UID_URL); // ← THÊM
+            avatarUrl = getArguments().getString(ARG_AVATAR_URL);
+            targetUid = getArguments().getString(ARG_UID_URL);
+
+//            isPinned = getArguments().getBoolean("isPinned", false);
         }
         setStyle(STYLE_NORMAL, R.style.BottomSheetStyle);
         db   = FirebaseFirestore.getInstance();
         auth = FirebaseAuth.getInstance();
+        Log.d("BOTTOM_TEST",
+                "ON CREATE = " + System.identityHashCode(this));
     }
 
     @Nullable
@@ -90,9 +116,12 @@ public class BottomMessageMore extends BottomSheetDialogFragment {
         LinearLayout btnTat     = view.findViewById(R.id.btnTat);
         LinearLayout btnGhim    = view.findViewById(R.id.btnGhim);
         LinearLayout btnXoa     = view.findViewById(R.id.btnXoa);
+//        TextView btnGhim = view.findViewById(R.id.btnGhim);
+
+        checkPinnedStatus(targetUid, btnGhim);
 
         btnDanhDau.setOnClickListener(v -> {
-            Toast.makeText(getContext(), "Đánh dấu là chưa đọc", Toast.LENGTH_SHORT).show();
+            saveMessage(targetUid);
             dismiss();
         });
         btnTat.setOnClickListener(v -> {
@@ -100,8 +129,26 @@ public class BottomMessageMore extends BottomSheetDialogFragment {
             dismiss();
         });
         btnGhim.setOnClickListener(v -> {
-//pinMessage(msg);
-dismiss();
+
+            String myUid = auth.getCurrentUser().getUid();
+
+            String convId = myUid.compareTo(targetUid) < 0
+                    ? myUid + "_" + targetUid
+                    : targetUid + "_" + myUid;
+
+            db.collection("nguoi_dung")
+                    .document(myUid)
+                    .collection("tin_nhan_ghim")
+                    .document(convId)
+                    .get()
+                    .addOnSuccessListener(doc -> {
+
+                        if (doc.exists()) {
+                            unpinConversation(targetUid, btnGhim);
+                        } else {
+                            pinConversation(targetUid, btnGhim);
+                        }
+                    });
         });
         btnXoa.setOnClickListener(v -> {
             deleteConversationDocument(targetUid);
@@ -110,55 +157,162 @@ dismiss();
         });
 
     }
+    private void updatePinButton(LinearLayout btnGhim, boolean isPinned) {
+        TextView tv = btnGhim.findViewById(R.id.tvGhim);
+        tv.setText(isPinned ? "Bỏ ghim" : "Ghim");
+    }
+    private void unpinConversation(String targetUid, LinearLayout btnGhim) {
 
-    private void deleteConversation(String targetUid) {
         String myUid = auth.getCurrentUser().getUid();
 
         String convId = myUid.compareTo(targetUid) < 0
                 ? myUid + "_" + targetUid
                 : targetUid + "_" + myUid;
 
-        // Bước 1: Xóa tất cả tin nhắn trong subcollection trước
+        db.collection("nguoi_dung")
+                .document(myUid)
+                .collection("tin_nhan_ghim")
+                .document(convId)
+                .delete()
+                .addOnSuccessListener(unused -> {
+
+                    checkPinnedStatus(targetUid, btnGhim);
+
+                    showToast("Đã bỏ ghim");
+
+                    if (actionDoneListener != null) {
+                        actionDoneListener.onActionDone();
+                    }
+                });
+        dismiss();
+    }
+    private void saveMessage(String targetUid) {
+        String myUid = auth.getCurrentUser().getUid();
+
+        Log.d("BOTTOM_TEST",
+                "SAVE INSTANCE = " + System.identityHashCode(this));
+
+        Log.d("BOTTOM_TEST",
+                "LISTENER = " + actionDoneListener);
+
+        String convId = myUid.compareTo(targetUid) < 0
+                ? myUid + "_" + targetUid
+                : targetUid + "_" + myUid;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("tin_nhan_id", convId);
+        data.put("ngay_luu", com.google.firebase.Timestamp.now());
+
+        db.collection("nguoi_dung")
+                .document(myUid)
+                .collection("cuoc_tro_luu_tru")
+                .document(convId)
+                .set(data)
+                .addOnSuccessListener(unused -> {
+//                    Log.d("BOTTOM_TEST", "SAVE SUCCESS");
+//
+//                    Log.d("BOTTOM_TEST",
+//                            "SUCCESS INSTANCE = " + System.identityHashCode(this));
+//
+//                    Log.d("BOTTOM_TEST",
+//                            "SUCCESS LISTENER = " + actionDoneListener);
+
+                    if (actionDoneListener != null) {
+                        Log.d("BOTTOM_TEST", "CALL ACTION DONE");
+                        actionDoneListener.onActionDone();
+                    } else {
+                        Log.d("BOTTOM_TEST", "LISTENER NULL");
+                    }
+//                    Toast.makeText(getContext(),"Lưu tin nhắn thành công",Toast.LENGTH_SHORT).show();
+//
+                });
+    }
+
+    private void deleteConversation(String targetUid) {
+        String myUid = auth.getCurrentUser().getUid();
+        String convId = myUid.compareTo(targetUid) < 0
+                ? myUid + "_" + targetUid
+                : targetUid + "_" + myUid;
+
         db.collection("cuoc_tro_chuyen")
                 .document(convId)
                 .collection("tin_nhan")
                 .get()
                 .addOnSuccessListener(querySnapshot -> {
                     if (querySnapshot.isEmpty()) {
-                        // Không có tin nhắn → xóa thẳng document
                         deleteConversationDocument(convId);
                         return;
                     }
-
-                    // Dùng batch để xóa tất cả tin nhắn 1 lần
                     com.google.firebase.firestore.WriteBatch batch = db.batch();
                     for (com.google.firebase.firestore.DocumentSnapshot doc : querySnapshot.getDocuments()) {
                         batch.delete(doc.getReference());
                     }
-
                     batch.commit()
-                            .addOnSuccessListener(unused -> {
-                                // Bước 2: Sau khi xóa xong tin nhắn → xóa document cha
-                                deleteConversationDocument(convId);
-                            })
-                            .addOnFailureListener(err ->
-                                    Toast.makeText(getContext(), "Lỗi xóa tin nhắn: " + err.getMessage(), Toast.LENGTH_SHORT).show()
-                            );
+                            .addOnSuccessListener(unused -> deleteConversationDocument(convId))
+                            .addOnFailureListener(err -> showToast("Lỗi xóa tin nhắn: " + err.getMessage()));
                 })
-                .addOnFailureListener(err ->
-                        Toast.makeText(getContext(), "Lỗi: " + err.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+                .addOnFailureListener(err -> showToast("Lỗi: " + err.getMessage()));
     }
+    private void pinConversation(String targetUid, LinearLayout btnGhim) {
 
+        String myUid = auth.getCurrentUser().getUid();
+
+        String convId = myUid.compareTo(targetUid) < 0
+                ? myUid + "_" + targetUid
+                : targetUid + "_" + myUid;
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("id_doan_chat", convId);
+        data.put("tin_nhan_cuoi", lastMessage);
+        data.put("thoi_gian_ghim", com.google.firebase.Timestamp.now());
+
+        db.collection("nguoi_dung")
+                .document(myUid)
+                .collection("tin_nhan_ghim")
+                .document(convId)
+                .set(data)
+                .addOnSuccessListener(unused -> {
+
+                    checkPinnedStatus(targetUid, btnGhim);
+
+                    showToast("Đã ghim đoạn chat");
+
+                    if (actionDoneListener != null) {
+                        actionDoneListener.onActionDone();
+                    }
+                    dismiss();
+                });
+    }
     private void deleteConversationDocument(String convId) {
         db.collection("cuoc_tro_chuyen")
                 .document(convId)
                 .delete()
-                .addOnSuccessListener(a ->
-                        Toast.makeText(getContext(), "Đã xóa cuộc trò chuyện", Toast.LENGTH_SHORT).show()
-                )
-                .addOnFailureListener(err ->
-                        Toast.makeText(getContext(), "Lỗi: " + err.getMessage(), Toast.LENGTH_SHORT).show()
-                );
+                .addOnSuccessListener(a -> showToast("Đã xóa cuộc trò chuyện"))
+                .addOnFailureListener(err -> showToast("Lỗi: " + err.getMessage()));
+    }
+    // Thêm method này vào class
+    private void checkPinnedStatus(String targetUid, LinearLayout btnGhim) {
+        String myUid = auth.getCurrentUser().getUid();
+
+        String convId = myUid.compareTo(targetUid) < 0
+                ? myUid + "_" + targetUid
+                : targetUid + "_" + myUid;
+
+        db.collection("nguoi_dung")
+                .document(myUid)
+                .collection("tin_nhan_ghim")
+                .document(convId)
+                .get()
+                .addOnSuccessListener(doc -> {
+                    boolean pinned = doc.exists();
+                    updatePinButton(btnGhim, pinned);
+                });
+    }
+    private void showToast(String msg) {
+        if (!isAdded()) return;
+        requireActivity().runOnUiThread(() -> {
+            if (getContext() != null)
+                Toast.makeText(getContext(), msg, Toast.LENGTH_SHORT).show();
+        });
     }
 }

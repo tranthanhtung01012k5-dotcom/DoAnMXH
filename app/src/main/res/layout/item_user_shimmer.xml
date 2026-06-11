@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:paddingVertical="10dp"
+    android:gravity="center_vertical">
+
+    <!-- Avatar giả -->
+    <View
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="#2C2C2E"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp">
+
+        <!-- Tên giả -->
+        <View
+            android:layout_width="130dp"
+            android:layout_height="12dp"
+            android:background="#2C2C2E"/>
+
+        <!-- Bio giả -->
+        <View
+            android:layout_width="90dp"
+            android:layout_height="10dp"
+            android:background="#2C2C2E"
+            android:layout_marginTop="7dp"/>
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -31,6 +31,7 @@ import com.example.doanmxh.HomePage.CommentModel;
 import com.example.doanmxh.HomePage.PostAdapter;
 import com.example.doanmxh.HomePage.PostDetailActivity;
 import com.example.doanmxh.HomePage.PostModel;
+import com.example.doanmxh.HomePage.ShareBottom;
 import com.example.doanmxh.Log_Res.LoginActivity;
 import com.example.doanmxh.MainActivity;
 import com.example.doanmxh.R;
@@ -40,6 +41,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
@@ -49,6 +51,7 @@ public class ProfileFragment extends Fragment {
     private List<CommentModel> myCommentList = new ArrayList<>();
     private View profileRoot;
     private CommentAdapter commentAdapter;
+    private ListenerRegistration listenerRegistration;
     private String myUid;
     private boolean isLoaded = false; // ← chống load lại
     private LinearLayout btnPost, btnComment, btnRepost;
@@ -291,7 +294,7 @@ public class ProfileFragment extends Fragment {
 
                 if (liked) {
                     likeRef.delete();
-                    postRef.update("so_luot_thich",
+                    postRef.update("so_like",
                             com.google.firebase.firestore.FieldValue.increment(-1));
                 } else {
                     java.util.Map<String, Object> likeData = new java.util.HashMap<>();
@@ -299,7 +302,7 @@ public class ProfileFragment extends Fragment {
                     likeData.put("thoi_gian",
                             com.google.firebase.firestore.FieldValue.serverTimestamp());
                     likeRef.set(likeData);
-                    postRef.update("so_luot_thich",
+                    postRef.update("so_like",
                             com.google.firebase.firestore.FieldValue.increment(1));
                 }
             }
@@ -311,10 +314,29 @@ public class ProfileFragment extends Fragment {
             }
 
             @Override
-            public void onRepostClick(PostModel post, int position) {}
+            public void onRepostClick(PostModel post, int position) {
+                Toast.makeText(getContext(), "Không thể repost bài mình ở trang cá nhân của mình", Toast.LENGTH_SHORT).show();
+            }
 
             @Override
-            public void onShareClick(PostModel post, int position) {}
+            public void onShareClick(PostModel post, int position) {
+                if (post == null) return;
+                if (!isAdded()) return;
+
+                ShareBottom sheet = ShareBottom.newInstance("Xem bài này nè!", post.getDocumentId());
+
+                // ✅ Thêm listener reload
+                sheet.setOnShareDoneListener(() -> {
+                    if (!isAdded()) return;
+                    myPostList.clear();
+                    postAdapter.notifyDataSetChanged();
+                    if (listenerRegistration != null) listenerRegistration.remove();
+                    listenerRegistration = null;
+                    loadMyThreads(auth.getCurrentUser().getUid());
+                });
+
+                sheet.show(getParentFragmentManager(), "ShareBottom");
+            }
 
             @Override
             public void onMoreOptionsClick(PostModel post, int position) {
@@ -387,10 +409,11 @@ public class ProfileFragment extends Fragment {
                     loadFollowingAvatars(uid);
 
                     // ← Chỉ load posts lần đầu
-                    if (!isLoaded) {
-                        isLoaded = true;
-                        loadMyThreads(uid);
-                    }
+//                    if (!isLoaded) {
+//                        isLoaded = true;
+//                        loadMyThreads(uid);
+//                    }
+                    loadMyThreads(uid);
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(getContext(), "Lỗi tải dữ liệu user",
@@ -447,12 +470,19 @@ public class ProfileFragment extends Fragment {
                                         .collection("luot_thich")
                                         .document(myUid).get()
                                         .addOnSuccessListener(likeDoc -> {
-                                            post.setLikedByMe(likeDoc.exists());
+                                            boolean liked = likeDoc.exists();
+
+                                            post.setLikedByMe(liked);
+
+                                            Log.d("thread",
+                                                    "post=" + post.getDocumentId()
+                                                            + " liked=" + liked);
                                             tempList.add(post);
                                             pendingCount[0]--;
                                             if (pendingCount[0] == 0) {
                                                 myPostList.addAll(tempList);
                                                 postAdapter.notifyDataSetChanged();
+
                                             }
                                         })
                                         .addOnFailureListener(e -> {
@@ -464,6 +494,9 @@ public class ProfileFragment extends Fragment {
                                                 postAdapter.notifyDataSetChanged();
                                             }
                                         });
+                                Log.d("thread", "loadMyThreads: " + post.getDocumentId());
+                                Log.d("thread", "setLike: " + post.isLikedByMe());
+
                             } else {
                                 tempList.add(post);
                                 pendingCount[0]--;
@@ -472,6 +505,8 @@ public class ProfileFragment extends Fragment {
                                     postAdapter.notifyDataSetChanged();
                                 }
                             }
+//                            Log.d("thread", "loadMyThreads: " + post.isLikedByMe());
+
                         };
 
                         if (nguoiDungId != null && !nguoiDungId.isEmpty()) {

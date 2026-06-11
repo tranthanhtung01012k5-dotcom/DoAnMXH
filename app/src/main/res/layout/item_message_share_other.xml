@@ -10,6 +10,39 @@
 
     <!-- Bubble -->
     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <!-- Avatar người gửi -->
+        <ImageView
+            android:id="@+id/imgSenderAvatar"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="top"
+            android:layout_marginEnd="8dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_person_outline_24" />
+
+        <!-- Nội dung -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Tên người gửi -->
+            <TextView
+                android:id="@+id/txtSenderName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="3dp"
+                android:text="Nguyễn Văn A"
+                android:textColor="#8E8E93"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <!-- Bubble -->
+    <LinearLayout
         android:layout_width="280dp"
         android:layout_height="wrap_content"
         android:layout_gravity="start"
@@ -121,5 +154,6 @@
         </LinearLayout>
 
     </LinearLayout>
-
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>

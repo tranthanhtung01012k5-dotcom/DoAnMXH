@@ -12,7 +12,10 @@ public class PostModel {
     // =========================================================
     // Firestore Fields
     // =========================================================
+    private boolean repostedByMe = false;
 
+    public boolean isRepostedByMe() { return repostedByMe; }
+    public void setRepostedByMe(boolean repostedByMe) { this.repostedByMe = repostedByMe; }
     @PropertyName("id")
     private int id = 0;
 

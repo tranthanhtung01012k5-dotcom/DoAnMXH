@@ -84,4 +84,6 @@ dependencies {
     //
     implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    //
+    implementation("com.facebook.shimmer:shimmer:0.5.0")
 }

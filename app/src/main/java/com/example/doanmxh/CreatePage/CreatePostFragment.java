@@ -32,6 +32,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 
@@ -279,7 +281,7 @@ public class CreatePostFragment extends Fragment {
         post.put("che_do_xem", "public");
         post.put("so_like", 0);
         post.put("so_binh_luan", 0);
-        post.put("so_repost",0);
+        post.put("so_repost", 0);
         post.put("so_share", 0);
         post.put("danh_sach_anh", imageUrls);
         post.put("bai_viet_cha_id", "");
@@ -289,25 +291,21 @@ public class CreatePostFragment extends Fragment {
         db.collection("bai_viet").add(post)
                 .addOnSuccessListener(ref -> {
                     dialog.dismiss();
-
-                    // ✅ Tắt bàn phím
                     hideKeyboard();
 
-                    Toast.makeText(requireContext(),
-                            "Đăng bài thành công",
-                            Toast.LENGTH_SHORT).show();
+                    // ── Lưu hashtag ──
+                    saveHashtags(noiDung, ref.getId());
+
+                    Toast.makeText(requireContext(), "Đăng bài thành công", Toast.LENGTH_SHORT).show();
 
                     edtNoiDung.setText("");
                     selectedImages.clear();
                     displayUris.clear();
                     imageUrls.clear();
-
                     adapter.notifyDataSetChanged();
 
                     requireActivity().runOnUiThread(() -> {
-                        BottomNavigationView nav =
-                                requireActivity().findViewById(R.id.bottomNav);
-
+                        BottomNavigationView nav = requireActivity().findViewById(R.id.bottomNav);
                         nav.setSelectedItemId(R.id.homeFragment);
                     });
                 })
@@ -315,6 +313,33 @@ public class CreatePostFragment extends Fragment {
                     dialog.dismiss();
                     Toast.makeText(requireContext(), "Đăng bài thất bại", Toast.LENGTH_SHORT).show();
                 });
+    }
+
+    private void saveHashtags(String noiDung, String postId) {
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("#\\w+");
+        java.util.regex.Matcher matcher = pattern.matcher(noiDung);
+
+        while (matcher.find()) {
+            String tag = matcher.group().substring(1).toLowerCase(); // bỏ dấu #, lowercase
+
+            // Document ID = tên hashtag, để dễ query sau này
+            DocumentReference tagRef = db.collection("hashtag").document(tag);
+
+            // Tạo/cập nhật document hashtag
+            Map<String, Object> tagData = new HashMap<>();
+            tagData.put("ten", tag);
+            tagData.put("so_bai_viet", FieldValue.increment(1));
+            tagData.put("lan_cuoi_su_dung", Timestamp.now());
+
+            tagRef.set(tagData, com.google.firebase.firestore.SetOptions.merge());
+
+            // Lưu bài viết vào subcollection hashtag/{tag}/bai_viet
+            Map<String, Object> postRef = new HashMap<>();
+            postRef.put("bai_viet_id", postId);
+            postRef.put("ngay_tao", Timestamp.now());
+
+            tagRef.collection("bai_viet").document(postId).set(postRef);
+        }
     }
     @Override
     public void onDestroyView() {

@@ -33,8 +33,8 @@
             android:layout_height="18dp"
             android:layout_gravity="bottom|end"
             android:background="@drawable/bg_circle_dark"
-            android:tint="@color/bg_primary"
-            android:src="@drawable/ic_add_circle" />
+            android:src="@drawable/ic_add_circle"
+            android:tint="@color/bg_primary" />
 
     </FrameLayout>
 
@@ -108,7 +108,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
-        android:background="@drawable/bg_repost_box"
+        android:background="@drawable/bg_repost"
         android:orientation="vertical"
         android:padding="10dp"
         android:visibility="gone"
@@ -146,13 +146,14 @@
             android:layout_marginTop="4dp"
             android:ellipsize="end"
             android:maxLines="3"
-            android:textColor="@color/text_secondary"
+            android:textColor="@color/text_primary"
             android:textSize="13sp" />
         <ImageView
             android:id="@+id/ivRepostImage"
             android:layout_width="match_parent"
             android:layout_height="220dp"
             android:scaleType="centerCrop"
+            android:background="@drawable/bg_repost"
             android:visibility="gone"/>
 
     </LinearLayout>

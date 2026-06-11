@@ -11,6 +11,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowInsetsController;
+import android.widget.ImageButton;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,7 @@ import com.bumptech.glide.Glide;
 import com.example.doanmxh.Mention.MentionHelper;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
+import com.example.doanmxh.Search.SearchActivity;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentChange;
@@ -36,8 +38,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import com.google.firebase.firestore.DocumentSnapshot;
 import android.widget.EditText;
 import com.google.firebase.firestore.DocumentReference;
@@ -47,6 +52,7 @@ import com.google.firebase.firestore.WriteBatch;
 public class HomeFragment extends Fragment {
     private com.google.android.material.imageview.ShapeableImageView ivUserAvatarPost;
     private EditText tvQuickPostHint;
+    private ImageButton btnSearch;
     private com.google.android.material.button.MaterialButton btnQuickPost;
     private RecyclerView rvFeed;
     private SwipeRefreshLayout swipeRefresh;
@@ -55,6 +61,8 @@ public class HomeFragment extends Fragment {
     private FirebaseFirestore db;
     private ListenerRegistration listenerRegistration;
     private MentionHelper mentionHelper;
+    private final Set<String> repostedByMe = new HashSet<>();
+    private final Set<String> processingLikes = new HashSet<>();
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -80,6 +88,7 @@ public class HomeFragment extends Fragment {
         ivUserAvatarPost = view.findViewById(R.id.ivUserAvatarPost);
         tvQuickPostHint  = view.findViewById(R.id.tvQuickPostHint);
         btnQuickPost     = view.findViewById(R.id.btnQuickPost);
+        btnSearch        = view.findViewById(R.id.btnSearch);
 // Load avatar người dùng hiện tại
         String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
                 ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
@@ -108,25 +117,37 @@ public class HomeFragment extends Fragment {
             }
             quickPost(content);
         });
+        btnSearch.setOnClickListener( v -> {
+            Intent intent = new Intent(getActivity(), SearchActivity.class);
+            startActivity(intent);
+        });
         mentionHelper = new MentionHelper(requireContext(), tvQuickPostHint , db,null);
 
         adapter = new PostAdapter(postList, new PostAdapter.OnPostActionListener() {
-
-
             @Override
             public void onLikeClick(PostModel post, int position) {
-                if (getContext() == null) return;
+
+                String docId = post.getDocumentId();
+
+                if (processingLikes.contains(docId)) return;
+                processingLikes.add(docId);
+
+                if (getContext() == null) {
+                    processingLikes.remove(docId);
+                    return;
+                }
 
                 String currentUid = FirebaseAuth.getInstance().getCurrentUser() != null
-                        ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
+                        ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                        : null;
 
                 if (currentUid == null) {
+                    processingLikes.remove(docId);
                     Toast.makeText(getContext(), "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
                     return;
                 }
 
-                // ✅ Luôn lấy post mới nhất từ postList theo documentId
-                String docId = post.getDocumentId();
+                // Luôn lấy post mới nhất từ postList theo documentId
                 PostModel currentPost = null;
                 int currentPosition = -1;
                 for (int i = 0; i < postList.size(); i++) {
@@ -136,7 +157,11 @@ public class HomeFragment extends Fragment {
                         break;
                     }
                 }
-                if (currentPost == null) return;
+
+                if (currentPost == null) {
+                    processingLikes.remove(docId);
+                    return;
+                }
 
                 final PostModel finalPost = currentPost;
                 final int finalPosition = currentPosition;
@@ -160,7 +185,10 @@ public class HomeFragment extends Fragment {
                                             finalPost.setLikedByMe(false);
                                             finalPost.setSoLuotThich(Math.max(0, finalPost.getSoLuotThich() - 1));
                                             adapter.notifyItemChanged(finalPosition, "LIKE_UPDATE");
-                                        });
+                                            processingLikes.remove(docId);
+                                        })
+                                        .addOnFailureListener(e -> Log.e("HomeFragment", "Lỗi unlike: " + e.getMessage()))
+                                        .addOnCompleteListener(t -> processingLikes.remove(docId)); // ✅ mở khóa
                             } else {
                                 db.collection("nguoi_dung")
                                         .document(currentUid)
@@ -186,13 +214,21 @@ public class HomeFragment extends Fragment {
                                                         finalPost.setLikedByMe(true);
                                                         finalPost.setSoLuotThich(finalPost.getSoLuotThich() + 1);
                                                         adapter.notifyItemChanged(finalPosition, "LIKE_UPDATE");
-                                                    });
+                                                        processingLikes.remove(docId);
+                                                    })
+                                                    .addOnFailureListener(e -> Log.e("HomeFragment", "Lỗi like: " + e.getMessage()))
+                                                    .addOnCompleteListener(t -> processingLikes.remove(docId)); // ✅ mở khóa
+                                        })
+                                        .addOnFailureListener(e -> {
+                                            Log.e("HomeFragment", "Lỗi load user khi like: " + e.getMessage());
+                                            processingLikes.remove(docId); // ✅ mở khóa khi lỗi
                                         });
                             }
                         })
-                        .addOnFailureListener(e ->
-                                Log.e("HomeFragment", "Lỗi like: " + e.getMessage())
-                        );
+                        .addOnFailureListener(e -> {
+                            Log.e("HomeFragment", "Lỗi like: " + e.getMessage());
+                            processingLikes.remove(docId); // ✅ mở khóa khi lỗi
+                        });
             }
 
             @Override
@@ -312,6 +348,57 @@ public class HomeFragment extends Fragment {
                     return;
                 }
 
+                String originalDocId = post.getDocumentId();
+
+                // ── Nếu đã repost → hỏi có muốn hủy không ──
+                if (repostedByMe.contains(originalDocId)) {
+                    new androidx.appcompat.app.AlertDialog.Builder(getContext())
+                            .setTitle("Hủy đăng lại")
+                            .setMessage("Bạn muốn xóa bài đăng lại này?")
+                            .setPositiveButton("Xóa", (dialog, which) -> {
+
+                                // Tìm bài repost của user này trong Firestore
+                                db.collection("bai_viet")
+                                        .whereEqualTo("nguoi_dung_id", currentUid)
+                                        .whereEqualTo("bai_viet_cha_id", originalDocId)
+                                        .whereEqualTo("is_repost", true)
+                                        .whereEqualTo("da_xoa", false)
+                                        .get()
+                                        .addOnSuccessListener(snap -> {
+                                            if (snap.isEmpty()) return;
+
+                                            WriteBatch batch = db.batch();
+
+                                            for (DocumentSnapshot doc : snap.getDocuments()) {
+                                                // Đánh dấu da_xoa = true thay vì xóa hẳn
+                                                batch.update(doc.getReference(), "da_xoa", true);
+                                            }
+
+                                            // Giảm so_repost của bài gốc
+                                            DocumentReference baiGocRef = db.collection("bai_viet")
+                                                    .document(originalDocId);
+                                            batch.update(baiGocRef, "so_repost", FieldValue.increment(-1));
+
+                                            batch.commit()
+                                                    .addOnSuccessListener(unused -> {
+                                                        repostedByMe.remove(originalDocId);
+                                                        post.setRepostedByMe(false);
+                                                        post.setSoRepost(Math.max(0, post.getSoRepost() - 1));
+                                                        adapter.notifyItemChanged(position, "REPOST_UPDATE");
+                                                        Toast.makeText(getContext(), "Đã xóa bài đăng lại", Toast.LENGTH_SHORT).show();
+                                                    })
+                                                    .addOnFailureListener(e ->
+                                                            Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                                        })
+                                        .addOnFailureListener(e ->
+                                                Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                            })
+                            .setNegativeButton("Hủy", null)
+                            .show();
+                    return;
+                }
+
+                // ── Chưa repost → hỏi có muốn đăng lại không ──
                 new androidx.appcompat.app.AlertDialog.Builder(getContext())
                         .setTitle("Đăng lại bài viết")
                         .setMessage("Bạn muốn đăng lại bài này?")
@@ -320,18 +407,19 @@ public class HomeFragment extends Fragment {
                             Map<String, Object> repost = new HashMap<>();
                             repost.put("nguoi_dung_id", currentUid);
                             repost.put("noi_dung", "");
-                            repost.put("ngay_tao", com.google.firebase.Timestamp.now());
+                            repost.put("ngay_tao", Timestamp.now());
                             repost.put("so_like", 0);
                             repost.put("so_binh_luan", 0);
+                            repost.put("so_repost", 0);
+                            repost.put("so_share", 0);
                             repost.put("da_xoa", false);
+                            repost.put("che_do_xem", "public");
                             repost.put("hinh_anh", new ArrayList<>());
-                            repost.put("bai_viet_cha_id", post.getDocumentId());
+                            repost.put("danh_sach_anh", new ArrayList<>());
+                            repost.put("bai_viet_cha_id", originalDocId);
                             repost.put("is_repost", true);
 
-                            DocumentReference baiGocRef = db.collection("bai_viet")
-                                    .document(post.getDocumentId());
-
-                            // Dùng batch: tạo repost + tăng so_repost cùng lúc
+                            DocumentReference baiGocRef = db.collection("bai_viet").document(originalDocId);
                             WriteBatch batch = db.batch();
 
                             DocumentReference repostRef = db.collection("bai_viet").document();
@@ -340,11 +428,11 @@ public class HomeFragment extends Fragment {
 
                             batch.commit()
                                     .addOnSuccessListener(unused -> {
-                                        Toast.makeText(getContext(), "Đã đăng lại!", Toast.LENGTH_SHORT).show();
-
-                                        // Cập nhật UI local không cần reload
+                                        repostedByMe.add(originalDocId);
+                                        post.setRepostedByMe(true);
                                         post.setSoRepost(post.getSoRepost() + 1);
                                         adapter.notifyItemChanged(position, "REPOST_UPDATE");
+                                        Toast.makeText(getContext(), "Đã đăng lại!", Toast.LENGTH_SHORT).show();
                                     })
                                     .addOnFailureListener(e ->
                                             Toast.makeText(getContext(), "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
@@ -375,8 +463,23 @@ public class HomeFragment extends Fragment {
             public void onMoreOptionsClick(PostModel post, int position) {
                 PostOptionBottomSheet sheet = new PostOptionBottomSheet(post.getDocumentId());
 
-                sheet.setOnPostDeletedListener(deletedId -> {
-                    // Firestore listener tự bắt REMOVED event, không cần làm thêm
+                sheet.setOnPostDeletedListener((deletedId, originalPostId) -> {
+                    // ✅ Nếu là bài repost bị xóa → reset trạng thái repost của bài gốc
+                    if (originalPostId != null) {
+                        repostedByMe.remove(originalPostId);
+
+                        // Cập nhật PostModel trong postList
+                        for (int i = 0; i < postList.size(); i++) {
+                            PostModel item = postList.get(i);
+                            if (item.getDocumentId().equals(originalPostId)) {
+                                item.setRepostedByMe(false);
+                                item.setSoRepost(Math.max(0, item.getSoRepost() - 1));
+                                adapter.notifyItemChanged(i, "REPOST_UPDATE");
+                                break;
+                            }
+                        }
+                    }
+                    // Firestore listener tự bắt REMOVED event cho deletedId, không cần làm thêm
                 });
 
                 // ✅ Thêm listener xóa bài bị hạn chế ngay lập tức
@@ -539,7 +642,19 @@ public class HomeFragment extends Fragment {
                                                         .addOnSuccessListener(likeDoc -> {
 
                                                             post.setLikedByMe(likeDoc.exists());
-
+// Check xem user đã repost bài này chưa
+                                                            db.collection("bai_viet")
+                                                                    .whereEqualTo("nguoi_dung_id", myUid)
+                                                                    .whereEqualTo("bai_viet_cha_id", post.getDocumentId())
+                                                                    .whereEqualTo("is_repost", true)
+                                                                    .whereEqualTo("da_xoa", false)
+                                                                    .get()
+                                                                    .addOnSuccessListener(repostSnap -> {
+                                                                        if (!repostSnap.isEmpty()) {
+                                                                            repostedByMe.add(post.getDocumentId());
+                                                                            post.setRepostedByMe(true);
+                                                                        }
+                                                                    });
                                                             String authorUid = post.getNguoiDungId();
 
                                                             // check follow
@@ -767,11 +882,19 @@ public class HomeFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        if (listenerRegistration == null) {
-            postList.clear();
-            adapter.notifyDataSetChanged();
-            loadFromFirestore();
+
+        repostedByMe.clear();
+
+        postList.clear();
+        adapter.notifyDataSetChanged();
+
+        if (listenerRegistration != null) {
+            listenerRegistration.remove();
         }
+
+        listenerRegistration = null;
+
+        loadFromFirestore();
     }
 
     @Override
@@ -1087,10 +1210,37 @@ public class HomeFragment extends Fragment {
                     if (imm != null) imm.hideSoftInputFromWindow(tvQuickPostHint.getWindowToken(), 0);
 
                     btnQuickPost.setEnabled(true);
+                    saveHashtags(content, ref.getId());
                     Toast.makeText(getContext(), "Đã đăng!", Toast.LENGTH_SHORT).show();})
                 .addOnFailureListener(e -> {
                     btnQuickPost.setEnabled(true);
                     Toast.makeText(getContext(), "Lỗi đăng bài: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
+    }
+    private void saveHashtags(String noiDung, String postId) {
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("#\\w+");
+        java.util.regex.Matcher matcher = pattern.matcher(noiDung);
+
+        while (matcher.find()) {
+            String tag = matcher.group().substring(1).toLowerCase(); // bỏ dấu #, lowercase
+
+            // Document ID = tên hashtag, để dễ query sau này
+            DocumentReference tagRef = db.collection("hashtag").document(tag);
+
+            // Tạo/cập nhật document hashtag
+            Map<String, Object> tagData = new HashMap<>();
+            tagData.put("ten", tag);
+            tagData.put("so_bai_viet", FieldValue.increment(1));
+            tagData.put("lan_cuoi_su_dung", Timestamp.now());
+
+            tagRef.set(tagData, com.google.firebase.firestore.SetOptions.merge());
+
+            // Lưu bài viết vào subcollection hashtag/{tag}/bai_viet
+            Map<String, Object> postRef = new HashMap<>();
+            postRef.put("bai_viet_id", postId);
+            postRef.put("ngay_tao", Timestamp.now());
+
+            tagRef.collection("bai_viet").document(postId).set(postRef);
+        }
     }
 }

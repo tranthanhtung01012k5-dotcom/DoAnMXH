@@ -196,6 +196,7 @@
                     </FrameLayout>
 
                     <TextView
+                        android:id="@+id/btnInbox"
                         android:layout_width="wrap_content"
                         android:layout_height="36dp"
                         android:layout_marginEnd="8dp"

@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
+import com.example.doanmxh.Search.SearchResultActivity;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.firestore.FirebaseFirestore;
 
@@ -110,7 +111,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
 // nếu đã expand → show full
         if (post.isExpanded()) {
 
-            holder.tvContent.setText(content);
+            holder.tvContent.setText(
+                    highlightText(holder.tvContent, content)
+            );
             holder.tvContent.setMaxLines(Integer.MAX_VALUE);
             holder.tvContent.setEllipsize(null);
             holder.tvContent.setMovementMethod(null);
@@ -131,8 +134,9 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
                 ).build();
 
                 if (layout.getLineCount() <= 3) {
-                    holder.tvContent.setText(content);
-                    return;
+                    holder.tvContent.setText(
+                            highlightText(holder.tvContent, content)
+                    );                    return;
                 }
 
                 CharSequence visibleText = TextUtils.ellipsize(
@@ -564,74 +568,80 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         postList.remove(position);
         notifyItemRemoved(position);
     }
-    private SpannableString highlightMentions(TextView textView, String text) {
+    private SpannableString highlightText(TextView textView, String text) {
 
         SpannableString spannable = new SpannableString(text);
 
-        Pattern pattern = Pattern.compile("@\\w+");
-        Matcher matcher = pattern.matcher(text);
+        // ── Mention @username ──
+        Pattern mentionPattern = Pattern.compile("@\\w+");
+        Matcher mentionMatcher = mentionPattern.matcher(text);
 
-        while (matcher.find()) {
-
-            String mention = matcher.group(); // @tung
+        while (mentionMatcher.find()) {
+            String mention  = mentionMatcher.group();
             String username = mention.substring(1);
 
             ClickableSpan clickableSpan = new ClickableSpan() {
                 @Override
                 public void onClick(@NonNull View widget) {
-
                     Context ctx = widget.getContext();
-
                     FirebaseFirestore.getInstance()
                             .collection("nguoi_dung")
                             .whereEqualTo("ten_dang_nhap", username)
                             .limit(1)
                             .get()
-                            .addOnSuccessListener(queryDocumentSnapshots -> {
-
-                                if (!queryDocumentSnapshots.isEmpty()) {
-
-                                    String uid =
-                                            queryDocumentSnapshots
-                                                    .getDocuments()
-                                                    .get(0)
-                                                    .getId();
-
-                                    Log.d("DEBUG", "uid = " + uid);
-
-                                    Intent intent =
-                                            new Intent(ctx, UserProfileActivity.class);
-
+                            .addOnSuccessListener(snap -> {
+                                if (!snap.isEmpty()) {
+                                    String uid = snap.getDocuments().get(0).getId();
+                                    Intent intent = new Intent(ctx, UserProfileActivity.class);
                                     intent.putExtra("user_uid", uid);
-
                                     ctx.startActivity(intent);
                                 }
                             });
                 }
 
                 @Override
-                public void updateDrawState(
-                        @NonNull android.text.TextPaint ds
-                ) {
-                    super.updateDrawState(ds);
-
+                public void updateDrawState(@NonNull TextPaint ds) {
                     ds.setColor(Color.parseColor("#1DA1F2"));
                     ds.setUnderlineText(false);
                 }
             };
 
-            spannable.setSpan(
-                    clickableSpan,
-                    matcher.start(),
-                    matcher.end(),
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            );
+            spannable.setSpan(clickableSpan,
+                    mentionMatcher.start(), mentionMatcher.end(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
 
-        textView.setMovementMethod(
-                android.text.method.LinkMovementMethod.getInstance()
-        );
+        // ── Hashtag #topic ──
+        Pattern hashtagPattern = Pattern.compile("#\\w+");
+        Matcher hashtagMatcher = hashtagPattern.matcher(text);
 
+        while (hashtagMatcher.find()) {
+            String hashtag = hashtagMatcher.group();          // "#android"
+            String topic   = hashtag.substring(1);            // "android"
+
+            ClickableSpan hashSpan = new ClickableSpan() {
+                @Override
+                public void onClick(@NonNull View widget) {
+                    // Tuỳ bạn: mở màn search với keyword = hashtag
+                    Context ctx = widget.getContext();
+                    Intent intent = new Intent(ctx, SearchResultActivity.class);
+                    intent.putExtra("keyword", hashtag);
+                    ctx.startActivity(intent);
+                }
+
+                @Override
+                public void updateDrawState(@NonNull TextPaint ds) {
+                    ds.setColor(Color.parseColor("#1DA1F2"));
+                    ds.setUnderlineText(false);
+                }
+            };
+
+            spannable.setSpan(hashSpan,
+                    hashtagMatcher.start(), hashtagMatcher.end(),
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+
+        textView.setMovementMethod(LinkMovementMethod.getInstance());
         textView.setHighlightColor(Color.TRANSPARENT);
 
         return spannable;

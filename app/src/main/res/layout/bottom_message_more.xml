@@ -65,9 +65,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Đánh dấu là chưa đọc"
-            android:textSize="16sp"
-            android:textColor="@color/text_secondary" />
+            android:text="Lưu trữ tin nhắn"
+            android:textColor="@color/text_secondary"
+            android:textSize="16sp" />
 
         <ImageView
             android:layout_width="24dp"
@@ -120,6 +120,7 @@
         android:background="@color/bg_primary">
 
         <TextView
+            android:id ="@+id/tvGhim"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"

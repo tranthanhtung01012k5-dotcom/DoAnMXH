@@ -20,8 +20,10 @@ import com.example.doanmxh.MainActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AccountSwitcherFragment extends BottomSheetDialogFragment {
@@ -42,44 +44,103 @@ public class AccountSwitcherFragment extends BottomSheetDialogFragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // ✅ Lưu context vào local variable NGAY LÚC còn attached
         final Context ctx = requireContext().getApplicationContext();
 
         RecyclerView rv = view.findViewById(R.id.rvAccounts);
         rv.setLayoutManager(new LinearLayoutManager(ctx));
 
-        List<AccountManager.SavedAccount> accounts = AccountManager.getAll(ctx);
+        // ── Lấy danh sách tài khoản đã lưu ──────────────────────────────────
+        List<AccountManager.SavedAccount> saved = AccountManager.getAll(ctx);
 
-        AccountAdapter adapter = new AccountAdapter(accounts, new AccountAdapter.Listener() {
-            @Override
-            public void onSelect(AccountManager.SavedAccount account) {
-                dismiss();
-                switchAccount(ctx, account);   // truyền ctx vào, không dùng requireContext()
-            }
+        // ── Lấy tài khoản đang đăng nhập hiện tại ───────────────────────────
+        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        String currentEmail = currentUser != null ? currentUser.getEmail() : null;
 
-            @Override
-            public void onRemove(AccountManager.SavedAccount account) {
-                AccountManager.removeAccount(ctx, account.email);
-                accounts.remove(account);
-                rv.getAdapter().notifyDataSetChanged();
-                Toast.makeText(ctx, "Đã xóa " + account.displayName,
-                        Toast.LENGTH_SHORT).show();
+        // ── Ghép danh sách: current lên đầu, bỏ trùng email ─────────────────
+        List<AccountManager.SavedAccount> displayList = new ArrayList<>();
+
+        if (currentUser != null) {
+            // Tìm trong saved xem có entry cho current user không
+            AccountManager.SavedAccount currentEntry = null;
+            for (AccountManager.SavedAccount a : saved) {
+                if (a.email.equalsIgnoreCase(currentEmail)) {
+                    currentEntry = a;
+                    break;
+                }
             }
-        });
+            // Nếu có → dùng entry đó; nếu không → tạo entry tạm (password rỗng, không switch được)
+            if (currentEntry != null) {
+                displayList.add(currentEntry);
+            } else {
+                String name = currentUser.getDisplayName();
+                displayList.add(new AccountManager.SavedAccount(
+                        currentEmail,
+                        "",   // không có password → không thể re-login
+                        (name != null && !name.isEmpty()) ? name : currentEmail,
+                        currentUser.getUid()
+                ));
+            }
+        }
+
+        // Thêm các tài khoản đã lưu khác (bỏ current)
+        for (AccountManager.SavedAccount a : saved) {
+            if (!a.email.equalsIgnoreCase(currentEmail)) {
+                displayList.add(a);
+            }
+        }
+
+        AccountAdapter adapter = new AccountAdapter(
+                displayList,
+                currentEmail,
+                new AccountAdapter.Listener() {
+                    @Override
+                    public void onSelect(AccountManager.SavedAccount account) {
+                        // Không làm gì nếu đã là tài khoản hiện tại
+                        if (account.email.equalsIgnoreCase(currentEmail)) {
+                            Toast.makeText(ctx, "Đây là tài khoản đang đăng nhập",
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        if (account.password.isEmpty()) {
+                            Toast.makeText(ctx,
+                                    "Tài khoản này chưa được lưu mật khẩu.\nVui lòng đăng nhập lại và tick Ghi nhớ.",
+                                    Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        dismiss();
+                        switchAccount(ctx, account);
+                    }
+
+                    @Override
+                    public void onRemove(AccountManager.SavedAccount account) {
+                        // Không cho xóa tài khoản đang đăng nhập
+                        if (account.email.equalsIgnoreCase(currentEmail)) {
+                            Toast.makeText(ctx, "Không thể xóa tài khoản đang đăng nhập",
+                                    Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        AccountManager.removeAccount(ctx, account.email);
+                        displayList.remove(account);
+                        rv.getAdapter().notifyDataSetChanged();
+                        Toast.makeText(ctx, "Đã xóa " + account.displayName,
+                                Toast.LENGTH_SHORT).show();
+                    }
+                });
 
         rv.setAdapter(adapter);
 
+        // Nút thêm tài khoản
         view.findViewById(R.id.btnAddAccount).setOnClickListener(v -> {
             dismiss();
             markCurrentUserOffline();
             FirebaseAuth.getInstance().signOut();
             Intent intent = new Intent(ctx, LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+            ctx.startActivity(intent);
         });
     }
 
-    // ── Đánh dấu offline ──────────────────────────────────────────────────────
+    // ── Offline ───────────────────────────────────────────────────────────────
 
     private void markCurrentUserOffline() {
         FirebaseAuth auth = FirebaseAuth.getInstance();
@@ -91,13 +152,12 @@ public class AccountSwitcherFragment extends BottomSheetDialogFragment {
         }
     }
 
-    // ── Switch account — nhận ctx từ ngoài, KHÔNG gọi requireContext() ────────
+    // ── Switch ────────────────────────────────────────────────────────────────
 
     private void switchAccount(final Context ctx, AccountManager.SavedAccount account) {
         FirebaseAuth auth = FirebaseAuth.getInstance();
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
-        // Đánh dấu user cũ offline
         if (auth.getCurrentUser() != null) {
             db.collection("nguoi_dung")
                     .document(auth.getCurrentUser().getUid())
@@ -108,22 +168,17 @@ public class AccountSwitcherFragment extends BottomSheetDialogFragment {
         auth.signInWithEmailAndPassword(account.email, account.password)
                 .addOnSuccessListener(authResult -> {
                     String newUid = authResult.getUser().getUid();
-
                     db.collection("nguoi_dung")
                             .document(newUid)
                             .update("trang_thai_hoat_dong", true)
                             .addOnSuccessListener(unused -> {
-
-                                // ✅ Dùng ctx (ApplicationContext) — không bao giờ null
                                 ctx.getSharedPreferences("login_pref", Context.MODE_PRIVATE)
                                         .edit()
                                         .putBoolean("remember_login", true)
                                         .apply();
-
                                 Toast.makeText(ctx,
                                         "Đã chuyển sang " + account.displayName,
                                         Toast.LENGTH_SHORT).show();
-
                                 Intent intent = new Intent(ctx, MainActivity.class);
                                 intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
                                         | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -132,14 +187,12 @@ public class AccountSwitcherFragment extends BottomSheetDialogFragment {
                             .addOnFailureListener(e ->
                                     Toast.makeText(ctx,
                                             "Không cập nhật được trạng thái: " + e.getMessage(),
-                                            Toast.LENGTH_LONG).show()
-                            );
+                                            Toast.LENGTH_LONG).show());
                 })
                 .addOnFailureListener(e ->
                         Toast.makeText(ctx,
                                 "Chuyển tài khoản thất bại: " + e.getMessage(),
-                                Toast.LENGTH_LONG).show()
-                );
+                                Toast.LENGTH_LONG).show());
     }
 
     // ── Adapter ───────────────────────────────────────────────────────────────
@@ -153,6 +206,7 @@ public class AccountSwitcherFragment extends BottomSheetDialogFragment {
         }
 
         private final List<AccountManager.SavedAccount> data;
+        private final String currentEmail;
         private final Listener listener;
 
         private static final int[] AVATAR_COLORS = {
@@ -160,9 +214,12 @@ public class AccountSwitcherFragment extends BottomSheetDialogFragment {
                 0xFFB36AE2, 0xFFE05C7A, 0xFF4ECDC4
         };
 
-        AccountAdapter(List<AccountManager.SavedAccount> data, Listener listener) {
-            this.data     = data;
-            this.listener = listener;
+        AccountAdapter(List<AccountManager.SavedAccount> data,
+                       String currentEmail,
+                       Listener listener) {
+            this.data         = data;
+            this.currentEmail = currentEmail;
+            this.listener     = listener;
         }
 
         @NonNull
@@ -176,13 +233,25 @@ public class AccountSwitcherFragment extends BottomSheetDialogFragment {
         @Override
         public void onBindViewHolder(@NonNull VH h, int position) {
             AccountManager.SavedAccount a = data.get(position);
+            boolean isCurrent = a.email.equalsIgnoreCase(currentEmail);
 
+            // Avatar
             String initial = a.displayName.substring(0, 1).toUpperCase();
             h.tvAvatar.setText(initial);
             h.tvAvatar.getBackground().setTint(AVATAR_COLORS[position % AVATAR_COLORS.length]);
 
             h.tvName.setText(a.displayName);
-            h.tvEmail.setText(a.email);
+
+            // Email + badge "Đang đăng nhập" nếu là current
+            if (isCurrent) {
+                h.tvEmail.setText(a.email + "  ✓ Đang đăng nhập");
+                h.tvEmail.setTextColor(0xFF43C59E);   // màu xanh nổi bật
+                h.btnRemove.setVisibility(View.GONE); // ẩn nút xóa
+            } else {
+                h.tvEmail.setText(a.email);
+                h.tvEmail.setTextColor(0xFF8E8E93);
+                h.btnRemove.setVisibility(View.VISIBLE);
+            }
 
             h.itemView.setOnClickListener(v -> listener.onSelect(a));
             h.btnRemove.setOnClickListener(v -> listener.onRemove(a));

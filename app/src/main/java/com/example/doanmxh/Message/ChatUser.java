@@ -13,7 +13,10 @@ public class ChatUser {
     public void setDaDoc(Boolean daDoc) {
         this.daDoc = daDoc;
     }
+    private boolean isPinned;
 
+    public boolean isPinned() { return isPinned; }
+    public void setPinned(boolean pinned) { isPinned = pinned; }
     private Boolean daDoc;
     @PropertyName("ten_dang_nhap")
     private String TenNguoiGui;

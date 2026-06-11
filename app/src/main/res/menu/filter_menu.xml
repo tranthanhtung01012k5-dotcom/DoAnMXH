@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/filter_after_day"
+        android:title="Sau ngày"/>
+
+    <item
+        android:id="@+id/filter_before_day"
+        android:title="Trước ngày"/>
+
+    <item
+        android:id="@+id/filter_from_profile"
+        android:title="Từ trang cá nhân"/>
+
+</menu>

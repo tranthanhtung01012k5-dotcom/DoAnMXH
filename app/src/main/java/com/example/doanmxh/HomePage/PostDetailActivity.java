@@ -1,5 +1,6 @@
 package com.example.doanmxh.HomePage;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
@@ -35,27 +36,33 @@ import com.example.doanmxh.Mention.MentionHelper;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class PostDetailActivity extends BaseActivity {
 
+    private final Set<String> repostedByMe = new HashSet<>();
     public static final String EXTRA_POST_ID = "post_id";
     private String replyToCommentId = null;
     private RecyclerView rvDetail;
     private EditText edtComment;
     private ImageButton btnSend, btnBack;
     private ShapeableImageView ivMyAvatar;
-
+    private final Set<String> processingLikes = new HashSet<>();
     private FirebaseFirestore db;
     private String postId;
     private String myUid;
@@ -128,30 +135,149 @@ public class PostDetailActivity extends BaseActivity {
 
             @Override
             public void onRepostClick(PostModel post, int position) {
+
                 if (myUid == null) {
-                    Toast.makeText(PostDetailActivity.this, "Vui lòng đăng nhập", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(PostDetailActivity.this,
+                            "Vui lòng đăng nhập",
+                            Toast.LENGTH_SHORT).show();
                     return;
                 }
-                new androidx.appcompat.app.AlertDialog.Builder(PostDetailActivity.this)
+
+                String originalDocId = post.getDocumentId();
+
+                // Đã repost -> cho hủy
+                if (repostedByMe.contains(originalDocId)) {
+
+                    new AlertDialog.Builder(PostDetailActivity.this)
+                            .setTitle("Hủy đăng lại")
+                            .setMessage("Bạn muốn xóa bài đăng lại này?")
+                            .setPositiveButton("Xóa", (dialog, which) -> {
+
+                                db.collection("bai_viet")
+                                        .whereEqualTo("nguoi_dung_id", myUid)
+                                        .whereEqualTo("bai_viet_cha_id", originalDocId)
+                                        .whereEqualTo("is_repost", true)
+                                        .whereEqualTo("da_xoa", false)
+                                        .get()
+                                        .addOnSuccessListener(snap -> {
+
+                                            if (snap.isEmpty()) return;
+
+                                            WriteBatch batch = db.batch();
+
+                                            for (DocumentSnapshot doc : snap.getDocuments()) {
+                                                batch.update(doc.getReference(),
+                                                        "da_xoa",
+                                                        true);
+                                            }
+
+                                            DocumentReference baiGocRef =
+                                                    db.collection("bai_viet")
+                                                            .document(originalDocId);
+
+                                            batch.update(
+                                                    baiGocRef,
+                                                    "so_repost",
+                                                    FieldValue.increment(-1)
+                                            );
+
+                                            batch.commit()
+                                                    .addOnSuccessListener(unused -> {
+
+                                                        repostedByMe.remove(originalDocId);
+
+                                                        post.setRepostedByMe(false);
+                                                        post.setSoRepost(
+                                                                Math.max(0,
+                                                                        post.getSoRepost() - 1)
+                                                        );
+
+                                                        postAdapter.notifyItemChanged(
+                                                                position,
+                                                                "REPOST_UPDATE"
+                                                        );
+
+                                                        Toast.makeText(
+                                                                PostDetailActivity.this,
+                                                                "Đã xóa bài đăng lại",
+                                                                Toast.LENGTH_SHORT
+                                                        ).show();
+                                                    });
+                                        });
+                            })
+                            .setNegativeButton("Hủy", null)
+                            .show();
+
+                    return;
+                }
+
+                // Chưa repost -> đăng lại
+                new AlertDialog.Builder(PostDetailActivity.this)
                         .setTitle("Đăng lại bài viết")
                         .setMessage("Bạn muốn đăng lại bài này?")
                         .setPositiveButton("Đăng lại", (dialog, which) -> {
+
                             Map<String, Object> repost = new HashMap<>();
+
                             repost.put("nguoi_dung_id", myUid);
                             repost.put("noi_dung", "");
-                            repost.put("ngay_tao", new Date());
+                            repost.put("ngay_tao", Timestamp.now());
                             repost.put("so_like", 0);
                             repost.put("so_binh_luan", 0);
+                            repost.put("so_repost", 0);
+                            repost.put("so_share", 0);
                             repost.put("da_xoa", false);
+                            repost.put("che_do_xem", "public");
                             repost.put("hinh_anh", new ArrayList<>());
-                            repost.put("bai_viet_cha_id", post.getDocumentId());
+                            repost.put("danh_sach_anh", new ArrayList<>());
+                            repost.put("bai_viet_cha_id", originalDocId);
                             repost.put("is_repost", true);
 
-                            db.collection("bai_viet").add(repost)
-                                    .addOnSuccessListener(ref -> Toast.makeText(PostDetailActivity.this,
-                                            "Đã đăng lại bài viết", Toast.LENGTH_SHORT).show())
-                                    .addOnFailureListener(e -> Toast.makeText(PostDetailActivity.this,
-                                            "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                            DocumentReference baiGocRef =
+                                    db.collection("bai_viet")
+                                            .document(originalDocId);
+
+                            WriteBatch batch = db.batch();
+
+                            DocumentReference repostRef =
+                                    db.collection("bai_viet")
+                                            .document();
+
+                            batch.set(repostRef, repost);
+
+                            batch.update(
+                                    baiGocRef,
+                                    "so_repost",
+                                    FieldValue.increment(1)
+                            );
+
+                            batch.commit()
+                                    .addOnSuccessListener(unused -> {
+
+                                        repostedByMe.add(originalDocId);
+
+                                        post.setRepostedByMe(true);
+                                        post.setSoRepost(
+                                                post.getSoRepost() + 1
+                                        );
+
+                                        postAdapter.notifyItemChanged(
+                                                position,
+                                                "REPOST_UPDATE"
+                                        );
+
+                                        Toast.makeText(
+                                                PostDetailActivity.this,
+                                                "Đã đăng lại!",
+                                                Toast.LENGTH_SHORT
+                                        ).show();
+                                    })
+                                    .addOnFailureListener(e ->
+                                            Toast.makeText(
+                                                    PostDetailActivity.this,
+                                                    "Lỗi: " + e.getMessage(),
+                                                    Toast.LENGTH_SHORT
+                                            ).show());
                         })
                         .setNegativeButton("Hủy", null)
                         .show();
@@ -213,7 +339,9 @@ public class PostDetailActivity extends BaseActivity {
         commentAdapter = new CommentAdapter(
                 commentList, postId,
                 new CommentAdapter.OnCommentActionListener() {
-                    @Override public void onCommentClick(CommentModel comment, int position) {}
+                    @Override public void onCommentClick(CommentModel comment, int position) {
+                        Toast.makeText(PostDetailActivity.this,"Vui lòng nhập chữ để comment",Toast.LENGTH_SHORT).show();
+                    }
 
                     @Override
                     public void onReplyClick(CommentModel comment, int position) {
@@ -376,6 +504,7 @@ public class PostDetailActivity extends BaseActivity {
     // ════════════════════════════════════════════════════════
     //  LOAD BÀI VIẾT
     // ════════════════════════════════════════════════════════
+
     private void loadPost() {
         db.collection("bai_viet").document(postId).get()
                 .addOnSuccessListener(doc -> {
@@ -444,9 +573,46 @@ public class PostDetailActivity extends BaseActivity {
     }
 
     private void checkRepost(PostModel post, Runnable onDone) {
+
+        if (myUid == null) {
+            continueLoadParent(post, onDone);
+            return;
+        }
+
+        db.collection("bai_viet")
+                .whereEqualTo("nguoi_dung_id", myUid)
+                .whereEqualTo("bai_viet_cha_id", post.getDocumentId())
+                .whereEqualTo("is_repost", true)
+                .whereEqualTo("da_xoa", false)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snapshot -> {
+
+                    boolean reposted = !snapshot.isEmpty();
+
+                    post.setRepostedByMe(reposted);
+
+                    if (reposted) {
+                        repostedByMe.add(post.getDocumentId());
+                    } else {
+                        repostedByMe.remove(post.getDocumentId());
+                    }
+
+                    continueLoadParent(post, onDone);
+                })
+                .addOnFailureListener(e ->
+                        continueLoadParent(post, onDone));
+    }
+
+    private void continueLoadParent(PostModel post, Runnable onDone) {
+
         String chaId = post.getBaiVietChaId();
-        if (chaId == null || chaId.isEmpty()) { onDone.run(); return; }
-        loadBaiVietCha(post, chaId, onDone);
+
+        if (chaId == null || chaId.isEmpty()) {
+            onDone.run();
+        } else {
+            loadBaiVietCha(post, chaId, onDone);
+        }
     }
 
     private void loadBaiVietCha(PostModel post, String chaId, Runnable onDone) {
@@ -626,38 +792,100 @@ public class PostDetailActivity extends BaseActivity {
     //  LIKE BÀI VIẾT
     // ════════════════════════════════════════════════════════
     private void handleLikePost(PostModel post, int position) {
-        if (myUid == null) return;
-        db.collection("bai_viet").document(postId)
-                .collection("luot_thich").document(myUid).get()
+
+        String postId = post.getDocumentId();
+
+        String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : null;
+
+        if (processingLikes.contains(postId)) return;
+        processingLikes.add(postId);
+
+        if (myUid == null) {
+            processingLikes.remove(postId);
+            Toast.makeText(this,
+                    "Vui lòng đăng nhập",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        db.collection("bai_viet")
+                .document(postId)
+                .collection("luot_thich")
+                .document(myUid)
+                .get()
                 .addOnSuccessListener(doc -> {
+
                     if (doc.exists()) {
-                        doc.getReference().delete();
-                        db.collection("bai_viet").document(postId)
-                                .update("so_like", FieldValue.increment(-1));
-                        post.setLikedByMe(false);
-                        post.setSoLuotThich(Math.max(0, post.getSoLuotThich() - 1));
-                        postAdapter.notifyItemChanged(0, "LIKE_UPDATE");
+
+                        // Unlike
+                        doc.getReference().delete()
+                                .addOnSuccessListener(unused -> {
+
+                                    db.collection("bai_viet")
+                                            .document(postId)
+                                            .update("so_like",
+                                                    FieldValue.increment(-1));
+
+                                    post.setLikedByMe(false);
+                                    post.setSoLuotThich(
+                                            Math.max(0,
+                                                    post.getSoLuotThich() - 1)
+                                    );
+
+                                    postAdapter.notifyItemChanged(position, "LIKE_UPDATE");
+                                    processingLikes.remove(postId);
+                                })
+                                .addOnFailureListener(e ->
+                                        processingLikes.remove(postId));
+
                     } else {
-                        db.collection("nguoi_dung").document(myUid).get()
+
+                        // Like
+                        db.collection("nguoi_dung")
+                                .document(myUid)
+                                .get()
                                 .addOnSuccessListener(userDoc -> {
+
                                     Map<String, Object> likeData = new HashMap<>();
                                     likeData.put("nguoi_dung_id", myUid);
                                     likeData.put("ho_va_ten",
-                                            userDoc.exists() ? userDoc.getString("ho_va_ten") : "Ẩn danh");
+                                            userDoc.exists()
+                                                    ? userDoc.getString("ho_va_ten")
+                                                    : "Ẩn danh");
                                     likeData.put("ngay_like", new Date());
 
-                                    db.collection("bai_viet").document(postId)
-                                            .collection("luot_thich").document(myUid).set(likeData);
-                                    db.collection("bai_viet").document(postId)
-                                            .update("so_like", FieldValue.increment(1));
-                                    post.setLikedByMe(true);
-                                    post.setSoLuotThich(post.getSoLuotThich() + 1);
-                                    postAdapter.notifyItemChanged(0, "LIKE_UPDATE");
-                                });
-                    }
-                });
-    }
+                                    db.collection("bai_viet")
+                                            .document(postId)
+                                            .collection("luot_thich")
+                                            .document(myUid)
+                                            .set(likeData)
+                                            .addOnSuccessListener(unused -> {
 
+                                                db.collection("bai_viet")
+                                                        .document(postId)
+                                                        .update("so_like",
+                                                                FieldValue.increment(1));
+
+                                                post.setLikedByMe(true);
+                                                post.setSoLuotThich(
+                                                        post.getSoLuotThich() + 1
+                                                );
+
+                                                postAdapter.notifyItemChanged(position, "LIKE_UPDATE");
+                                                processingLikes.remove(postId);
+                                            })
+                                            .addOnFailureListener(e ->
+                                                    processingLikes.remove(postId));
+                                })
+                                .addOnFailureListener(e ->
+                                        processingLikes.remove(postId));
+                    }
+                })
+                .addOnFailureListener(e ->
+                        processingLikes.remove(postId));
+    }
     // ════════════════════════════════════════════════════════
     //  LIFECYCLE
     // ════════════════════════════════════════════════════════

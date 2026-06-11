@@ -45,9 +45,13 @@
         <activity android:name=".ProfilePage.UserProfileActivity" />
         <activity android:name=".HomePage.EditPostActivity" />
         <activity android:name=".Message.ChatActivity" />
+        <activity android:name=".Message.NewMessageActivity" />
+        <activity android:name=".Search.SearchActivity" />
+        <activity android:name=".Search.SearchExpandActivity" />
         <activity android:name=".ProfilePage.ChangePasswordActivity" />
         <activity android:name=".ProfilePage.LikedPostsActivity" />
         <activity android:name=".ProfilePage.LikedCommentsActivity" />
+        <activity android:name=".Search.SearchResultActivity" />
         <activity android:name=".ProfilePage.SavedPostsActivity" />
         <activity android:name=".ProfilePage.ArchivedPostsActivity" />
         <activity android:name=".ProfilePage.BlockedUsersActivity" />
