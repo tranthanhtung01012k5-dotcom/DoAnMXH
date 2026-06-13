@@ -1,9 +1,12 @@
 package com.example.doanmxh.HomePage;
 
+import android.util.Log;
+
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.IgnoreExtraProperties;
 import com.google.firebase.firestore.PropertyName;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @IgnoreExtraProperties
@@ -12,8 +15,33 @@ public class PostModel {
     // =========================================================
     // Firestore Fields
     // =========================================================
+    private String videoUrl;
+    private String videoThumbnail;
+    public List<MediaItem> getMediaList() {
+        List<MediaItem> list = new ArrayList<>();
+
+        if (danhSachVideo != null) {
+            for (String url : danhSachVideo) {
+                list.add(new MediaItem(url, MediaItem.Type.VIDEO));
+            }
+        }
+
+        if (danhSachAnh != null) {
+            for (String url : danhSachAnh) {
+                list.add(new MediaItem(url, MediaItem.Type.IMAGE));
+            }
+        }
+
+        return list;
+    }
+
     private boolean repostedByMe = false;
 
+
+    public String getVideoUrl() { return videoUrl; }
+    public void setVideoUrl(String videoUrl) { this.videoUrl = videoUrl; }
+    public String getVideoThumbnail() { return videoThumbnail; }
+    public void setVideoThumbnail(String v) { this.videoThumbnail = v; }
     public boolean isRepostedByMe() { return repostedByMe; }
     public void setRepostedByMe(boolean repostedByMe) { this.repostedByMe = repostedByMe; }
     @PropertyName("id")
@@ -61,10 +89,21 @@ public class PostModel {
     @PropertyName("danh_sach_video")
     private List<String> danhSachVideo;
 
+    @PropertyName("danh_sach_audio")
+    public List<String> getDanhSachAudio() {
+        return danhSachAudio;
+    }
+
+    @PropertyName("danh_sach_audio")
+    public void setDanhSachAudio(List<String> danhSachAudio) {
+        this.danhSachAudio = danhSachAudio;
+    }
+
     // =========================================================
     // Runtime Only
     // =========================================================
-
+    @PropertyName("danh_sach_audio")
+    private List<String> danhSachAudio;
     @PropertyName("liked_by_me")
     private boolean likedByMe = false;
     private boolean expanded = false;

@@ -134,8 +134,20 @@
                 android:nestedScrollingEnabled="false"
                 app:layout_constraintTop_toBottomOf="@id/edtNoiDung"
                 app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvAudio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:nestedScrollingEnabled="false"
+                android:visibility="gone"
+                app:layout_constraintTop_toBottomOf="@id/rvImages"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                tools:listitem="@layout/item_preview_image" />
+                tools:listitem="@layout/item_audio"
+                tools:visibility="visible" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
@@ -144,13 +156,13 @@
         android:id="@+id/layoutTools"
         android:layout_width="match_parent"
         android:layout_height="54dp"
+        android:background="@color/bg_surface"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
-        android:background="@color/bg_surface"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintEnd_toEndOf="parent" >
 
         <ImageButton
             android:id="@+id/btnAnh"

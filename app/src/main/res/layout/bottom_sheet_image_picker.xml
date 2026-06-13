@@ -59,23 +59,47 @@
         android:id="@+id/layoutGallery"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="@drawable/bg_option_item"
         android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_option_item"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:paddingHorizontal="16dp">
 
         <ImageView
             android:layout_width="24dp"
             android:layout_height="24dp"
+            android:layout_marginEnd="14dp"
             android:src="@drawable/ic_picture"
-            android:tint="@color/text_primary"
-            android:layout_marginEnd="14dp"/>
+            android:tint="@color/text_primary"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Thư viện ảnh"
+            android:text="Thư viện"
+            android:textSize="15sp"
+            android:textColor="@color/text_primary"/>
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/layoutAudio"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_option_item"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="14dp"
+            android:src="@drawable/ic_micro"
+            android:tint="@color/text_primary"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Âm thanh"
             android:textSize="15sp"
             android:textColor="@color/text_primary"/>
     </LinearLayout>

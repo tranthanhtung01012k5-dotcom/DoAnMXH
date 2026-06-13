@@ -7,7 +7,13 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -18,6 +24,7 @@
     </queries>
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -26,7 +33,9 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.DoAnMXH">
-
+        <meta-data
+            android:name="CLOUDINARY_URL"
+            android:value="cloudinary://563169335892278:FK7CO@dm7unz14b" />
         <activity
             android:name=".SplashActivity"
             android:exported="true">
@@ -44,6 +53,7 @@
         <activity android:name=".ProfilePage.EditProfileActivity" />
         <activity android:name=".ProfilePage.UserProfileActivity" />
         <activity android:name=".HomePage.EditPostActivity" />
+<!--        <activity android:name=".HomePage." />-->
         <activity android:name=".Message.ChatActivity" />
         <activity android:name=".Message.NewMessageActivity" />
         <activity android:name=".Search.SearchActivity" />
@@ -58,6 +68,9 @@
         <activity
             android:name=".HomePage.FullScreenImageActivity"
             android:theme="@style/Theme.AppCompat.NoActionBar" />
+        <activity
+            android:name=".HomePage.FullScreenVideoActivity"
+            android:exported="false"/>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

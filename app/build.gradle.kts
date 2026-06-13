@@ -86,4 +86,8 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     //
     implementation("com.facebook.shimmer:shimmer:0.5.0")
+    // Cloudinary Android SDK (all modules)
+    implementation("com.cloudinary:cloudinary-android:2.5.0")
+// Glide để hiển thị ảnh (tùy chọn)
+    implementation("com.github.bumptech.glide:glide:4.16.0")
 }

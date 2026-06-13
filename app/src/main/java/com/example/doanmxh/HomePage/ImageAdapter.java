@@ -1,5 +1,6 @@
 package com.example.doanmxh.HomePage;
 
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,69 +15,121 @@ import com.example.doanmxh.R;
 
 import java.util.List;
 
-public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHolder> {
+public class ImageAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private List<String> imageList;
-    private OnImageRemoveListener removeListener;
+    private static final int    TYPE_IMAGE   = 0;
+    private static final int    TYPE_VIDEO   = 1;
+    public  static final String VIDEO_PREFIX = "video:";
+
+    private final List<String>          mediaList;
+    private final OnImageRemoveListener removeListener;
 
     public interface OnImageRemoveListener {
         void onRemove(int position);
     }
 
-    // Constructor không có listener → dùng ở chỗ chỉ xem (không xóa)
-    public ImageAdapter(List<String> imageList) {
-        this.imageList = imageList;
+    public ImageAdapter(List<String> mediaList) {
+        this.mediaList      = mediaList;
+        this.removeListener = null;
     }
 
-    // Constructor có listener → dùng ở EditPostActivity
-    public ImageAdapter(List<String> imageList, OnImageRemoveListener removeListener) {
-        this.imageList = imageList;
+    public ImageAdapter(List<String> mediaList, OnImageRemoveListener removeListener) {
+        this.mediaList      = mediaList;
         this.removeListener = removeListener;
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return mediaList.get(position).startsWith(VIDEO_PREFIX) ? TYPE_VIDEO : TYPE_IMAGE;
     }
 
     @NonNull
     @Override
-    public ImageViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_image, parent, false);
-        return new ImageViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        LayoutInflater inf = LayoutInflater.from(parent.getContext());
+        if (viewType == TYPE_VIDEO) {
+            return new VideoViewHolder(inf.inflate(R.layout.item_video_preview, parent, false));
+        } else {
+            return new ImageViewHolder(inf.inflate(R.layout.item_image, parent, false));
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ImageViewHolder holder, int position) {
-        Glide.with(holder.itemView.getContext())
-                .load(imageList.get(position))
-                .into(holder.imageView);
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        String raw = mediaList.get(position);
 
-        // Hiện nút X nếu có listener, ẩn nếu không
+        if (holder instanceof VideoViewHolder) {
+            VideoViewHolder vh = (VideoViewHolder) holder;
+            String uriStr = raw.substring(VIDEO_PREFIX.length());
+
+            Glide.with(vh.imgThumbnail.getContext())
+                    .load(Uri.parse(uriStr))
+                    .centerCrop()
+                    .placeholder(R.drawable.ic_placeholder_avatar)
+                    .into(vh.imgThumbnail);
+
+            setupRemoveButton(vh.btnRemove, vh);
+
+        } else if (holder instanceof ImageViewHolder) {
+            ImageViewHolder vh = (ImageViewHolder) holder;
+
+            Glide.with(vh.imageView.getContext())
+                    .load(raw)
+                    .centerCrop()
+                    .into(vh.imageView);
+
+            setupRemoveButton(vh.btnRemove, vh);
+        }
+    }
+
+    /** Gắn nút X — dùng getAdapterPosition() từ ViewHolder để tránh stale index */
+    // Trong ImageAdapter.java — sửa setupRemoveButton()
+    private void setupRemoveButton(ImageButton btnRemove, RecyclerView.ViewHolder vh) {
         if (removeListener != null) {
-            holder.btnRemove.setVisibility(View.VISIBLE);
-            holder.btnRemove.setOnClickListener(v -> {
-                int pos = holder.getAdapterPosition();
-                if (pos != RecyclerView.NO_ID) {
-                    imageList.remove(pos);
-                    notifyItemRemoved(pos);
+            btnRemove.setVisibility(View.VISIBLE);
+            btnRemove.setOnClickListener(v -> {
+                int pos = vh.getAdapterPosition();
+                if (pos != RecyclerView.NO_ID && pos < mediaList.size()) {
+                    // ✅ Gọi listener TRƯỚC khi xóa — để Fragment còn đọc được giá trị
                     removeListener.onRemove(pos);
+                    mediaList.remove(pos);
+                    notifyItemRemoved(pos);
+                    notifyItemRangeChanged(pos, mediaList.size());
                 }
             });
         } else {
-            holder.btnRemove.setVisibility(View.GONE);
+            btnRemove.setVisibility(View.GONE);
         }
     }
 
     @Override
     public int getItemCount() {
-        return imageList != null ? imageList.size() : 0;
+        return mediaList != null ? mediaList.size() : 0;
     }
 
+    // ── Image ViewHolder ──────────────────────────────────────
     static class ImageViewHolder extends RecyclerView.ViewHolder {
-        ImageView imageView;
+        ImageView   imageView;
         ImageButton btnRemove;
 
-        public ImageViewHolder(@NonNull View itemView) {
-            super(itemView);
-            imageView = itemView.findViewById(R.id.imgPost);
-            btnRemove = itemView.findViewById(R.id.btnRemoveImage);
+        ImageViewHolder(@NonNull View v) {
+            super(v);
+            imageView = v.findViewById(R.id.imgPost);
+            btnRemove = v.findViewById(R.id.btnRemoveImage);
+        }
+    }
+
+    // ── Video ViewHolder ──────────────────────────────────────
+    static class VideoViewHolder extends RecyclerView.ViewHolder {
+        ImageView   imgThumbnail;
+        ImageView   icPlay;
+        ImageButton btnRemove;
+
+        VideoViewHolder(@NonNull View v) {
+            super(v);
+            imgThumbnail = v.findViewById(R.id.imgVideoThumbnail);
+            icPlay       = v.findViewById(R.id.icPlay);
+            btnRemove    = v.findViewById(R.id.btnRemoveImage);
         }
     }
 }

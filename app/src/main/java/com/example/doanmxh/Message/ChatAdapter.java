@@ -1,5 +1,6 @@
 package com.example.doanmxh.Message;
 
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -464,7 +465,15 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                                         tvAuthor.setText(userDoc.getString("ten_dang_nhap"));
                                     String anh = userDoc.getString("anh_dai_dien");
                                     if (ivAvatar != null && anh != null && !anh.isEmpty()) {
-                                        Glide.with(holder.itemView.getContext())
+
+                                        // ✅ Kiểm tra context còn sống không trước khi load
+                                        Context ctx = holder.itemView.getContext();
+                                        if (ctx instanceof Activity) {
+                                            Activity act = (Activity) ctx;
+                                            if (act.isDestroyed() || act.isFinishing()) return;
+                                        }
+
+                                        Glide.with(ctx)
                                                 .load(anh).circleCrop().into(ivAvatar);
                                     }
                                 });

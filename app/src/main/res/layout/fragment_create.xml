@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -18,8 +17,6 @@
             android:layout_height="wrap_content"
             android:padding="16dp">
 
-            <!-- Avatar -->
-
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/imgAvatar"
                 android:layout_width="44dp"
@@ -30,8 +27,6 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:shapeAppearanceOverlay="@style/ShapeCircle"
                 tools:src="@drawable/ic_placeholder_avatar" />
-
-            <!-- Username -->
 
             <TextView
                 android:id="@+id/txtUsername"
@@ -45,8 +40,6 @@
                 android:textStyle="bold"
                 app:layout_constraintStart_toEndOf="@id/imgAvatar"
                 app:layout_constraintTop_toTopOf="@id/imgAvatar" />
-
-            <!-- Content -->
 
             <EditText
                 android:id="@+id/edtNoiDung"
@@ -67,8 +60,6 @@
                 app:layout_constraintStart_toStartOf="@id/txtUsername"
                 app:layout_constraintTop_toBottomOf="@id/txtUsername" />
 
-            <!-- Preview Image -->
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvImages"
                 android:layout_width="0dp"
@@ -79,7 +70,16 @@
                 app:layout_constraintEnd_toEndOf="parent"
                 tools:listitem="@layout/item_preview_image" />
 
-            <!-- Tool Bar -->
+            ...
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvAudio"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:layout_constraintTop_toBottomOf="@id/rvImages"
+                app:layout_constraintStart_toStartOf="parent"   app:layout_constraintEnd_toEndOf="parent"
+                tools:listitem="@layout/item_audio" />
 
             <LinearLayout
                 android:id="@+id/layoutTools"
@@ -88,8 +88,8 @@
                 android:layout_marginTop="20dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                app:layout_constraintTop_toBottomOf="@id/rvImages"
-                app:layout_constraintStart_toStartOf="@id/rvImages"
+                app:layout_constraintTop_toBottomOf="@id/rvAudio"
+                app:layout_constraintStart_toStartOf="@id/edtNoiDung"
                 app:layout_constraintEnd_toEndOf="parent">
 
                 <ImageButton
@@ -113,12 +113,12 @@
                     app:tint="@color/text_secondary" />
 
                 <ImageButton
-                    android:id="@+id/btnMic"
+                    android:id="@+id/btnMicro"
                     android:layout_width="26dp"
                     android:layout_height="26dp"
                     android:layout_marginEnd="20dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Mic"
+                    android:contentDescription="Âm thanh"
                     android:src="@drawable/ic_micro"
                     app:tint="@color/text_secondary" />
 
@@ -132,8 +132,6 @@
                     app:tint="@color/text_secondary" />
 
             </LinearLayout>
-
-            <!-- Post Button -->
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnPost"

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="250dp"
+    android:layout_marginBottom="8dp">
+
+    <!-- Thumbnail (hiện trước khi play) -->
+    <ImageView
+        android:id="@+id/imgVideoThumbnail"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:visibility="visible" />
+
+    <!-- Video Player -->
+    <VideoView
+        android:id="@+id/videoView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Nút Play / Pause ở giữa -->
+    <ImageButton
+        android:id="@+id/btnPlayPause"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="center"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_media_play"
+        android:contentDescription="Play/Pause" />
+
+</FrameLayout>

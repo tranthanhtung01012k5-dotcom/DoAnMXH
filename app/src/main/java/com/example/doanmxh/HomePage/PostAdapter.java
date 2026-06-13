@@ -22,15 +22,18 @@ import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.doanmxh.CreatePage.AudioAdapter;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
 import com.example.doanmxh.Search.SearchResultActivity;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +41,7 @@ import android.graphics.Color;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.widget.VideoView;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,6 +50,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private List<PostModel> postList;
     private OnPostActionListener listener;
     private OnItemClickListener itemClickListener;
+
 
     public interface OnItemClickListener {
         void onItemClick(String postId);
@@ -175,6 +180,27 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             });
         }
 
+        Log.e("POST_BIND", "Bind post = " + post.getDocumentId());
+
+        List<String> audioList = post.getDanhSachAudio();
+
+        Log.e("POST_BIND", "audioList = " + audioList);
+        if (audioList != null && !audioList.isEmpty()) {
+            holder.rvAudio.setVisibility(View.VISIBLE); // Phải hiển thị
+
+            // Luôn reset layout manager hoặc adapter để tránh dữ liệu cũ
+            if (holder.rvAudio.getAdapter() == null) {
+                holder.rvAudio.setLayoutManager(new LinearLayoutManager(holder.itemView.getContext()));
+                AudioAdapter audioAdapter = new AudioAdapter(new ArrayList<>(audioList), null);
+                holder.rvAudio.setAdapter(audioAdapter);
+            } else {
+                AudioAdapter adapter = (AudioAdapter) holder.rvAudio.getAdapter();
+                adapter.updateList(audioList);
+            }
+        } else {
+            holder.rvAudio.setVisibility(View.GONE); // Ẩn hoàn toàn nếu rỗng
+        }
+
         bindStats(holder, post);
 
         // Top Comment
@@ -254,7 +280,8 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         // ────────────────────────────────────────────────────
         //  ẢNH BÀI VIẾT — logic hiển thị động
         // ────────────────────────────────────────────────────
-        bindImages(holder, post.getDanhSachAnh());
+        bindMediaGrid(holder, post.getMediaList());
+
 
         // Like UI
         updateLikeUI(holder, post);
@@ -306,113 +333,200 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         holder.tvShareCount.setText(shares > 0 ? String.valueOf(shares) : "");
         Log.d("LIKE_DEBUG", "so_like = " + post.getSoLuotThich());
     }
-    private void bindImages(@NonNull PostViewHolder holder, List<String> images) {
+    private void bindMediaGrid(@NonNull PostViewHolder holder, List<MediaItem> mediaList) {
         Context ctx = holder.itemView.getContext();
 
-        // Reset tất cả về hidden trước
+        // ── Reset ──
         holder.layoutImages.setVisibility(View.GONE);
         holder.rightContainer.setVisibility(View.GONE);
+        //
+        holder.frameImg1.setVisibility(View.GONE);
         holder.img1.setVisibility(View.GONE);
+        holder.videoView1.setVisibility(View.GONE);
+        holder.ivPlay1.setVisibility(View.GONE);
+        //
+        holder.frameImg2.setVisibility(View.GONE);
         holder.img2.setVisibility(View.GONE);
+        holder.videoView2.setVisibility(View.GONE);
+        holder.ivPlay2.setVisibility(View.GONE);
+        ///
         holder.frameImg3.setVisibility(View.GONE);
         holder.img3.setVisibility(View.GONE);
+        holder.videoView3.setVisibility(View.GONE);
+        holder.ivPlay3.setVisibility(View.GONE);
+        //
         holder.viewOverlay.setVisibility(View.GONE);
         holder.tvMore.setVisibility(View.GONE);
 
-        // Xóa click listener cũ tránh reuse
-        holder.img1.setOnClickListener(null);
-        holder.img2.setOnClickListener(null);
-        holder.img3.setOnClickListener(null);
-        holder.viewOverlay.setOnClickListener(null);
-        holder.tvMore.setOnClickListener(null);
+        // Stop video đang chạy (tránh leak khi recycle)
+        holder.videoView1.stopPlayback();
+        holder.videoView2.stopPlayback();
+        holder.videoView3.stopPlayback();
+        Log.d("MEDIA_DEBUG", "mediaList = " + (mediaList == null ? "NULL" : "size=" + mediaList.size()));
 
-        if (images == null || images.isEmpty()) return;
-
+        if (mediaList == null || mediaList.isEmpty()) return;
+        if (mediaList != null) {
+            for (int i = 0; i < mediaList.size(); i++) {
+                MediaItem item = mediaList.get(i);
+                Log.d("MEDIA_DEBUG", "  [" + i + "] type=" + item.getType() + " url=" + item.getUrl());
+            }
+        }
         holder.layoutImages.setVisibility(View.VISIBLE);
-        int count = images.size();
-
-        // Lấy ConstraintLayout cha để điều chỉnh constraint của img1
-        ConstraintLayout layoutImages = holder.layoutImages;
+        int count = mediaList.size();
         ConstraintSet cs = new ConstraintSet();
-        cs.clone(layoutImages);
+        cs.clone(holder.layoutImages);
 
         if (count == 1) {
-            // ── 1 ảnh: img1 chiếm toàn bộ, height cố định 300dp ──
-            // img1 end → parent end (không bị chặn bởi rightContainer)
-            cs.connect(R.id.img1, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END);
-            cs.constrainPercentWidth(R.id.img1, 1.0f); // full width
-            cs.constrainHeight(R.id.img1, dpToPx(ctx, 300));
-            cs.applyTo(layoutImages);
+            cs.connect(R.id.frameImg1, ConstraintSet.END, ConstraintSet.PARENT_ID, ConstraintSet.END);
+            cs.constrainPercentWidth(R.id.frameImg1, 1.0f);
+            cs.constrainHeight(R.id.frameImg1, dpToPx(ctx, 300)); // set height cứng
 
-            holder.img1.setVisibility(View.VISIBLE);
-            Glide.with(ctx).load(images.get(0)).centerCrop().into(holder.img1);
-            holder.img1.setOnClickListener(v ->
-                    FullScreenImageActivity.open(ctx, images, 0));
+            // THÊM: disconnect bottom constraint để height cứng có hiệu lực
+            cs.clear(R.id.frameImg1, ConstraintSet.BOTTOM);
 
+            cs.applyTo(holder.layoutImages);
+
+            holder.frameImg1.setVisibility(View.VISIBLE);
+            holder.rightContainer.setVisibility(View.GONE); // đảm bảo gone
+            bindSlot(ctx, holder, mediaList.get(0), 0, mediaList, 1);
         } else if (count == 2) {
-            // ── 2 ảnh: img1 50% | img2 50%, height 220dp ──
-            // img1 end → start của rightContainer (50%)
-            cs.connect(R.id.img1, ConstraintSet.END, R.id.rightContainer, ConstraintSet.START);
-            cs.constrainPercentWidth(R.id.img1, 0.5f);
-            cs.constrainHeight(R.id.img1, dpToPx(ctx, 220));
-            cs.applyTo(layoutImages);
+            cs.connect(R.id.frameImg1, ConstraintSet.END, R.id.rightContainer, ConstraintSet.START);
+            cs.constrainPercentWidth(R.id.frameImg1, 0.5f);
+            cs.constrainHeight(R.id.frameImg1, dpToPx(ctx, 220));
+            cs.applyTo(holder.layoutImages);
 
-            // rightContainer: chỉ hiện img2 (không hiện img3)
+            holder.frameImg1.setVisibility(View.VISIBLE);
+            holder.frameImg2.setVisibility(View.VISIBLE);
             holder.rightContainer.setVisibility(View.VISIBLE);
             holder.img2.setVisibility(View.VISIBLE);
-            holder.frameImg3.setVisibility(View.GONE); // ẩn slot img3
+            holder.videoView2.setVisibility(View.VISIBLE);
 
-            Glide.with(ctx).load(images.get(0)).centerCrop().into(holder.img1);
-            Glide.with(ctx).load(images.get(1)).centerCrop().into(holder.img2);
+            holder.frameImg3.setVisibility(View.GONE);
 
-            holder.img1.setVisibility(View.VISIBLE);
-            holder.img1.setOnClickListener(v ->
-                    FullScreenImageActivity.open(ctx, images, 0));
-            holder.img2.setOnClickListener(v ->
-                    FullScreenImageActivity.open(ctx, images, 1));
+            bindSlot(ctx, holder, mediaList.get(0), 0, mediaList, 2);
+            bindSlot(ctx, holder, mediaList.get(1), 1, mediaList, 2);
+            Log.e("CHECK",
+                    "frame2=" + holder.frameImg2.getVisibility()
+                            + " img2=" + holder.img2.getVisibility());
 
         } else {
-            // ── 3+ ảnh: img1 50% | (img2 trên + img3 dưới) 50% ──
-            cs.connect(R.id.img1, ConstraintSet.END, R.id.rightContainer, ConstraintSet.START);
-            cs.constrainPercentWidth(R.id.img1, 0.5f);
-            cs.constrainHeight(R.id.img1, dpToPx(ctx, 260));
-            cs.applyTo(layoutImages);
+            // 3+ media
+            cs.connect(R.id.frameImg1, ConstraintSet.END, R.id.rightContainer, ConstraintSet.START);
+            cs.constrainPercentWidth(R.id.frameImg1, 0.5f);
+            cs.constrainHeight(R.id.frameImg1, dpToPx(ctx, 260));
+            cs.applyTo(holder.layoutImages);
 
+            holder.frameImg1.setVisibility(View.VISIBLE);
+            holder.frameImg2.setVisibility(View.VISIBLE);
             holder.rightContainer.setVisibility(View.VISIBLE);
             holder.img2.setVisibility(View.VISIBLE);
+            holder.videoView2.setVisibility(View.VISIBLE);
             holder.frameImg3.setVisibility(View.VISIBLE);
             holder.img3.setVisibility(View.VISIBLE);
+            holder.videoView3.setVisibility(View.VISIBLE);
 
-            holder.img1.setVisibility(View.VISIBLE);
-
-            Glide.with(ctx).load(images.get(0)).centerCrop().into(holder.img1);
-            Glide.with(ctx).load(images.get(1)).centerCrop().into(holder.img2);
-            Glide.with(ctx).load(images.get(2)).centerCrop().into(holder.img3);
-
-            holder.img1.setOnClickListener(v ->
-                    FullScreenImageActivity.open(ctx, images, 0));
-            holder.img2.setOnClickListener(v ->
-                    FullScreenImageActivity.open(ctx, images, 1));
+            bindSlot(ctx, holder, mediaList.get(0), 0, mediaList, count);
+            bindSlot(ctx, holder, mediaList.get(1), 1, mediaList, count);
+            bindSlot(ctx, holder, mediaList.get(2), 2, mediaList, count);
 
             if (count > 3) {
-                // Có thêm ảnh → hiện overlay "+N", click → bottom sheet
                 holder.viewOverlay.setVisibility(View.VISIBLE);
                 holder.tvMore.setVisibility(View.VISIBLE);
                 holder.tvMore.setText("+" + (count - 3));
-
                 View.OnClickListener openSheet = v ->
-                        ImageListBottomSheet.show(ctx, images);
-                holder.img3.setOnClickListener(openSheet);
+                        MediaListBottomSheet.show(ctx, mediaList); // cập nhật BottomSheet nhận MediaItem
+                holder.frameImg3.setOnClickListener(openSheet);
                 holder.viewOverlay.setOnClickListener(openSheet);
                 holder.tvMore.setOnClickListener(openSheet);
-            } else {
-                // Đúng 3 ảnh → click xem full
-                holder.img3.setOnClickListener(v ->
-                        FullScreenImageActivity.open(ctx, images, 2));
             }
         }
     }
 
+    // ── Helper: bind 1 slot (slot 0 = frameImg1, 1 = img2, 2 = img3) ──
+    private void bindSlot(Context ctx, PostViewHolder holder,
+                          MediaItem item, int slotIndex,
+                          List<MediaItem> allMedia, int totalCount) {
+
+        ImageView imgView   = slotIndex == 0 ? holder.img1
+                : slotIndex == 1 ? holder.img2
+                : holder.img3;
+        VideoView videoView = slotIndex == 0 ? holder.videoView1
+                : slotIndex == 1 ? holder.videoView2
+                : holder.videoView3;
+        ImageView playBtn   = slotIndex == 0 ? holder.ivPlay1
+                : slotIndex == 1 ? holder.ivPlay2
+                : holder.ivPlay3;
+
+        // ← THÊM: reset slot trước
+        imgView.setVisibility(View.GONE);
+        videoView.setVisibility(View.GONE);
+        playBtn.setVisibility(View.GONE);
+
+        if (item.getType() == MediaItem.Type.IMAGE) {
+            imgView.setVisibility(View.VISIBLE);
+            videoView.setVisibility(View.GONE);
+            playBtn.setVisibility(View.GONE);
+            Glide.with(ctx).load(item.getUrl()).centerCrop().into(imgView);
+            imgView.setOnClickListener(v ->
+                    FullScreenImageActivity.open(ctx,
+                            extractImageUrls(allMedia), slotIndex));
+
+        } else {
+            // VIDEO
+            imgView.setVisibility(View.VISIBLE);   // thumbnail
+            videoView.setVisibility(View.GONE);
+            playBtn.setVisibility(View.VISIBLE);   // ← hiện nút play
+
+            String thumb = item.getThumbnail();
+            Glide.with(ctx)
+                    .load(thumb != null && !thumb.isEmpty() ? thumb : item.getUrl())
+                    .centerCrop()
+                    .placeholder(R.drawable.ic_placeholder_avatar)
+                    .into(imgView);
+
+            View.OnClickListener playClick = v -> {
+                // ĐỪNG hide imgView ngay — để videoView lấy kích thước trước
+                playBtn.setVisibility(View.GONE);
+
+                videoView.setVisibility(View.VISIBLE);
+                videoView.setVideoPath(item.getUrl());
+                videoView.requestFocus();
+
+                videoView.setOnPreparedListener(mp -> {
+                    // Chỉ hide imgView SAU KHI video sẵn sàng play
+                    imgView.setVisibility(View.GONE);
+                    mp.start();
+                    mp.setLooping(true);
+                });
+
+                videoView.setOnErrorListener((mp, what, extra) -> {
+                    Log.e("VIDEO", "Error: what=" + what + " extra=" + extra);
+                    // Khôi phục lại thumbnail nếu lỗi
+                    imgView.setVisibility(View.VISIBLE);
+                    playBtn.setVisibility(View.VISIBLE);
+                    videoView.setVisibility(View.GONE);
+                    return true;
+                });
+
+                videoView.setOnClickListener(fv ->
+                        FullScreenVideoActivity.open(ctx, item.getUrl()));
+            };
+
+            imgView.setOnClickListener(playClick);
+            playBtn.setOnClickListener(playClick);
+        }
+        Log.d("MEDIA_BIND", "slot=" + slotIndex
+                + " type=" + item.getType()
+                + " url=" + item.getUrl());
+    }
+    // Helper lấy list URL ảnh (bỏ qua video) để truyền cho FullScreenImageActivity
+    private List<String> extractImageUrls(List<MediaItem> mediaList) {
+        List<String> urls = new ArrayList<>();
+        for (MediaItem m : mediaList) {
+            if (m.getType() == MediaItem.Type.IMAGE) urls.add(m.getUrl());
+        }
+        return urls;
+    }
     private int dpToPx(Context ctx, int dp) {
         float density = ctx.getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
@@ -655,16 +769,17 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         LinearLayout layoutTopComment;
         ImageView imgTopCommentAvatar;
         ShapeableImageView ivAvatar;
-        ImageView img1, img2, img3, ivAddFriend, ivVerified;
-        FrameLayout frameImg3;
+        ImageView img1, img2, img3, ivAddFriend, ivVerified,ivPlay1, ivPlay2, ivPlay3;
+        FrameLayout frameImg3,frameImg2,frameImg1;
         LinearLayout rightContainer;
         TextView tvMore;
+        VideoView videoView1, videoView2, videoView3;
         View viewOverlay;
         ConstraintLayout layoutImages;
         TextView tvAuthorName, tvPostTime, tvContent;
         TextView tvLikeCount, tvCommentCount, tvRepostCount,tvShareCount,tvSeeMore; // ← thay tvStats
         ImageButton btnLike, btnComment, btnRepost, btnShare, btnMoreOptions;
-
+        RecyclerView rvAudio;
         public PostViewHolder(@NonNull View itemView) {
             super(itemView);
             ivRepostImage       = itemView.findViewById(R.id.ivRepostImage);
@@ -678,6 +793,15 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             img2                = itemView.findViewById(R.id.img2);
             img3                = itemView.findViewById(R.id.img3);
             frameImg3           = itemView.findViewById(R.id.frameImg3);
+            frameImg2           = itemView.findViewById(R.id.frameImg2);
+            frameImg1           = itemView.findViewById(R.id.frameImg1);
+            videoView1 = itemView.findViewById(R.id.videoView1);
+            videoView2 = itemView.findViewById(R.id.videoView2);
+            videoView3 = itemView.findViewById(R.id.videoView3);
+            rvAudio = itemView.findViewById(R.id.rvAudio);
+            ivPlay1 = itemView.findViewById(R.id.ivPlay1);
+            ivPlay2 = itemView.findViewById(R.id.ivPlay2);
+            ivPlay3 = itemView.findViewById(R.id.ivPlay3);
             rightContainer      = itemView.findViewById(R.id.rightContainer);
             ivAddFriend         = itemView.findViewById(R.id.ivAddFriend);
             viewOverlay         = itemView.findViewById(R.id.viewOverlay);

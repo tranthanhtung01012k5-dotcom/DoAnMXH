@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="160dp"
+    android:layout_margin="4dp">
+
+    <!-- Thumbnail frame đầu của video -->
+    <ImageView
+        android:id="@+id/imgVideoThumbnail"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:background="#000000" />
+
+    <!-- Icon play ở giữa -->
+    <ImageView
+        android:id="@+id/icPlay"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="center"
+        android:src="@android:drawable/ic_media_play"
+        android:alpha="0.8" />
+
+    <!-- Nút X xóa (góc trên phải, cùng id với item_image) -->
+    <ImageButton
+        android:id="@+id/btnRemoveImage"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="4dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="Xóa video"
+        android:visibility="gone" />
+
+</FrameLayout>

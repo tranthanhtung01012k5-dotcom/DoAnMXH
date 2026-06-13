@@ -10,6 +10,7 @@ import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.LifecycleOwner;
 import androidx.lifecycle.ProcessLifecycleOwner;
 
+import com.cloudinary.android.MediaManager;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -22,7 +23,6 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
 import java.util.Map;
-
 public class MyApplication extends Application {
     private static final String PREF_SETTINGS = "app_settings";
     private static final String KEY_DARK_MODE = "dark_mode";
@@ -31,6 +31,11 @@ public class MyApplication extends Application {
     public void onCreate() {
         super.onCreate();
         applySavedTheme();
+
+        // ✅ Init Cloudinary với cloud_name
+        Map<String, String> config = new HashMap<>();
+        config.put("cloud_name", "dm7unzl4b"); // ← sửa chỗ này
+        MediaManager.init(this, config);
 
         FirebaseApp.initializeApp(this);
         Log.d("MyApplication", "Firebase khởi tạo: " + FirebaseApp.getApps(this).size());

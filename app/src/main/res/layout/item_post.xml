@@ -148,17 +148,23 @@
             android:maxLines="3"
             android:textColor="@color/text_primary"
             android:textSize="13sp" />
+
         <ImageView
             android:id="@+id/ivRepostImage"
             android:layout_width="match_parent"
             android:layout_height="220dp"
             android:scaleType="centerCrop"
             android:background="@drawable/bg_repost"
-            android:visibility="gone"/>
+            android:visibility="gone" />
 
     </LinearLayout>
 
-    <!-- IMAGE LAYOUT -->
+    <!-- ═══════════════════════════════════════════════
+         IMAGE / VIDEO GRID LAYOUT
+         Slot 1 (trái): frameImg1  — ImageView + VideoView + play button
+         Slot 2 (phải trên): frameImg2 — ImageView + VideoView + play button
+         Slot 3 (phải dưới): frameImg3 — ImageView + VideoView + play button + overlay
+         ═══════════════════════════════════════════════ -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/layoutImages"
         android:layout_width="0dp"
@@ -169,48 +175,98 @@
         app:layout_constraintStart_toStartOf="@id/tvContent"
         app:layout_constraintTop_toBottomOf="@id/layoutRepost">
 
-        <!-- LEFT IMAGE -->
-        <ImageView
-            android:id="@+id/img1"
+        <!-- SLOT 1 — LEFT (full width khi 1 media, 50% khi 2-3+) -->
+        <FrameLayout
+            android:id="@+id/frameImg1"
             android:layout_width="0dp"
-            android:layout_height="220dp"
-            android:adjustViewBounds="false"
-            android:scaleType="centerCrop"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/rightContainer"
+            android:layout_height="0dp"
+            android:clipToOutline="true"
+            android:minHeight="200dp"
+            app:layout_constraintDimensionRatio=""
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintWidth_percent="0.5" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/rightContainer">
 
-        <!-- RIGHT -->
+            <!-- Thumbnail / ảnh -->
+            <ImageView
+                android:id="@+id/img1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop" />
+
+            <!-- Video (ẩn mặc định, hiện khi nhấn play) -->
+            <VideoView
+                android:id="@+id/videoView1"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+
+            <!-- Nút play (chỉ hiện khi slot là video) -->
+            <ImageView
+                android:id="@+id/ivPlay1"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_play_circle_24"
+                android:alpha="0.85"
+                android:visibility="gone" />
+
+        </FrameLayout>
+
+        <!-- SLOT phải: chứa slot 2 (trên) + slot 3 (dưới) -->
         <LinearLayout
             android:id="@+id/rightContainer"
             android:layout_width="0dp"
-            android:layout_height="220dp"
+            android:layout_height="0dp"
             android:orientation="vertical"
             android:paddingStart="2dp"
             android:visibility="gone"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/img1"
+            app:layout_constraintStart_toEndOf="@id/frameImg1"
             app:layout_constraintTop_toTopOf="parent">
 
-            <!-- IMG 2 -->
-            <ImageView
-                android:id="@+id/img2"
+            <!-- SLOT 2 — phải trên -->
+            <FrameLayout
+                android:id="@+id/frameImg2"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_marginBottom="2dp"
                 android:layout_weight="1"
-                android:scaleType="centerCrop"
-                android:visibility="gone" />
+                android:clipToOutline="true"
+                android:visibility="gone">
 
-            <!-- IMG 3 -->
+                <ImageView
+                    android:id="@+id/img2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop" />
+
+                <VideoView
+                    android:id="@+id/videoView2"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/ivPlay2"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_play_circle_24"
+                    android:alpha="0.85"
+                    android:visibility="gone" />
+
+            </FrameLayout>
+
+            <!-- SLOT 3 — phải dưới (có overlay "+N" nếu còn thêm media) -->
             <FrameLayout
                 android:id="@+id/frameImg3"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
+                android:clipToOutline="true"
                 android:visibility="gone">
 
                 <ImageView
@@ -219,6 +275,22 @@
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop" />
 
+                <VideoView
+                    android:id="@+id/videoView3"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:visibility="gone" />
+
+                <ImageView
+                    android:id="@+id/ivPlay3"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_play_circle_24"
+                    android:alpha="0.85"
+                    android:visibility="gone" />
+
+                <!-- Overlay tối khi có "+N" media -->
                 <View
                     android:id="@+id/viewOverlay"
                     android:layout_width="match_parent"
@@ -226,23 +298,34 @@
                     android:background="#AA000000"
                     android:visibility="gone" />
 
+                <!-- Text "+N" -->
                 <TextView
                     android:id="@+id/tvMore"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
-                    android:text="+5"
                     android:textColor="@color/text_primary"
                     android:textSize="26sp"
                     android:textStyle="bold"
-                    android:visibility="gone" />
+                    android:visibility="gone"
+                    tools:text="+3" />
 
             </FrameLayout>
 
         </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvAudio"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:nestedScrollingEnabled="false"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="@id/tvContent"
+        app:layout_constraintTop_toBottomOf="@id/layoutImages"
+        tools:visibility="visible" />
     <!-- ACTIONS -->
     <LinearLayout
         android:id="@+id/layoutActions"
@@ -252,7 +335,7 @@
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@id/tvContent"
-        app:layout_constraintTop_toBottomOf="@id/layoutImages">
+        app:layout_constraintTop_toBottomOf="@id/rvAudio">
 
         <!-- LIKE -->
         <LinearLayout
@@ -261,6 +344,7 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingEnd="4dp">
+
             <ImageButton
                 android:id="@+id/btnLike"
                 android:layout_width="36dp"
@@ -287,6 +371,7 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingEnd="4dp">
+
             <ImageButton
                 android:id="@+id/btnComment"
                 android:layout_width="36dp"
@@ -306,12 +391,14 @@
                 tools:text="342" />
         </LinearLayout>
 
+        <!-- REPOST -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingEnd="4dp">
+
             <ImageButton
                 android:id="@+id/btnRepost"
                 android:layout_width="36dp"
@@ -331,12 +418,14 @@
                 tools:text="342" />
         </LinearLayout>
 
+        <!-- SHARE -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:paddingEnd="4dp">
+
             <ImageButton
                 android:id="@+id/btnShare"
                 android:layout_width="36dp"
@@ -357,6 +446,7 @@
         </LinearLayout>
 
     </LinearLayout>
+
     <!-- TOP COMMENT -->
     <LinearLayout
         android:id="@+id/layoutTopComment"

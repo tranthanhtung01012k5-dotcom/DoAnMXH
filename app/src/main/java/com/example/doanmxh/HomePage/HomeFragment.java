@@ -586,6 +586,11 @@ public class HomeFragment extends Fragment {
                             pendingCount[0]++;
 
                             PostModel post = dc.getDocument().toObject(PostModel.class);
+                            Log.e("AUDIO_TEST_RAW",
+                                    String.valueOf(dc.getDocument().get("danh_sach_audio")));
+
+                            Log.e("AUDIO_TEST_MODEL",
+                                    String.valueOf(post.getDanhSachAudio()));
                             post.setDocumentId(dc.getDocument().getId());
 
                             // ✅ Set sớm để dùng trong callback
@@ -715,6 +720,7 @@ public class HomeFragment extends Fragment {
                             } else {
                                 finishTask.run();
                             }
+                            Log.e("FULL_DOC", String.valueOf(dc.getDocument().getData()));
                         }
 
                         if (pendingCount[0] == 0) {
@@ -737,6 +743,8 @@ public class HomeFragment extends Fragment {
                                 case ADDED: {
 
                                     PostModel post = dc.getDocument().toObject(PostModel.class);
+                                    Log.e("FIRESTORE_AUDIO",
+                                            String.valueOf(post.getDanhSachAudio()));
                                     post.setDocumentId(docId);
 
                                     // ✅ Set sớm
@@ -842,6 +850,7 @@ public class HomeFragment extends Fragment {
 
                     Log.d("HomeFragment", "Feed: " + postList.size() + " bài");
                 });
+
     }
     // ─── Helper: kiểm tra xem myUid có bị hạn chế không ───
     private void checkBiHanChe(String postDocId, String myUid, Runnable onNotRestricted, Runnable onRestricted) {
