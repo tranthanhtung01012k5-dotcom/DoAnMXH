@@ -4,16 +4,21 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.VideoView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -45,6 +50,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     private static final int TYPE_SHARE_OTHER = 4;
     private static final int TYPE_HEART_ME    = 5;
     private static final int TYPE_HEART_OTHER = 6;
+    private static final int TYPE_AUDIO_ME    = 7;
+    private static final int TYPE_AUDIO_OTHER = 8;
+    private static final int TYPE_VIDEO_ME    = 9;   // ✅ MỚI
+    private static final int TYPE_VIDEO_OTHER = 10;  // ✅ MỚI
 
     // ════════════════════════════════════════════════════
     //  FIELDS
@@ -54,6 +63,11 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
 
     private final Context conversationContext;
     private final List<ChatMessage> messageList;
+    // ── Audio player ─────────────────────────────────────
+    private android.media.MediaPlayer audioMediaPlayer  = null;
+    private String                    playingAudioUrl   = null;
+    private final Handler             audioHandler      = new Handler(Looper.getMainLooper());
+    private Runnable                  audioProgressRunnable = null;
     private final String myUid;
     private final String conversationId;
     private final FirebaseFirestore db;
@@ -62,7 +76,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     private final SimpleDateFormat timeFormat =
             new SimpleDateFormat("HH:mm", Locale.getDefault());
 
-    // ✅ Cache uid → [ten_dang_nhap, anh_dai_dien]  (tránh query Firestore lặp lại)
+    // ✅ Cache uid → [ten_dang_nhap, anh_dai_dien]
     private final Map<String, String[]> userInfoCache = new HashMap<>();
 
     // ════════════════════════════════════════════════════
@@ -102,12 +116,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         ChatMessage msg = messageList.get(position);
         boolean isMe = myUid.equals(msg.getNguoiGuiId());
 
-        if ("share_bai_viet".equals(msg.getLoai())) {
+        if ("share_bai_viet".equals(msg.getLoai()))
             return isMe ? TYPE_SHARE_ME : TYPE_SHARE_OTHER;
-        }
-        if ("tim".equals(msg.getLoai())) {
+        if ("tim".equals(msg.getLoai()))
             return isMe ? TYPE_HEART_ME : TYPE_HEART_OTHER;
-        }
+        if ("audio".equals(msg.getLoai()))
+            return isMe ? TYPE_AUDIO_ME : TYPE_AUDIO_OTHER;
+        if ("video".equals(msg.getLoai()))          // ✅ MỚI
+            return isMe ? TYPE_VIDEO_ME : TYPE_VIDEO_OTHER;
         return isMe ? TYPE_ME : TYPE_OTHER;
     }
 
@@ -121,6 +137,10 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             case TYPE_ME:          layout = R.layout.item_message_me;          break;
             case TYPE_HEART_ME:    layout = R.layout.item_message_heart_me;    break;
             case TYPE_HEART_OTHER: layout = R.layout.item_message_heart_other; break;
+            case TYPE_AUDIO_ME:    layout = R.layout.item_message_audio_me;    break;
+            case TYPE_AUDIO_OTHER: layout = R.layout.item_message_audio_other; break;
+            case TYPE_VIDEO_ME:    layout = R.layout.item_message_video_me;    break;  // ✅ MỚI
+            case TYPE_VIDEO_OTHER: layout = R.layout.item_message_video_other; break;  // ✅ MỚI
             default:               layout = R.layout.item_message_other;       break;
         }
         View view = LayoutInflater.from(parent.getContext()).inflate(layout, parent, false);
@@ -142,6 +162,18 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             holder.itemView.setBackgroundResource(0);
         }
 
+        // ── AUDIO ──
+        if (viewType == TYPE_AUDIO_ME || viewType == TYPE_AUDIO_OTHER) {
+            bindAudioMessage(holder, msg, position);
+            return;
+        }
+
+        // ── VIDEO ── ✅ MỚI
+        if (viewType == TYPE_VIDEO_ME || viewType == TYPE_VIDEO_OTHER) {
+            bindVideoMessage(holder, msg, position);
+            return;
+        }
+
         // ── ALPHA (khi có tin nhắn đang được chọn) ──
         boolean isSelected     = selectedMessageId != null;
         boolean isThisSelected = msg.getMessageId() != null
@@ -156,7 +188,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             return true;
         });
 
-        // ── AVATAR + TÊN (chỉ cho tin của đối phương, giống Messenger) ──
+        // ── AVATAR + TÊN ──
         bindSenderAvatar(holder, msg, position, viewType);
 
         // ════════════════════════════════════════════════
@@ -316,18 +348,16 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     }
 
     // ════════════════════════════════════════════════════
-    //  HELPER — AVATAR & TÊN (giống Messenger)
-    //  - Chỉ hiện với tin của đối phương (TYPE_OTHER, TYPE_SHARE_OTHER, TYPE_HEART_OTHER)
-    //  - Avatar chỉ hiện ở tin CUỐI của mỗi chuỗi liên tiếp
-    //  - Dùng cache để tránh query Firestore lặp lại
+    //  HELPER — AVATAR & TÊN
     // ════════════════════════════════════════════════════
     private void bindSenderAvatar(@NonNull MessageViewHolder holder,
                                   ChatMessage msg,
                                   int position,
                                   int viewType) {
 
-        // Tin của mình → không có avatar bên cạnh bubble
-        if (viewType == TYPE_ME || viewType == TYPE_SHARE_ME || viewType == TYPE_HEART_ME) {
+        if (viewType == TYPE_ME || viewType == TYPE_SHARE_ME
+                || viewType == TYPE_HEART_ME || viewType == TYPE_AUDIO_ME
+                || viewType == TYPE_VIDEO_ME) {  // ✅ thêm VIDEO_ME
             if (holder.imgSenderAvatar != null)
                 holder.imgSenderAvatar.setVisibility(View.GONE);
             if (holder.txtSenderName != null)
@@ -337,7 +367,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
 
         if (holder.imgSenderAvatar == null) return;
 
-        // Kiểm tra có phải tin CUỐI của chuỗi liên tiếp không
         boolean isLastInGroup =
                 position == messageList.size() - 1
                         || !messageList.get(position + 1)
@@ -345,38 +374,29 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                         .equals(msg.getNguoiGuiId());
 
         if (!isLastInGroup) {
-            // Giữa chuỗi: INVISIBLE để giữ khoảng trống căn chỉnh bubble
             holder.imgSenderAvatar.setVisibility(View.INVISIBLE);
             if (holder.txtSenderName != null)
                 holder.txtSenderName.setVisibility(View.GONE);
             return;
         }
 
-        // Tin cuối của chuỗi → hiện avatar
         holder.imgSenderAvatar.setVisibility(View.VISIBLE);
-        // Chat 1-1: ẩn tên (giống Messenger); nếu muốn hiện thì đổi thành VISIBLE
         if (holder.txtSenderName != null)
             holder.txtSenderName.setVisibility(View.GONE);
 
         String uid = msg.getNguoiGuiId();
 
-        // ── Trong bindSenderAvatar(), phần dùng cache ──
         if (userInfoCache.containsKey(uid)) {
             String avatarUrl = userInfoCache.get(uid)[1];
-
-            // ✅ Check context
             Context ctx = holder.itemView.getContext();
             if (!isContextValid(ctx)) return;
-
             Glide.with(ctx)
                     .load(avatarUrl.isEmpty() ? null : avatarUrl)
                     .circleCrop()
                     .placeholder(R.drawable.ic_person_outline_24)
                     .into(holder.imgSenderAvatar);
         } else {
-            // Lần đầu — query Firestore rồi lưu cache
             db.collection("nguoi_dung").document(uid).get()
-                    // ── Trong bindSenderAvatar(), callback Firestore ──
                     .addOnSuccessListener(doc -> {
                         String ten    = doc.getString("ten_dang_nhap");
                         String avatar = doc.getString("anh_dai_dien");
@@ -384,11 +404,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                                 ten    != null ? ten    : "",
                                 avatar != null ? avatar : ""
                         });
-
-                        // ✅ Check trước khi load
                         Context ctx = holder.itemView.getContext();
-                        if (!isContextValid(ctx)) return; // Activity đã chết → bỏ qua
-
+                        if (!isContextValid(ctx)) return;
                         if (uid.equals(msg.getNguoiGuiId())) {
                             Glide.with(ctx)
                                     .load(avatar)
@@ -401,7 +418,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
     }
 
     // ════════════════════════════════════════════════════
-    //  HELPER — TIME (chỉ hiện ở tin cuối cùng)
+    //  HELPER — TIME
     // ════════════════════════════════════════════════════
     private void bindTime(@NonNull MessageViewHolder holder,
                           ChatMessage msg,
@@ -465,16 +482,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                                         tvAuthor.setText(userDoc.getString("ten_dang_nhap"));
                                     String anh = userDoc.getString("anh_dai_dien");
                                     if (ivAvatar != null && anh != null && !anh.isEmpty()) {
-
-                                        // ✅ Kiểm tra context còn sống không trước khi load
                                         Context ctx = holder.itemView.getContext();
                                         if (ctx instanceof Activity) {
                                             Activity act = (Activity) ctx;
                                             if (act.isDestroyed() || act.isFinishing()) return;
                                         }
-
-                                        Glide.with(ctx)
-                                                .load(anh).circleCrop().into(ivAvatar);
+                                        Glide.with(ctx).load(anh).circleCrop().into(ivAvatar);
                                     }
                                 });
                     }
@@ -491,11 +504,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                                 .addOnSuccessListener(userDoc -> {
                                     if (tvAuthor != null)
                                         tvAuthor.setText(userDoc.getString("ten_dang_nhap"));
-
-                                    // ✅ Check lại lần nữa trong callback lồng nhau
                                     Context ctx2 = holder.itemView.getContext();
                                     if (!isContextValid(ctx2)) return;
-
                                     String anh = userDoc.getString("anh_dai_dien");
                                     if (ivAvatar != null && anh != null && !anh.isEmpty()) {
                                         Glide.with(ctx2).load(anh).circleCrop().into(ivAvatar);
@@ -514,7 +524,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             v.getContext().startActivity(intent);
         });
 
-        // Reaction
         if (holder.txtReaction != null) {
             String reaction = msg.getReaction();
             boolean hasReaction = reaction != null && !reaction.trim().isEmpty();
@@ -522,8 +531,93 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             if (hasReaction) holder.txtReaction.setText(reaction);
         }
 
-        // Time
         bindTime(holder, msg, position);
+    }
+
+    // ════════════════════════════════════════════════════
+    //  BIND VIDEO MESSAGE  ✅ MỚI
+    // ════════════════════════════════════════════════════
+    /**
+     * Hiển thị video giống như gửi ảnh:
+     *  - Thumbnail video (dùng Glide) + icon play ở giữa
+     *  - Click → mở VideoPlayerActivity (fullscreen) hoặc Intent ACTION_VIEW
+     *  - Long click → menu tùy chọn (reaction, xóa, trả lời...)
+     */
+    private void bindVideoMessage(@NonNull MessageViewHolder holder,
+                                  ChatMessage msg,
+                                  int position) {
+        String videoUrl = msg.getNoiDung();
+
+        // ── Avatar + time ──
+        bindSenderAvatar(holder, msg, position, getItemViewType(position));
+        bindTime(holder, msg, position);
+
+        // ── Alpha khi có tin đang được chọn ──
+        boolean isSelected     = selectedMessageId != null;
+        boolean isThisSelected = msg.getMessageId() != null
+                && msg.getMessageId().equals(selectedMessageId);
+        holder.itemView.setAlpha(isSelected && !isThisSelected ? 0.3f : 1f);
+
+        // ── Thumbnail ──
+        if (holder.imgVideoThumbnail != null) {
+            // Glide load frame đầu của video qua URL
+            Glide.with(holder.itemView.getContext())
+                    .asBitmap()
+                    .load(videoUrl)
+                    .placeholder(R.drawable.ic_placeholder_avatar)
+                    .centerCrop()
+                    .into(holder.imgVideoThumbnail);
+        }
+
+        // ── Icon play ở giữa ──
+        if (holder.btnPlayVideo != null) {
+            holder.btnPlayVideo.setVisibility(View.VISIBLE);
+        }
+
+        // ── Reaction ──
+        if (holder.txtReaction != null) {
+            String reaction    = msg.getReaction();
+            boolean hasReaction = reaction != null && !reaction.trim().isEmpty();
+            holder.txtReaction.setVisibility(hasReaction ? View.VISIBLE : View.GONE);
+            if (hasReaction) holder.txtReaction.setText(reaction);
+        }
+
+        // ── Click → mở trình phát video ──
+        View.OnClickListener playClick = v -> {
+            if (videoUrl == null || videoUrl.isEmpty()) return;
+            try {
+                // Ưu tiên mở VideoPlayerActivity nếu bạn có; nếu không dùng ACTION_VIEW
+                // Option A: Dùng Intent hệ thống (đơn giản, không cần tạo Activity mới)
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setDataAndType(Uri.parse(videoUrl), "video/*");
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                v.getContext().startActivity(intent);
+
+                // Option B (nếu bạn có VideoPlayerActivity):
+                // Intent intent = new Intent(v.getContext(), VideoPlayerActivity.class);
+                // intent.putExtra("video_url", videoUrl);
+                // v.getContext().startActivity(intent);
+            } catch (Exception e) {
+                Toast.makeText(v.getContext(),
+                        "Không thể mở video", Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        if (holder.imgVideoThumbnail != null)
+            holder.imgVideoThumbnail.setOnClickListener(playClick);
+        if (holder.btnPlayVideo != null)
+            holder.btnPlayVideo.setOnClickListener(playClick);
+
+        // ── Long click → menu tùy chọn ──
+        View.OnLongClickListener longClick = v -> {
+            selectedMessageId = msg.getMessageId();
+            showMessageOptions(v, msg);
+            notifyDataSetChanged();
+            return true;
+        };
+        holder.itemView.setOnLongClickListener(longClick);
+        if (holder.imgVideoThumbnail != null)
+            holder.imgVideoThumbnail.setOnLongClickListener(longClick);
     }
 
     // ════════════════════════════════════════════════════
@@ -544,6 +638,138 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             highlightMessageId = null;
             notifyDataSetChanged();
         }, 2000);
+    }
+
+    // ════════════════════════════════════════════════════
+    //  BIND AUDIO MESSAGE
+    // ════════════════════════════════════════════════════
+    private void bindAudioMessage(@NonNull MessageViewHolder holder,
+                                  ChatMessage msg,
+                                  int position) {
+        String audioUrl = msg.getNoiDung();
+
+        ImageButton btnPlay     = holder.btnPlayAudio;
+        SeekBar     seekBar     = holder.seekBarAudio;
+        TextView    txtDuration = holder.txtAudioDuration;
+        TextView    txtCurrent  = holder.txtCurrentTime;
+
+        if (btnPlay == null || seekBar == null) return;
+
+        new Thread(() -> {
+            try {
+                android.media.MediaMetadataRetriever retriever =
+                        new android.media.MediaMetadataRetriever();
+                if (audioUrl != null && audioUrl.startsWith("http"))
+                    retriever.setDataSource(audioUrl, new java.util.HashMap<>());
+                else
+                    retriever.setDataSource(audioUrl);
+                String durationStr = retriever.extractMetadata(
+                        android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+                retriever.release();
+                long duration = durationStr != null ? Long.parseLong(durationStr) : 0;
+                audioHandler.post(() -> {
+                    if (txtDuration != null) txtDuration.setText(formatAudioTime(duration));
+                    seekBar.setMax((int) duration);
+                });
+            } catch (Exception e) {
+                audioHandler.post(() -> {
+                    if (txtDuration != null) txtDuration.setText("00:00");
+                });
+            }
+        }).start();
+
+        boolean isPlaying = audioUrl != null
+                && audioUrl.equals(playingAudioUrl)
+                && audioMediaPlayer != null
+                && audioMediaPlayer.isPlaying();
+
+        btnPlay.setImageResource(
+                isPlaying ? R.drawable.ic_pause : R.drawable.ic_play_circle_24);
+
+        if (isPlaying) {
+            seekBar.setProgress(audioMediaPlayer.getCurrentPosition());
+            if (txtCurrent != null)
+                txtCurrent.setText(formatAudioTime(audioMediaPlayer.getCurrentPosition()));
+        } else {
+            seekBar.setProgress(0);
+            if (txtCurrent != null) txtCurrent.setText("00:00");
+        }
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
+                if (fromUser && audioMediaPlayer != null
+                        && audioUrl.equals(playingAudioUrl)) {
+                    audioMediaPlayer.seekTo(progress);
+                    if (txtCurrent != null)
+                        txtCurrent.setText(formatAudioTime(progress));
+                }
+            }
+            @Override public void onStartTrackingTouch(SeekBar sb) {}
+            @Override public void onStopTrackingTouch(SeekBar sb) {}
+        });
+
+        btnPlay.setOnClickListener(v -> {
+            if (audioUrl.equals(playingAudioUrl) && audioMediaPlayer != null) {
+                stopAudio();
+                notifyDataSetChanged();
+            } else {
+                stopAudio();
+                try {
+                    audioMediaPlayer = new android.media.MediaPlayer();
+                    audioMediaPlayer.setDataSource(audioUrl);
+                    audioMediaPlayer.prepareAsync();
+                    audioMediaPlayer.setOnPreparedListener(mp -> {
+                        mp.start();
+                        playingAudioUrl = audioUrl;
+                        notifyDataSetChanged();
+
+                        audioProgressRunnable = new Runnable() {
+                            @Override public void run() {
+                                if (audioMediaPlayer != null && audioMediaPlayer.isPlaying()) {
+                                    int pos = audioMediaPlayer.getCurrentPosition();
+                                    seekBar.setProgress(pos);
+                                    if (txtCurrent != null)
+                                        txtCurrent.setText(formatAudioTime(pos));
+                                    audioHandler.postDelayed(this, 500);
+                                }
+                            }
+                        };
+                        audioHandler.post(audioProgressRunnable);
+                    });
+                    audioMediaPlayer.setOnCompletionListener(mp -> {
+                        stopAudio();
+                        notifyDataSetChanged();
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
+        bindSenderAvatar(holder, msg, position, getItemViewType(position));
+        bindTime(holder, msg, position);
+    }
+
+    private void stopAudio() {
+        if (audioMediaPlayer != null) {
+            audioMediaPlayer.release();
+            audioMediaPlayer = null;
+        }
+        playingAudioUrl = null;
+        if (audioProgressRunnable != null) {
+            audioHandler.removeCallbacks(audioProgressRunnable);
+            audioProgressRunnable = null;
+        }
+    }
+
+    public void releaseAudio() {
+        stopAudio();
+    }
+
+    private String formatAudioTime(long millis) {
+        return String.format(Locale.getDefault(), "%02d:%02d",
+                (millis / 60000), ((millis / 1000) % 60));
     }
 
     // ════════════════════════════════════════════════════
@@ -591,6 +817,12 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
                 .setVisibility(isMyMessage ? View.VISIBLE : View.GONE);
         popupView.findViewById(R.id.btnDelete)
                 .setVisibility(isMyMessage ? View.VISIBLE : View.GONE);
+
+        // Ẩn Edit & Copy với tin video (không có nội dung text)
+        if ("video".equals(msg.getLoai())) {
+            popupView.findViewById(R.id.btnEdit).setVisibility(View.GONE);
+            popupView.findViewById(R.id.btnCopy).setVisibility(View.GONE);
+        }
 
         popupView.findViewById(R.id.btnEdit).setOnClickListener(v -> {
             popupWindow.dismiss();
@@ -672,7 +904,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
 
         Map<String, Object> pinData = new HashMap<>();
         pinData.put("message_id",    msg.getMessageId());
-        pinData.put("noi_dung",      msg.getNoiDung() != null ? msg.getNoiDung() : "[Hình ảnh]");
+        pinData.put("noi_dung",      msg.getNoiDung() != null ? msg.getNoiDung() : "[Video]");
         pinData.put("nguoi_ghim_id", uid);
         pinData.put("thoi_gian_ghim", com.google.firebase.Timestamp.now());
 
@@ -947,9 +1179,17 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
         TextView           txtContent, txtTime, txtReadReceipt;
         LinearLayout       layoutReplyPreview;
         TextView           txtReplyPreviewName, txtReplyPreviewContent, txtReaction;
-        ImageView imgSenderAvatar;
+        ImageView          imgSenderAvatar;
         TextView           txtSenderName;
-//        ImageView imgAvatar;
+
+        // Audio
+        ImageButton        btnPlayAudio;
+        SeekBar            seekBarAudio;
+        TextView           txtAudioDuration, txtCurrentTime;
+
+        // Video ✅ MỚI
+        ImageView          imgVideoThumbnail;
+        ImageView          btnPlayVideo;
 
         MessageViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -962,9 +1202,19 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             txtReplyPreviewContent = itemView.findViewById(R.id.txtReplyPreviewContent);
             imgSenderAvatar        = itemView.findViewById(R.id.imgSenderAvatar);
             txtSenderName          = itemView.findViewById(R.id.txtSenderName);
+
+            // Audio
+            btnPlayAudio           = itemView.findViewById(R.id.btnPlayAudio);
+            seekBarAudio           = itemView.findViewById(R.id.seekBarAudio);
+            txtAudioDuration       = itemView.findViewById(R.id.txtAudioDuration);
+            txtCurrentTime         = itemView.findViewById(R.id.txtCurrentTime);
+
+            // Video ✅ MỚI
+            imgVideoThumbnail      = itemView.findViewById(R.id.imgVideoThumbnail);
+            btnPlayVideo           = itemView.findViewById(R.id.btnPlayVideo);
         }
     }
-    // Thêm vào cuối class, trước dấu } cuối cùng
+
     private boolean isContextValid(Context context) {
         if (context == null) return false;
         if (context instanceof android.app.Activity) {

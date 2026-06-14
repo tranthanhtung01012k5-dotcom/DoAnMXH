@@ -137,7 +137,9 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
             holder.txtUsername.setTypeface(null, android.graphics.Typeface.BOLD);
             holder.txtNguoiGui.setTypeface(null, android.graphics.Typeface.BOLD);
             holder.txtLastMessageContent.setTypeface(null, android.graphics.Typeface.BOLD);
-            holder.txtLastMessageContent.setTextColor(0xFFFFFFFF);
+            holder.txtLastMessageContent.setTextColor(
+                    holder.itemView.getResources().getColor(R.color.text_primary)
+            );
             holder.txtChatTime.setTypeface(null, android.graphics.Typeface.BOLD);
             if (holder.unreadDot != null) holder.unreadDot.setVisibility(View.VISIBLE);
         } else {
