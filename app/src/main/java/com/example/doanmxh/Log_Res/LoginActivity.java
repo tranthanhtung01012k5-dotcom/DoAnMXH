@@ -19,15 +19,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.doanmxh.Log_Res.AccountManager;
 import com.example.doanmxh.BaseActivity;
 import com.example.doanmxh.MainActivity;
 import com.example.doanmxh.MyApplication;
 import com.example.doanmxh.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.List;
 
 public class LoginActivity extends BaseActivity {
 
@@ -38,8 +38,7 @@ public class LoginActivity extends BaseActivity {
     FirebaseAuth auth;
     FirebaseFirestore db;
 
-    // Key lưu trạng thái "đã đăng nhập" (auto-login mỗi lần mở app)
-    private static final String PREF_NAME   = "login_pref";
+    private static final String PREF_NAME    = "login_pref";
     private static final String KEY_REMEMBER = "remember_login";
 
     @Override
@@ -58,6 +57,10 @@ public class LoginActivity extends BaseActivity {
 
         btnLogin.setOnClickListener(v -> loginUser());
 
+        // ── Autofill dropdown (chỉ hiện tài khoản đã tick Remember) ──────────
+        setupAutofillDropdown();
+
+        // ── Quên mật khẩu ────────────────────────────────────────────────────
         TextView txtForgotPassword = findViewById(R.id.txtForgotPassword);
         txtForgotPassword.setOnClickListener(v -> {
             startActivity(new Intent(LoginActivity.this, ForgotPassActivity.class));
@@ -72,6 +75,7 @@ public class LoginActivity extends BaseActivity {
             public void onClick(@NonNull View widget) {
                 startActivity(new Intent(LoginActivity.this, RegisterActivity.class));
             }
+
             @Override
             public void updateDrawState(@NonNull TextPaint ds) {
                 super.updateDrawState(ds);
@@ -89,6 +93,37 @@ public class LoginActivity extends BaseActivity {
         txtRegister.setText(spannableString);
         txtRegister.setMovementMethod(LinkMovementMethod.getInstance());
         txtRegister.setHighlightColor(Color.TRANSPARENT);
+    }
+
+    // ── Autofill dropdown ─────────────────────────────────────────────────────
+
+    private void setupAutofillDropdown() {
+        // Chỉ lấy account có password (đã từng tick Remember)
+        List<AccountManager.SavedAccount> list = AccountManager.getAllWithPassword(this);
+        if (list.isEmpty()) return;
+
+        edtUsername.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) showCredentialDropdown(list);
+        });
+    }
+
+    private void showCredentialDropdown(List<AccountManager.SavedAccount> list) {
+        String[] emails = list.stream()
+                .map(a -> a.email)
+                .toArray(String[]::new);
+
+        android.widget.ListPopupWindow popup = new android.widget.ListPopupWindow(this);
+        popup.setAnchorView(edtUsername);
+        popup.setAdapter(new android.widget.ArrayAdapter<>(
+                this, android.R.layout.simple_list_item_1, emails));
+        popup.setWidth(edtUsername.getWidth());
+        popup.setOnItemClickListener((parent, view, position, id) -> {
+            edtUsername.setText(list.get(position).email);
+            edtPassword.setText(list.get(position).password);
+            checkRemember.setChecked(true);
+            popup.dismiss();
+        });
+        popup.show();
     }
 
     // ── Đăng nhập ─────────────────────────────────────────────────────────────
@@ -123,71 +158,75 @@ public class LoginActivity extends BaseActivity {
                         return;
                     }
 
-                    auth.getCurrentUser().reload().addOnCompleteListener(reloadTask -> {
+                    String uid = auth.getCurrentUser().getUid();
 
-                        boolean verified = auth.getCurrentUser().isEmailVerified();
-                        if (!verified) {
-                            auth.signOut();
-                            Toast.makeText(LoginActivity.this,
-                                    "Email chưa được xác minh", Toast.LENGTH_LONG).show();
+                    // Kiểm tra xác thực OTP qua Firestore
+                    db.collection("nguoi_dung").document(uid).get()
+                            .addOnSuccessListener(documentSnapshot -> {
+                                if (documentSnapshot.exists()) {
+                                    boolean isVerified = Boolean.TRUE.equals(
+                                            documentSnapshot.getBoolean("verified"));
 
-                            // Gửi lại email xác minh
-                            auth.signInWithEmailAndPassword(email, password)
-                                    .addOnSuccessListener(authResult -> {
-                                        if (auth.getCurrentUser() != null) {
-                                            auth.getCurrentUser().sendEmailVerification();
-                                            Toast.makeText(LoginActivity.this,
-                                                    "Đã gửi lại email xác minh",
-                                                    Toast.LENGTH_LONG).show();
-                                        }
+                                    if (!isVerified) {
                                         auth.signOut();
-                                    });
-                            return;
-                        }
-
-                        // ✅ Đã xác minh — lấy thêm displayName rồi xử lý
-                        String uid         = auth.getCurrentUser().getUid();
-                        String displayName = auth.getCurrentUser().getDisplayName();
-
-                        // ── Lưu tài khoản vào danh sách nếu tick Remember ────
-                        if (checkRemember.isChecked()) {
-                            AccountManager.saveAccount(
-                                    LoginActivity.this,
-                                    new AccountManager.SavedAccount(
-                                            email,
-                                            password,
-                                            displayName,
-                                            uid
-                                    )
-                            );
-                        }
-
-                        // Luôn lưu cờ auto-login cho lần mở app tiếp theo
-                        getSharedPreferences(PREF_NAME, MODE_PRIVATE)
-                                .edit()
-                                .putBoolean(KEY_REMEMBER, true)
-                                .apply();
-
-                        // Cập nhật trạng thái online
-                        db.collection("nguoi_dung")
-                                .document(uid)
-                                .update("trang_thai_hoat_dong", true)
-                                .addOnSuccessListener(unused -> {
-                                    MyApplication.setupPresence();
-                                    Toast.makeText(LoginActivity.this,
-                                            "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
-                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK
-                                            | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                    startActivity(intent);
-                                    finish();
-                                })
-                                .addOnFailureListener(e ->
                                         Toast.makeText(LoginActivity.this,
-                                                "Không cập nhật được trạng thái hoạt động",
-                                                Toast.LENGTH_SHORT).show()
-                                );
-                    });
+                                                "Tài khoản chưa xác thực OTP",
+                                                Toast.LENGTH_LONG).show();
+
+                                        Intent intent = new Intent(
+                                                LoginActivity.this,
+                                                VerifyRegisterOtpActivity.class);
+                                        intent.putExtra("uid", uid);
+                                        intent.putExtra("email",
+                                                edtUsername.getText().toString().trim());
+                                        Log.d("VerifyRegisterOtpActivity", "uid: " + uid + " " + "email: " + edtUsername.getText().toString().trim() + "");
+                                        startActivity(intent);
+                                        finish();
+                                        return;
+                                    }
+
+                                    // ✅ Đã xác thực → tiếp tục đăng nhập
+                                    proceedLogin(uid);
+                                }
+                            })
+                            .addOnFailureListener(e ->
+                                    Toast.makeText(this,
+                                            "Lỗi kiểm tra xác thực",
+                                            Toast.LENGTH_SHORT).show());
+                });
+    }
+
+    // ── Hoàn tất đăng nhập ────────────────────────────────────────────────────
+
+    private void proceedLogin(String uid) {
+        String email    = edtUsername.getText().toString().trim();
+        String password = edtPassword.getText().toString().trim();
+
+        // Luôn lưu vào AccountManager (đổi tài khoản nhanh)
+        // Tick Remember → lưu kèm password (dùng cho autofill dropdown)
+        // Không tick    → lưu password rỗng (chỉ đổi tài khoản nhanh)
+        AccountManager.saveAccount(this, new AccountManager.SavedAccount(
+                email,
+                checkRemember.isChecked() ? password : "",
+                null,
+                uid
+        ));
+
+        // Lưu trạng thái Remember (giữ session hay không)
+        getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_REMEMBER, checkRemember.isChecked())
+                .apply();
+
+        // Cập nhật trạng thái online
+        db.collection("nguoi_dung").document(uid)
+                .update("trang_thai_hoat_dong", true)
+                .addOnSuccessListener(unused -> {
+                    MyApplication.setupPresence();
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
                 });
     }
 }

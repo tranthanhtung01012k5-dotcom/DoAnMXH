@@ -21,6 +21,7 @@ import com.example.doanmxh.HomePage.PostDetailActivity;
 import com.example.doanmxh.HomePage.PostModel;
 import com.example.doanmxh.HomePage.PostOptionBottomSheet;
 import com.example.doanmxh.HomePage.ShareBottom;
+import com.example.doanmxh.Notifications.NotificationsFragment;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
 import com.google.firebase.Timestamp;
@@ -45,7 +46,7 @@ import java.util.Set;
 public class SearchResultActivity extends AppCompatActivity {
 
     private RecyclerView          rvRelatedProfiles, rvTopPosts;
-    private TextView              edtSearch;
+    private TextView              edtSearch,tencanhan,toppost,tvEmpty;
     private FirebaseFirestore     db;
     private RelatedProfileAdapter userAdapter;
     private PostAdapter           postAdapter;
@@ -55,6 +56,7 @@ public class SearchResultActivity extends AppCompatActivity {
     private final Set<String> repostedByMe = new HashSet<>();
     private final Set<String> processingLikes = new HashSet<>();
     private String keyword;
+    private FirebaseAuth auth;
     private ListenerRegistration listenerRegistration;
     private ImageView btnCancel;
     private final android.os.Handler searchHandler = new android.os.Handler();
@@ -66,7 +68,7 @@ public class SearchResultActivity extends AppCompatActivity {
 
         keyword = getIntent().getStringExtra("keyword");
         db      = FirebaseFirestore.getInstance();
-
+        auth = FirebaseAuth.getInstance();
         initViews();
         loadRelatedProfiles();
         loadTopPosts();
@@ -77,6 +79,9 @@ public class SearchResultActivity extends AppCompatActivity {
 
     private void initViews() {
         edtSearch         = findViewById(R.id.edtSearch);
+        tencanhan          = findViewById(R.id.tencanhan);
+        toppost            = findViewById(R.id.topposts);
+        tvEmpty            = findViewById(R.id.tvEmpty);
         rvRelatedProfiles = findViewById(R.id.rvRelatedProfiles);
         rvTopPosts        = findViewById(R.id.rvTopPosts);
         btnCancel         = findViewById(R.id.btnCancel);
@@ -200,12 +205,14 @@ public class SearchResultActivity extends AppCompatActivity {
                                                 .document(currentUid)
                                                 .set(likeData)
                                                 .addOnSuccessListener(unused -> {
+                                                    String nguoiNhanID = doc.getString("nguoi_dung_id");
                                                     db.collection("bai_viet")
                                                             .document(docId)
                                                             .update("so_like", FieldValue.increment(1));
                                                     finalPost.setLikedByMe(true);
                                                     finalPost.setSoLuotThich(finalPost.getSoLuotThich() + 1);
                                                     postAdapter.notifyItemChanged(finalPosition, "LIKE_UPDATE");
+                                                    NotificationsFragment.sendLikeNotification(nguoiNhanID,currentUid,docId);
                                                     processingLikes.remove(docId);
                                                 })
                                                 .addOnFailureListener(e -> Log.e("HomeFragment", "Lỗi like: " + e.getMessage()))
@@ -294,7 +301,7 @@ public class SearchResultActivity extends AppCompatActivity {
                                 .document(currentUid)
                                 .update("so_nguoi_dang_theo_doi",
                                         FieldValue.increment(1));
-
+                        NotificationsFragment.sendFollowNotification(authorUid,currentUid);
                         // cập nhật UI
                         Toast.makeText(SearchResultActivity.this,
                                 "Đã theo dõi @" + post.getTenDangNhap(),
@@ -408,10 +415,13 @@ public class SearchResultActivity extends AppCompatActivity {
                         repost.put("che_do_xem", "public");
                         repost.put("hinh_anh", new ArrayList<>());
                         repost.put("danh_sach_anh", new ArrayList<>());
+                        repost.put("danh_sach_video", new ArrayList<>());
+                        repost.put("danh_sach_audio", new ArrayList<>());
                         repost.put("bai_viet_cha_id", originalDocId);
                         repost.put("is_repost", true);
 
                         DocumentReference baiGocRef = db.collection("bai_viet").document(originalDocId);
+
                         WriteBatch batch = db.batch();
 
                         DocumentReference repostRef = db.collection("bai_viet").document();
@@ -424,6 +434,10 @@ public class SearchResultActivity extends AppCompatActivity {
                                     post.setRepostedByMe(true);
                                     post.setSoRepost(post.getSoRepost() + 1);
                                     postAdapter.notifyItemChanged(position, "REPOST_UPDATE");
+                                    baiGocRef.get().addOnSuccessListener(v -> {
+                                       String idNguoiDang = v.getString("nguoi_dung_id");
+                                       NotificationsFragment.sendRepostNotification(idNguoiDang,currentUid,originalDocId);
+                                    });
                                     Toast.makeText(SearchResultActivity.this, "Đã đăng lại!", Toast.LENGTH_SHORT).show();
                                 })
                                 .addOnFailureListener(e ->
@@ -502,151 +516,177 @@ public class SearchResultActivity extends AppCompatActivity {
 
     private void loadRelatedProfiles() {
         if (keyword == null || keyword.isEmpty()) return;
+        if (auth.getCurrentUser() == null) return;
+
+        String myUid = auth.getCurrentUser().getUid();
 
         db.collection("nguoi_dung")
                 .get()
                 .addOnSuccessListener(query -> {
-                    userList.clear();
-                    for (User user : query.toObjects(User.class)) {
-                        if (user.getUsername() != null &&
-                                user.getUsername().toLowerCase()
-                                        .contains(keyword.toLowerCase())) {
-                            userList.add(user);
+                    List<User> matched = new ArrayList<>();
+
+                    // Map thủ công để lấy đúng document ID làm uid
+                    for (DocumentSnapshot doc : query.getDocuments()) {
+                        String username = doc.getString("ten_dang_nhap");
+                        if (username != null &&
+                                username.toLowerCase().contains(keyword.toLowerCase())) {
+
+                            User user = new User();
+                            user.setUid(doc.getId());
+                            user.setUsername(username);
+                            user.setFullname(doc.getString("ho_va_ten"));
+                            user.setAvatar(doc.getString("anh_dai_dien"));
+                            user.setFollowed(false);
+                            matched.add(user);
                         }
                     }
-                    userAdapter.notifyDataSetChanged();
-                    rvRelatedProfiles.setVisibility(
-                            userList.isEmpty() ? View.GONE : View.VISIBLE);
+
+                    if (matched.isEmpty()) {
+                        userAdapter.setListWithoutCheck(new ArrayList<>());
+                        rvRelatedProfiles.setVisibility(View.GONE);
+                        tencanhan.setVisibility(View.GONE);
+                        return;
+                    }
+
+                    final int total = matched.size();
+                    final int[] done = {0};
+
+                    for (User user : matched) {
+                        if (user.getUid() == null || user.getUid().equals(myUid)) {
+                            done[0]++;
+                            if (done[0] == total) sortAndShow(matched, myUid);
+                            continue;
+                        }
+
+                        db.collection("nguoi_dung").document(myUid)
+                                .collection("nguoi_dang_theo_doi")
+                                .document(user.getUid())
+                                .get()
+                                .addOnSuccessListener(followDoc -> {
+                                    user.setFollowed(followDoc.exists());
+                                    done[0]++;
+                                    if (done[0] == total) sortAndShow(matched, myUid);
+                                })
+                                .addOnFailureListener(e -> {
+                                    done[0]++;
+                                    if (done[0] == total) sortAndShow(matched, myUid);
+                                });
+                    }
                 });
     }
 
-    private void loadTopPosts() {
+    private void sortAndShow(List<User> matched, String myUid) {
+        matched.sort((a, b) -> {
+            boolean aIsMe = myUid.equals(a.getUid());
+            boolean bIsMe = myUid.equals(b.getUid());
 
+            if (aIsMe) return 1;   // bản thân xuống cuối
+            if (bIsMe) return -1;
+
+            // false (chưa follow) < true (đã follow) → chưa follow lên đầu
+            return Boolean.compare(a.isFollowed(), b.isFollowed());
+        });
+
+        userAdapter.setListWithoutCheck(matched);
+        rvRelatedProfiles.setVisibility(matched.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    private void loadTopPosts() {
         if (keyword == null || keyword.isEmpty()) return;
 
-        String myUid =
-                FirebaseAuth.getInstance().getCurrentUser() != null
-                        ? FirebaseAuth.getInstance().getCurrentUser().getUid()
-                        : null;
-        Log.d("SEARCH_DEBUG", "=== loadTopPosts START, keyword=" + keyword);
+        String myUid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid() : null;
 
         db.collection("bai_viet")
                 .whereEqualTo("da_xoa", false)
                 .orderBy("ngay_tao", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(query -> {
-                    Log.d("SEARCH_DEBUG", "Total docs fetched: " + query.size()); // ← SỐ BÀI TÌM ĐƯỢC
-
                     postList.clear();
 
+                    // Lọc bài khớp keyword trước
+                    List<DocumentSnapshot> matched = new ArrayList<>();
                     for (DocumentSnapshot doc : query.getDocuments()) {
-
                         PostModel post = doc.toObject(PostModel.class);
-
                         if (post == null) continue;
+                        String content = post.getNoiDung();
+                        if (content != null && content.toLowerCase().contains(keyword.toLowerCase())) {
+                            matched.add(doc);
+                        }
+                    }
 
+                    // Nếu không có bài nào khớp → dùng tất cả
+                    List<DocumentSnapshot> toLoad = matched.isEmpty()
+                            ? query.getDocuments()
+                            : matched;
+
+                    if (toLoad.isEmpty()) {
+                        tvEmpty.setVisibility(View.VISIBLE);
+                        tvEmpty.setText("Không có bài nào");
+                        rvTopPosts.setVisibility(View.GONE);
+                        return;
+                    }
+
+                    for (DocumentSnapshot doc : toLoad) {
+                        PostModel post = doc.toObject(PostModel.class);
+                        if (post == null) continue;
                         post.setDocumentId(doc.getId());
 
-                        String content = post.getNoiDung();
-
-                        if (content == null ||
-                                !content.toLowerCase()
-                                        .contains(keyword.toLowerCase())) {
-                            Log.d("SEARCH_DEBUG", "Matched post: " + doc.getId() + " | content: " + content);
-
-                            continue;
-                        }
-//                        Log.d("SEARCH_DEBUG", "Matched posts count: " + matched); // ← CÓ BÀI NÀO KHỚP KHÔNG?
-
                         String uid = post.getNguoiDungId();
-
                         if (uid == null) continue;
 
-                        db.collection("nguoi_dung")
-                                .document(uid)
-                                .get()
+                        db.collection("nguoi_dung").document(uid).get()
                                 .addOnSuccessListener(userDoc -> {
-
                                     if (userDoc.exists()) {
-
-                                        post.setHoVaTen(
-                                                userDoc.getString("ho_va_ten"));
-
-                                        post.setTenDangNhap(
-                                                userDoc.getString("ten_dang_nhap"));
-
-                                        post.setAnhDaiDien(
-                                                userDoc.getString("anh_dai_dien"));
-
-                                        post.setVerified(
-                                                Boolean.TRUE.equals(
-                                                        userDoc.getBoolean("verified")));
+                                        post.setHoVaTen(userDoc.getString("ho_va_ten"));
+                                        post.setTenDangNhap(userDoc.getString("ten_dang_nhap"));
+                                        post.setAnhDaiDien(userDoc.getString("anh_dai_dien"));
+                                        post.setVerified(Boolean.TRUE.equals(userDoc.getBoolean("verified")));
                                     }
 
                                     Runnable finishTask = () -> {
-
-                                        loadTopComment(post, () -> {
-                                            Log.d("SEARCH_DEBUG", "Adding post to list: " + post.getDocumentId());
-
-                                            postList.add(post);
-                                            Log.d("SEARCH_DEBUG", "postList size now: " + postList.size());
-
-                                            postList.sort((a, b) -> {
-                                                Timestamp t1 = a.getNgayTao();
-                                                Timestamp t2 = b.getNgayTao();
-
-                                                if (t1 == null || t2 == null)
-                                                    return 0;
-
-                                                return t2.compareTo(t1);
+                                        loadFollowAndRepost(post, myUid, () -> {
+                                            loadTopComment(post, () -> {
+                                                postList.add(post);
+                                                postList.sort((a, b) -> {
+                                                    Timestamp t1 = a.getNgayTao();
+                                                    Timestamp t2 = b.getNgayTao();
+                                                    if (t1 == null || t2 == null) return 0;
+                                                    return t2.compareTo(t1);
+                                                });
+                                                postAdapter.notifyDataSetChanged();
+                                                rvTopPosts.setVisibility(
+                                                        postList.isEmpty() ? View.GONE : View.VISIBLE);
                                             });
-
-                                            postAdapter.notifyDataSetChanged();
-
-                                            rvTopPosts.setVisibility(
-                                                    postList.isEmpty()
-                                                            ? View.GONE
-                                                            : View.VISIBLE);
                                         });
                                     };
 
-                                    String chaId =
-                                            doc.getString("bai_viet_cha_id");
-
+                                    String chaId = doc.getString("bai_viet_cha_id");
                                     if (chaId != null && !chaId.isEmpty()) {
-
                                         post.setBaiVietChaId(chaId);
-
-                                        loadBaiVietCha(
-                                                post,
-                                                chaId,
-                                                finishTask
-                                        );
-
+                                        loadBaiVietCha(post, chaId, finishTask);
                                     } else {
                                         if (myUid != null) {
-
                                             db.collection("bai_viet")
                                                     .document(post.getDocumentId())
                                                     .collection("luot_thich")
                                                     .document(myUid)
                                                     .get()
                                                     .addOnSuccessListener(likeDoc -> {
-
                                                         post.setLikedByMe(likeDoc.exists());
-
                                                         loadFollowAndRepost(post, myUid, finishTask);
                                                     });
-
                                         } else {
                                             finishTask.run();
                                         }
-
                                     }
                                 });
                     }
-                }).addOnFailureListener(e -> {
-                    Log.e("SEARCH_DEBUG", "Query FAILED: " + e.getMessage()); // ← thêm dòng này
+                })
+                .addOnFailureListener(e -> {
+                    tvEmpty.setVisibility(View.VISIBLE);
+                    tvEmpty.setText("Không có bài nào");
+                    rvTopPosts.setVisibility(View.GONE);
                 });
     }
     private void loadFollowAndRepost(

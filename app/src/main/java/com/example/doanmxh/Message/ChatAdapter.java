@@ -253,7 +253,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.MessageViewHol
             tvMessage.setVisibility(View.VISIBLE);
             imgMessage.setVisibility(View.GONE);
             tvMessage.setText("Tin nhắn đã bị xóa");
-            tvMessage.setTextColor(Color.GRAY);
+            tvMessage.setTextColor(Color.LTGRAY);
             tvMessage.setTypeface(null, android.graphics.Typeface.ITALIC);
             if (holder.txtReaction != null)
                 holder.txtReaction.setVisibility(View.GONE);

@@ -18,19 +18,26 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.doanmxh.BaseActivity;
 import com.example.doanmxh.R;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import org.json.JSONObject;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 public class RegisterActivity extends BaseActivity {
+    // Cấu hình EmailJS (Giống như trong ForgotPassActivity)
+    private static final String EMAILJS_SERVICE_ID = "service_09rmxf2";
+    private static final String EMAILJS_USER_ID    = "q5i3vyErg69Xfxaza";
+    private static final String EMAILJS_TEMPLATE_OTP = "template_wcxozzh"; // Đảm bảo template này chấp nhận biến {{otp}}
 
     EditText edtFullname, edtUsername, edtEmail, edtPassword;
     Button btnRegister;
@@ -55,45 +62,16 @@ public class RegisterActivity extends BaseActivity {
         db   = FirebaseFirestore.getInstance();
 
         btnRegister.setOnClickListener(v -> registerUser());
-
-        // ── Spannable "Đăng nhập" ──
-        txtLogin = findViewById(R.id.txtLogin);
-        String text = "Đã có tài khoản? Đăng nhập";
-        SpannableString spannableString = new SpannableString(text);
-        ClickableSpan clickableSpan = new ClickableSpan() {
-            @Override
-            public void onClick(@NonNull View widget) {
-                startActivity(new Intent(RegisterActivity.this, LoginActivity.class));
-            }
-            @Override
-            public void updateDrawState(@NonNull TextPaint ds) {
-                super.updateDrawState(ds);
-                ds.setColor(getResources().getColor(R.color.text_primary));
-                ds.setUnderlineText(false);
-                ds.setFakeBoldText(true);
-            }
-        };
-        spannableString.setSpan(
-                clickableSpan,
-                text.indexOf("Đăng nhập"),
-                text.length(),
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-        );
-        txtLogin.setText(spannableString);
-        txtLogin.setMovementMethod(LinkMovementMethod.getInstance());
-        txtLogin.setHighlightColor(Color.TRANSPARENT);
+        setupLoginLink();
     }
 
     private void registerUser() {
-
-        String hoVaTen     = edtFullname.getText().toString().trim();
+        String hoVaTen = edtFullname.getText().toString().trim();
         String tenDangNhap = edtUsername.getText().toString().trim();
-        String email       = edtEmail.getText().toString().trim();
-        String matKhau     = edtPassword.getText().toString().trim();
+        String email = edtEmail.getText().toString().trim();
+        String matKhau = edtPassword.getText().toString().trim();
 
-        // ── Validate cơ bản ──
-        if (TextUtils.isEmpty(hoVaTen) || TextUtils.isEmpty(tenDangNhap)
-                || TextUtils.isEmpty(email) || TextUtils.isEmpty(matKhau)) {
+        if (TextUtils.isEmpty(hoVaTen) || TextUtils.isEmpty(tenDangNhap) || TextUtils.isEmpty(email) || TextUtils.isEmpty(matKhau)) {
             Toast.makeText(this, "Nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -103,142 +81,116 @@ public class RegisterActivity extends BaseActivity {
             return;
         }
 
-        if (matKhau.length() < 6) {
-            Toast.makeText(this, "Mật khẩu tối thiểu 6 ký tự", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (!checkTerms.isChecked()) {
-            Toast.makeText(this, "Vui lòng đồng ý điều khoản", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // ── Validate tên đăng nhập: chỉ chữ, số, dấu _ , từ 3-20 ký tự ──
-        if (!tenDangNhap.matches("^[a-zA-Z0-9_]{3,20}$")) {
-            Toast.makeText(this,
-                    "Tên người dùng chỉ gồm chữ, số, dấu _ và từ 3-20 ký tự",
-                    Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        // ── Kiểm tra ten_dang_nhap trùng trước khi đăng ký ──
-        db.collection("nguoi_dung")
-                .whereEqualTo("ten_dang_nhap", tenDangNhap)
-                .get()
+        // Kiểm tra tên người dùng trùng
+        db.collection("nguoi_dung").whereEqualTo("ten_dang_nhap", tenDangNhap).get()
                 .addOnSuccessListener(querySnapshot -> {
-
                     if (!querySnapshot.isEmpty()) {
-                        Toast.makeText(this,
-                                "Tên người dùng đã tồn tại",
-                                Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Tên người dùng đã tồn tại", Toast.LENGTH_SHORT).show();
                         return;
                     }
-
-                    // ── Đăng ký Firebase Auth ──
-                    auth.createUserWithEmailAndPassword(email, matKhau)
-                            .addOnCompleteListener(task -> {
-
-                                if (task.isSuccessful()) {
-
-                                    FirebaseUser user = auth.getCurrentUser();
-
-                                    if (user == null) {
-                                        Toast.makeText(
-                                                RegisterActivity.this,
-                                                "Không lấy được thông tin user",
-                                                Toast.LENGTH_SHORT
-                                        ).show();
-                                        return;
-                                    }
-
-                                    String uid = user.getUid();
-
-                                    // ── Gửi email xác minh ──
-                                    user.sendEmailVerification()
-                                            .addOnSuccessListener(unused -> {
-                                                Toast.makeText(
-                                                        RegisterActivity.this,
-                                                        "ĐÃ GỬI MAIL THÀNH CÔNG",
-                                                        Toast.LENGTH_LONG
-                                                ).show();
-                                            })
-                                            .addOnFailureListener(e -> {
-                                                Toast.makeText(
-                                                        RegisterActivity.this,
-                                                        "LỖI: " + e.getMessage(),
-                                                        Toast.LENGTH_LONG
-                                                ).show();
-                                            })
-                                            .addOnCompleteListener(verifyTask -> {
-
-                                                if (verifyTask.isSuccessful()) {
-
-                                                    // ── Lưu Firestore ──
-                                                    Map<String, Object> nguoiDung = new HashMap<>();
-                                                    nguoiDung.put("ho_va_ten",   hoVaTen);
-                                                    nguoiDung.put("ten_dang_nhap", tenDangNhap);
-                                                    nguoiDung.put("email",       email);
-                                                    nguoiDung.put("mat_khau",       matKhau);
-                                                    nguoiDung.put("anh_dai_dien", "");
-                                                    nguoiDung.put("tieu_su",     "");
-                                                    nguoiDung.put("ngay_tao",    new Date());
-                                                    nguoiDung.put("verified",    false);
-                                                    nguoiDung.put("private",     false);
-                                                    nguoiDung.put("lan_hoat_dong_cuoi",new Date());
-                                                    nguoiDung.put("ngay_cap_nhat_mat_khau",new Date());
-                                                    nguoiDung.put("uid",         uid);
-                                                    nguoiDung.put("so_nguoi_theo_doi",       0);
-                                                    nguoiDung.put("trang_thai_hoat_dong",  false);
-                                                    nguoiDung.put("so_nguoi_dang_theo_doi",  0);
-                                                    nguoiDung.put("link_lien_ket",  "https://DoAnMXH.net/@" + tenDangNhap);
-
-                                                    db.collection("nguoi_dung")
-                                                            .document(uid)
-                                                            .set(nguoiDung)
-                                                            .addOnSuccessListener(unused -> {
-                                                                Toast.makeText(
-                                                                        RegisterActivity.this,
-                                                                        "Đã gửi email xác minh",
-                                                                        Toast.LENGTH_LONG
-                                                                ).show();
-                                                                auth.signOut();
-                                                                startActivity(new Intent(
-                                                                        RegisterActivity.this,
-                                                                        LoginActivity.class));
-                                                                finish();
-                                                            })
-                                                            .addOnFailureListener(e -> {
-                                                                Toast.makeText(
-                                                                        RegisterActivity.this,
-                                                                        "Lỗi lưu dữ liệu: " + e.getMessage(),
-                                                                        Toast.LENGTH_LONG
-                                                                ).show();
-                                                            });
-
-                                                } else {
-                                                    Toast.makeText(
-                                                            RegisterActivity.this,
-                                                            "Không gửi được email xác minh",
-                                                            Toast.LENGTH_LONG
-                                                    ).show();
-                                                }
-                                            });
-
-                                } else {
-                                    Toast.makeText(
-                                            RegisterActivity.this,
-                                            task.getException() != null
-                                                    ? task.getException().getMessage()
-                                                    : "Đăng ký thất bại",
-                                            Toast.LENGTH_LONG
-                                    ).show();
-                                }
-                            });
-                })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(this,
-                            "Lỗi kiểm tra tên người dùng: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
+                    createAccount(hoVaTen, tenDangNhap, email, matKhau);
                 });
+    }
+
+    private void createAccount(String hoVaTen, String tenDangNhap, String email, String matKhau) {
+        auth.createUserWithEmailAndPassword(email, matKhau).addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                String uid = task.getResult().getUser().getUid();
+
+                // 1. Lưu thông tin người dùng vào Firestore với verified = false
+                Map<String, Object> nguoiDung = new HashMap<>();
+                nguoiDung.put("ho_va_ten",   hoVaTen);
+                nguoiDung.put("ten_dang_nhap", tenDangNhap);
+                nguoiDung.put("email",       email);
+                nguoiDung.put("mat_khau",       matKhau);
+                nguoiDung.put("anh_dai_dien", "");
+                nguoiDung.put("tieu_su",     "");
+                nguoiDung.put("ngay_tao",    new Date());
+                nguoiDung.put("verified",    false);
+                nguoiDung.put("private",     false);
+                nguoiDung.put("lan_hoat_dong_cuoi",new Date());
+                nguoiDung.put("ngay_cap_nhat_mat_khau",new Date());
+                nguoiDung.put("uid",         uid);
+                nguoiDung.put("so_nguoi_theo_doi",       0);
+                nguoiDung.put("trang_thai_hoat_dong",  false);
+                nguoiDung.put("so_nguoi_dang_theo_doi",  0);
+                nguoiDung.put("link_lien_ket",  "https://DoAnMXH.net/@" + tenDangNhap);
+
+                db.collection("nguoi_dung").document(uid).set(nguoiDung).addOnSuccessListener(unused -> {
+                    // 2. Tạo và gửi OTP
+                    sendOtpProcess(uid, email);
+                });
+            } else {
+                Toast.makeText(this, "Lỗi: " + task.getException().getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    // Trong RegisterActivity.java, tại hàm sendOtpProcess
+
+    private void sendOtpProcess(String uid, String email) {
+        String otp = String.valueOf(100000 + new Random().nextInt(900000));
+        long expireTime = System.currentTimeMillis() + 5 * 60 * 1000;
+
+        Map<String, Object> otpData = new HashMap<>();
+        otpData.put("otp_code", otp);
+        otpData.put("expire_time", expireTime);
+        otpData.put("da_su_dung", false); // Thêm trạng thái này cho khớp với VerifyRegisterOtpActivity
+
+        // Lưu vào collection "otp_register" thay vì "otp_verify" để khớp với Activity mới
+        db.collection("otp_register").document(uid).set(otpData).addOnSuccessListener(unused -> {
+            // Gửi qua EmailJS
+            sendEmailJs(email, otp);
+
+            Toast.makeText(this, "Vui lòng nhập mã OTP đã gửi về email", Toast.LENGTH_LONG).show();
+
+            // Mở màn hình VerifyRegisterOtpActivity
+            Intent intent = new Intent(RegisterActivity.this, VerifyRegisterOtpActivity.class);
+            intent.putExtra("uid", uid);
+            intent.putExtra("email", email);
+            startActivity(intent);
+            finish(); // Đóng Activity đăng ký
+        });
+    }
+
+    private void sendEmailJs(String email, String otp) {
+        new Thread(() -> {
+            try {
+                URL url = new URL("https://api.emailjs.com/api/v1.0/email/send");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("origin", "http://localhost");
+                conn.setDoOutput(true);
+
+                JSONObject body = new JSONObject();
+                body.put("service_id", EMAILJS_SERVICE_ID);
+                body.put("template_id", EMAILJS_TEMPLATE_OTP);
+                body.put("user_id", EMAILJS_USER_ID);
+                JSONObject params = new JSONObject();
+                params.put("to_email", email);
+                params.put("otp", otp);
+                body.put("template_params", params);
+
+                OutputStream os = conn.getOutputStream();
+                os.write(body.toString().getBytes("UTF-8"));
+                os.close();
+                conn.getResponseCode();
+            } catch (Exception e) { e.printStackTrace(); }
+        }).start();
+    }
+
+    private void setupLoginLink() {
+        txtLogin = findViewById(R.id.txtLogin);
+        String text = "Đã có tài khoản? Đăng nhập";
+        SpannableString ss = new SpannableString(text);
+        ClickableSpan cs = new ClickableSpan() {
+            @Override public void onClick(@NonNull View v) { startActivity(new Intent(RegisterActivity.this, LoginActivity.class)); }
+            @Override public void updateDrawState(@NonNull TextPaint ds) { ds.setUnderlineText(false); ds.setFakeBoldText(true); }
+        };
+        ss.setSpan(cs, text.indexOf("Đăng nhập"), text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        txtLogin.setText(ss);
+        txtLogin.setMovementMethod(LinkMovementMethod.getInstance());
+        txtLogin.setHighlightColor(Color.TRANSPARENT);
     }
 }

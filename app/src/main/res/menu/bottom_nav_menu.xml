@@ -20,7 +20,7 @@
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/nav_notifications"
+        android:id="@+id/notificationsFragment"
         android:icon="@drawable/ic_heart_outline_24"
         android:title="@string/nav_notifications"
         app:showAsAction="ifRoom" />

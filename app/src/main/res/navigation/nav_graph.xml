@@ -21,7 +21,7 @@
 
     <fragment
         android:id="@+id/notificationsFragment"
-        android:name="com.example.doanmxh.NotificationsFragment"
+        android:name="com.example.doanmxh.Notifications.NotificationsFragment"
         android:label="Notifications" />
 
     <fragment

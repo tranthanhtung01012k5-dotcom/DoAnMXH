@@ -3,7 +3,7 @@
     res/values/strings.xml
 -->
 <resources>
-    <string name="app_name">Threads</string>
+    <string name="app_name">STaPG</string>
 
     <!-- Bottom Navigation -->
     <string name="nav_home">Home</string>
@@ -18,7 +18,7 @@
 
     <!-- Content descriptions (accessibility) -->
     <string name="cd_toolbar_left">Nút trái toolbar</string>
-    <string name="cd_threads_logo">Logo Threads</string>
+    <string name="cd_threads_logo">Logo STPG</string>
     <string name="cd_direct_message">Tin nhắn trực tiếp</string>
     <string name="cd_more_options">Tùy chọn thêm</string>
     <string name="cd_like">Thích</string>

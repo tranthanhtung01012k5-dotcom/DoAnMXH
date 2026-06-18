@@ -48,6 +48,7 @@
                   android:windowSoftInputMode="adjustPan"/>
         <activity android:name=".Log_Res.LoginActivity"/>
         <activity android:name=".Log_Res.RegisterActivity"/>
+        <activity android:name=".Log_Res.VerifyRegisterOtpActivity"/>
         <activity android:name=".Log_Res.ForgotPassActivity"/>
         <activity android:name=".HomePage.PostDetailActivity" />
         <activity android:name=".ProfilePage.EditProfileActivity" />

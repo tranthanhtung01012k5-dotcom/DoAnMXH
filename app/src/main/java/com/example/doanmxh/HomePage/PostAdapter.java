@@ -50,7 +50,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     private List<PostModel> postList;
     private OnPostActionListener listener;
     private OnItemClickListener itemClickListener;
+    // PostAdapter.java — thêm constants
+    private static final int VIEW_TYPE_SKELETON = 0;
+    private static final int VIEW_TYPE_POST     = 1;
 
+// Thêm flag vào PostModel
+// post.setLoading(true) = skeleton, false = real content
 
     public interface OnItemClickListener {
         void onItemClick(String postId);
@@ -667,7 +672,10 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     }
 
     @Override public int getItemCount() { return postList != null ? postList.size() : 0; }
-
+    @Override
+    public int getItemViewType(int position) {
+        return postList.get(position).isLoading() ? VIEW_TYPE_SKELETON : VIEW_TYPE_POST;
+    }
     public void updateList(List<PostModel> newList) {
         this.postList = newList;
         notifyDataSetChanged();

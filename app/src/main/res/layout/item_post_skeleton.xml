@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="12dp"
+    android:orientation="horizontal">
+
+    <!-- Avatar skeleton -->
+    <View
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="@drawable/skeleton_circle"
+        android:layout_marginEnd="10dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Name skeleton -->
+        <View
+            android:layout_width="80dp"
+            android:layout_height="12dp"
+            android:background="@drawable/skeleton_rect"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- Content lines -->
+        <View android:layout_width="match_parent" android:layout_height="11dp"
+            android:background="@drawable/skeleton_rect" android:layout_marginBottom="6dp"/>
+        <View android:layout_width="200dp" android:layout_height="11dp"
+            android:background="@drawable/skeleton_rect" android:layout_marginBottom="6dp"/>
+        <View android:layout_width="140dp" android:layout_height="11dp"
+            android:background="@drawable/skeleton_rect" android:layout_marginBottom="12dp"/>
+
+        <!-- Actions skeleton -->
+        <View android:layout_width="120dp" android:layout_height="20dp"
+            android:background="@drawable/skeleton_rect"/>
+    </LinearLayout>
+</LinearLayout>

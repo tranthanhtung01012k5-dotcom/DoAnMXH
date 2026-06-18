@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatActivity; // Thêm import này
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.doanmxh.R;
 import com.google.firebase.Timestamp;
 
@@ -97,11 +98,16 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
         } else {
             holder.txtChatTime.setText("");
         }
-
+        if (chat.isPinned()) {
+            holder.imgPinned.setVisibility(View.VISIBLE);
+        } else {
+            holder.imgPinned.setVisibility(View.GONE);
+        }
         // ── AVATAR ──
         Glide.with(holder.itemView.getContext())
                 .load(chat.getAvatarResId())
                 .placeholder(R.drawable.ic_person_outline_24)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .error(R.drawable.ic_person_outline_24)
                 .into(holder.demoAvatar);
 
@@ -158,7 +164,7 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
     }
 
     public static class ChatViewHolder extends RecyclerView.ViewHolder {
-        ImageView demoAvatar;
+        ImageView demoAvatar,imgPinned;
         TextView txtUsername, txtLastMessageContent, txtChatTime, txtNguoiGui;
         View unreadDot, viewOnline;
 
@@ -171,6 +177,7 @@ public class ChatListAdapter extends RecyclerView.Adapter<ChatListAdapter.ChatVi
             viewOnline = itemView.findViewById(R.id.viewOnline);
             txtChatTime = itemView.findViewById(R.id.txtChatTime);
             unreadDot = itemView.findViewById(R.id.unreadDot);
+            imgPinned = itemView.findViewById(R.id.imgPinned);
         }
     }
 }

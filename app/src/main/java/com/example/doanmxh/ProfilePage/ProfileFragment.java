@@ -170,7 +170,7 @@ public class ProfileFragment extends Fragment {
         imgProfile = view.findViewById(R.id.imgProfile);
         editProfile = view.findViewById(R.id.btnEditProfile);
         shareProfile = view.findViewById(R.id.btnShareProfile);
-        btnLanguage = view.findViewById(R.id.btnLanguage);
+//        btnLanguage = view.findViewById(R.id.btnLanguage);
         btnMenu = view.findViewById(R.id.btnMenu);
         layoutFollowingAvatars = view.findViewById(R.id.layoutFollowingAvatars);
 

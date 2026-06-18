@@ -12,7 +12,7 @@
     <color name="text_secondary">#666666</color>
     <color name="text_hint">#999999</color>
     <color name="search">#C0C0C0</color>
-
+    <color name="skeleton_light">#E0E0E0</color>
     <!-- UI Elements -->
     <color name="divider">#E0E0E0</color>
     <color name="thread_line">#D0D0D0</color>

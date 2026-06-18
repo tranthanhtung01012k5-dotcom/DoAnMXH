@@ -240,12 +240,12 @@
                 android:id="@+id/sectionOther"
                 style="@style/SettingsSection">
 
-                <TextView
-                    android:id="@+id/rowLanguage"
-                    style="@style/SettingsRow"
-                    android:text="Ngôn ngữ" />
+<!--                <TextView-->
+<!--                    android:id="@+id/rowLanguage"-->
+<!--                    style="@style/SettingsRow"-->
+<!--                    android:text="Ngôn ngữ" />-->
 
-                <View style="@style/SettingsDivider" />
+<!--                <View style="@style/SettingsDivider" />-->
 
                 <TextView
                     android:id="@+id/rowAbout"

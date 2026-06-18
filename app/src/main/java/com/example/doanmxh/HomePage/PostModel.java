@@ -17,6 +17,11 @@ public class PostModel {
     // =========================================================
     private String videoUrl;
     private String videoThumbnail;
+    // PostModel.java
+    private boolean isLoading = false;
+
+    public boolean isLoading() { return isLoading; }
+    public void setLoading(boolean loading) { isLoading = loading; }
     public List<MediaItem> getMediaList() {
         List<MediaItem> list = new ArrayList<>();
 

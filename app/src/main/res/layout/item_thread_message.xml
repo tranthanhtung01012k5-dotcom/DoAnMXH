@@ -39,7 +39,16 @@
             android:background="@drawable/bg_status_online" />
 
     </FrameLayout>
-
+    <ImageView
+        android:id="@+id/imgPinned"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="4dp"
+        android:src="@drawable/ic_push_pin"
+        app:tint="@color/text_secondary"
+        android:visibility="gone"/>
     <!-- Menu -->
 <!--    <ImageView-->
 <!--        android:id="@+id/btnMore"-->

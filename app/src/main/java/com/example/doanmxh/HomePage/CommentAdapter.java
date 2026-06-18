@@ -16,6 +16,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.doanmxh.Notifications.NotificationsFragment;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.button.MaterialButton;
@@ -296,6 +297,18 @@ public class CommentAdapter
                                     .update("so_like", FieldValue.increment(1));
                             currentComment.setLikedByMe(true);
                             currentComment.setSoLike(currentComment.getSoLike() + 1);
+                            String commentOwnerId = currentComment.getNguoiDungId();
+                            String commentPreview = currentComment.getNoiDung(); // preview nội dung BL
+
+                            if (commentOwnerId != null && !commentOwnerId.equals(uid)) {
+                                NotificationsFragment.sendLikeCommentNotification(
+                                        commentOwnerId,  // receiverId = chủ bình luận
+                                        uid,             // senderId   = người đang like
+                                        commentId,       // commentId  để click mở đúng BL
+                                        effectivePostId, // postId     để mở bài viết
+                                        commentPreview   // preview hiển thị trong thông báo
+                                );
+                            }
                         }
                         if (listener != null)
                             listener.onLikeClick(currentComment, adapterPosition);

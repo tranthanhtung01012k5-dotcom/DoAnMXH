@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.example.doanmxh.BaseActivity;
 import com.example.doanmxh.Mention.MentionHelper;
+import com.example.doanmxh.Notifications.NotificationsFragment;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
@@ -130,7 +131,9 @@ public class PostDetailActivity extends BaseActivity {
             @Override public void onLikeClick(PostModel post, int position) {
                 handleLikePost(post, position);
             }
-            @Override public void onCommentClick(PostModel post, int position) {}
+            @Override public void onCommentClick(PostModel post, int position) {
+                Toast.makeText(PostDetailActivity.this, "Đã ở trang để comment",Toast.LENGTH_SHORT);
+            }
             @Override public void onCommentAvataClick(CommentModel post, int position) {}
 
             @Override
@@ -266,6 +269,22 @@ public class PostDetailActivity extends BaseActivity {
                                                 "REPOST_UPDATE"
                                         );
 
+                                        baiGocRef.get()
+                                                        .addOnSuccessListener( v->
+                                                        {
+                                                            String nguoiNhanID = v.getString("nguoi_dung_id");
+                                                            if(nguoiNhanID != null)
+                                                            {
+                                                                Toast.makeText(PostDetailActivity.this, "Không biết ai là người đăng bài này ",Toast.LENGTH_SHORT);
+                                                                return;
+                                                            } else {
+                                                                NotificationsFragment.sendRepostNotification(
+                                                                        nguoiNhanID,
+                                                                        myUid,
+                                                                        originalDocId
+                                                                );
+                                                            }
+                                                        });
                                         Toast.makeText(
                                                 PostDetailActivity.this,
                                                 "Đã đăng lại!",
@@ -325,6 +344,10 @@ public class PostDetailActivity extends BaseActivity {
 
                             post.setFollowing(true);
                             postAdapter.notifyItemChanged(position);
+                            NotificationsFragment.sendFollowNotification(
+                                    authorUid,
+                                    myUid
+                            );
                             Toast.makeText(PostDetailActivity.this,
                                     "Đã theo dõi @" + post.getTenDangNhap(), Toast.LENGTH_SHORT).show();
                         })
@@ -373,7 +396,22 @@ public class PostDetailActivity extends BaseActivity {
                     }
 
                     @Override
-                    public void onLikeClick(CommentModel comment, int position) {}
+                    public void onLikeClick(CommentModel comment, int position) {
+//
+//                        String currentUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+//
+//                        // Không gửi thông báo cho chính mình
+//                        if (currentUid.equals(comment.getNguoiDungId())) {
+//                            return;
+//                        }
+//
+//                        NotificationsFragment.sendLikeCommentNotification(
+//                                comment.getNguoiDungId(),     // receiverId
+//                                currentUid,              // senderId
+//                                comment.getPostId(),     // postId
+//                                comment.getCommentId()   // commentId
+//                        );
+                    }
 
                     @Override
                     public void onAvatarClick(CommentModel comment, int position) {
@@ -784,10 +822,41 @@ public class PostDetailActivity extends BaseActivity {
                     if (currentPost != null) {
                         currentPost.setSoBinhLuan(currentPost.getSoBinhLuan() + 1);
                         postAdapter.notifyItemChanged(0, "LIKE_UPDATE");
+                        String postOwnerId = currentPost.getNguoiDungId();
+                        if (postOwnerId != null && !postOwnerId.equals(myUid)) {
+                            NotificationsFragment.sendCommentNotification(
+                                    postOwnerId,  // receiverId = chủ bài viết
+                                    myUid,        // senderId   = người bình luận
+                                    postId,
+                                    ref.getId(),  // commentId vừa tạo
+                                    noiDung       // preview nội dung bình luận
+                            );
+                        }
                     }
+                    sendMentionNotificationsIfAny(noiDung, postId);
                 });
     }
+    private void sendMentionNotificationsIfAny(String content, String postId) {
+        if (myUid == null || content == null || content.isEmpty()) return;
 
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("@([\\p{L}\\p{N}_]+)");
+        java.util.regex.Matcher matcher = pattern.matcher(content);
+
+        while (matcher.find()) {
+            String username = matcher.group(1); // bỏ ký tự @
+            db.collection("nguoi_dung")
+                    .whereEqualTo("ten_dang_nhap", username)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener(query -> {
+                        if (!query.isEmpty()) {
+                            String mentionedUid = query.getDocuments().get(0).getId();
+                            NotificationsFragment.sendMentionNotification(
+                                    mentionedUid, myUid, postId);
+                        }
+                    });
+        }
+    }
     // ════════════════════════════════════════════════════════
     //  LIKE BÀI VIẾT
     // ════════════════════════════════════════════════════════
@@ -874,7 +943,12 @@ public class PostDetailActivity extends BaseActivity {
                                                 );
 
                                                 postAdapter.notifyItemChanged(position, "LIKE_UPDATE");
-                                                processingLikes.remove(postId);
+
+                                                String postOwnerId = post.getNguoiDungId();
+                                                if (postOwnerId != null && !postOwnerId.equals(myUid)) {
+                                                    NotificationsFragment.sendLikeNotification(
+                                                            postOwnerId, myUid, postId);
+                                                }processingLikes.remove(postId);
                                             })
                                             .addOnFailureListener(e ->
                                                     processingLikes.remove(postId));

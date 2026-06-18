@@ -24,8 +24,7 @@
                 android:layout_width="28dp"
                 android:layout_height="28dp"
                 android:layout_centerInParent="true"
-                android:src="@drawable/thread_logo_white"
-                app:tint="@color/text_primary"
+                android:src="@drawable/new_logo"
                 android:scaleType="fitCenter"
                 android:contentDescription="@string/app_name" />
 
@@ -105,7 +104,13 @@
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
         android:background="@color/divider" />
-
+    <!-- Wrap skeleton content bằng ShimmerFrameLayout -->
+    <com.facebook.shimmer.ShimmerFrameLayout
+        android:id="@+id/shimmerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <!-- skeleton views bên trong -->
+    </com.facebook.shimmer.ShimmerFrameLayout>
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"

@@ -215,7 +215,7 @@
                         android:background="@color/bg_primary"
                         android:gravity="center"
                         android:paddingHorizontal="16dp"
-                        android:text="Tin nhắn đang chờ"
+                        android:text="Đang chờ"
                         android:textColor="@color/text_primary"
                         android:textSize="14sp"
                         android:textStyle="bold" />

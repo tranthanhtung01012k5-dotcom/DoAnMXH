@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.example.doanmxh.Notifications.NotificationsFragment;
 import com.example.doanmxh.R;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
@@ -93,7 +94,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
                     .addOnSuccessListener( abc-> {
                             user.setFollowed(true);
                         notifyItemChanged(holder.getAdapterPosition());
-
+                        NotificationsFragment.sendFollowNotification(user.getUid(),myUid);
                         Toast.makeText(holder.itemView.getContext(), "Follow thành công",Toast.LENGTH_SHORT).show();
                     });
         });

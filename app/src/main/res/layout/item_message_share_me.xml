@@ -75,7 +75,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="📎 Nhấn để xem bài viết"
-                android:textColor="#8E8E93"
+                android:textColor="#FFFFFF"
                 android:textSize="12sp" />
 
         </LinearLayout>

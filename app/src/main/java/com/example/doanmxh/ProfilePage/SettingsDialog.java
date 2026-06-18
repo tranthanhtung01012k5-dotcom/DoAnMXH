@@ -73,7 +73,7 @@ public class SettingsDialog {
         TextView  rowAccountStatus      = dialog.findViewById(R.id.rowAccountStatus);
         TextView  rowTerms              = dialog.findViewById(R.id.rowTerms);
         TextView  rowPrivacyPolicy      = dialog.findViewById(R.id.rowPrivacyPolicy);
-        TextView  rowLanguage           = dialog.findViewById(R.id.rowLanguage);
+//        TextView  rowLanguage           = dialog.findViewById(R.id.rowLanguage);
         TextView  rowAbout              = dialog.findViewById(R.id.rowAbout);
         TextView  rowLogout             = dialog.findViewById(R.id.rowLogout);
         TextView  txtLightModeLabel     = dialog.findViewById(R.id.txtLightModeLabel);
@@ -124,17 +124,17 @@ public class SettingsDialog {
                 new TextView[]{
                         rowChangePassword, rowLikedPosts, rowLikedComments,
                         rowSavedPosts, rowArchive, rowBlockedUsers, rowAccountStatus,
-                        rowTerms, rowPrivacyPolicy, rowLanguage, rowAbout, rowSwitchAccount
+                        rowTerms, rowPrivacyPolicy, rowAbout, rowSwitchAccount
                 },
                 rowLogout, sections, switchRows, darkMode);
 
         // ── Language texts ─────────────────────────────────────────────────────
-        applyLanguageTexts(context, txtSettingsTitle, sectionTitles,
-                rowChangePassword, rowLikedPosts, rowLikedComments,
-                rowSavedPosts, rowArchive, rowBlockedUsers, rowAccountStatus,
-                rowTerms, rowPrivacyPolicy, rowLanguage, rowAbout, rowLogout,
-                txtLightModeLabel, txtPrivateAccountLabel, txtNotificationsLabel,
-                rowSwitchAccount);
+//        applyLanguageTexts(context, txtSettingsTitle, sectionTitles,
+//                rowChangePassword, rowLikedPosts, rowLikedComments,
+//                rowSavedPosts, rowArchive, rowBlockedUsers, rowAccountStatus,
+//                rowTerms, rowPrivacyPolicy, rowLanguage, rowAbout, rowLogout,
+//                txtLightModeLabel, txtPrivateAccountLabel, txtNotificationsLabel,
+//                rowSwitchAccount);
 
         // ── Listeners ──────────────────────────────────────────────────────────
         btnClose.setOnClickListener(v -> dialog.dismiss());
@@ -168,7 +168,7 @@ public class SettingsDialog {
                 new AccountStatusDialog(host, auth, db).show());
         rowTerms.setOnClickListener(v -> showTermsDialog());
         rowPrivacyPolicy.setOnClickListener(v -> showPrivacyPolicyDialog());
-        rowLanguage.setOnClickListener(v -> showLanguageDialog(context, dialog));
+//        rowLanguage.setOnClickListener(v -> showLanguageDialog(context, dialog));
         rowAbout.setOnClickListener(v -> showAboutDialog());
 
         // ✅ Chuyển tài khoản

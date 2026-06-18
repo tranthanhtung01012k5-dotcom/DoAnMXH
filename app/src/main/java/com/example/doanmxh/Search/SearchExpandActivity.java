@@ -95,6 +95,9 @@ public class SearchExpandActivity extends BaseActivity {
             }
             return false;
         });
+        btnBack.setOnClickListener(v-> {
+            finish();
+        });
     }
 
     private void initViews() {

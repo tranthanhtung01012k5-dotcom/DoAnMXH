@@ -8,7 +8,7 @@
     <color name="text_primary">#FFFFFF</color>
     <color name="text_secondary">#888888</color>
     <color name="text_hint">#555555</color>
-
+    <color name="skeleton_light">#3A3A3A</color>
     <color name="divider">#1A1A1A</color>
     <color name="thread_line">#333333</color>
     <color name="ripple_nav">#1AFFFFFF</color>

@@ -537,6 +537,10 @@ public class CreatePostFragment extends Fragment {
                     saveHashtags(noiDung, ref.getId());
 
                     Toast.makeText(requireContext(), "Đăng bài thành công", Toast.LENGTH_SHORT).show();
+                    String myUid = auth.getCurrentUser().getUid();
+                    com.example.doanmxh.Notifications.NotificationsFragment
+                            .sendNewPostToFollowers(myUid, ref.getId());
+                    sendMentionNotificationsIfAny(noiDung, ref.getId());
 
                     // Reset giao diện
                     edtNoiDung.setText("");
@@ -561,7 +565,30 @@ public class CreatePostFragment extends Fragment {
                     Toast.makeText(requireContext(), "Đăng bài thất bại: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                 });
     }
+    private void sendMentionNotificationsIfAny(String content, String postId) {
+        String myUid = auth.getCurrentUser() != null
+                ? auth.getCurrentUser().getUid() : null;
+        if (myUid == null || content == null || content.isEmpty()) return;
 
+        java.util.regex.Pattern pattern =
+                java.util.regex.Pattern.compile("@([\\p{L}\\p{N}_]+)");
+        java.util.regex.Matcher matcher = pattern.matcher(content);
+
+        while (matcher.find()) {
+            String username = matcher.group(1);
+            db.collection("nguoi_dung")
+                    .whereEqualTo("ten_dang_nhap", username)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener(query -> {
+                        if (!query.isEmpty()) {
+                            String mentionedUid = query.getDocuments().get(0).getId();
+                            com.example.doanmxh.Notifications.NotificationsFragment
+                                    .sendMentionNotification(mentionedUid, myUid, postId);
+                        }
+                    });
+        }
+    }
     private void saveHashtags(String noiDung, String postId) {
         java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("#\\w+");
         java.util.regex.Matcher matcher = pattern.matcher(noiDung);

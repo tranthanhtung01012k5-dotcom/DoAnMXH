@@ -32,8 +32,10 @@ import com.example.doanmxh.HomePage.CommentModel;
 import com.example.doanmxh.HomePage.PostAdapter;
 import com.example.doanmxh.HomePage.PostDetailActivity;
 import com.example.doanmxh.HomePage.PostModel;
+import com.example.doanmxh.HomePage.ShareBottom;
 import com.example.doanmxh.MainActivity;
 import com.example.doanmxh.Message.ChatActivity;
+import com.example.doanmxh.Notifications.NotificationsFragment;
 import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.Timestamp;
@@ -277,7 +279,7 @@ public class UserProfileActivity extends BaseActivity {
                                                 position,
                                                 "REPOST_UPDATE"
                                         );
-
+                                        NotificationsFragment.sendRepostNotification(targetUid,myUid,originalDocId);
                                         Toast.makeText(
                                                 UserProfileActivity.this,
                                                 "Đã đăng lại!",
@@ -294,8 +296,29 @@ public class UserProfileActivity extends BaseActivity {
                         .setNegativeButton("Hủy", null)
                         .show();
             }
-            @Override public void onShareClick(PostModel post, int position)       {}
-            @Override public void onMoreOptionsClick(PostModel post, int position) {}
+            @Override
+            public void onShareClick(PostModel post, int position) {
+                if (post == null) return;
+                if (isFinishing()) return; // ← bỏ dấu ! (Activity đang finishing thì không show)
+
+                ShareBottom sheet = ShareBottom.newInstance("Xem bài này nè!", post.getDocumentId());
+
+                sheet.setOnShareDoneListener(() -> {
+                    if (isFinishing()) return;
+                    postList.clear();
+                    postAdapter.notifyDataSetChanged();
+                    loadPosts(); // ← dùng loadPosts() thay vì loadMyThreads()
+                });
+
+                sheet.show(getSupportFragmentManager(), "ShareBottom"); // ← dùng getSupportFragmentManager()
+            }
+            @Override
+            public void onMoreOptionsClick(PostModel post, int position) {
+                com.example.doanmxh.HomePage.PostOptionBottomSheet bottomSheet =
+                        new com.example.doanmxh.HomePage.PostOptionBottomSheet(
+                                post.getDocumentId());
+                bottomSheet.show(getSupportFragmentManager(), "PostOptionBottomSheet");
+            }
             @Override public void onAvatarClick(PostModel post, int position)      { openPostDetail(post.getDocumentId()); }
             @Override public void onCommentAvataClick(CommentModel comment, int position) {}
             @Override public void onAddFriendClick(PostModel post, int position)   { handleFollow(post, position); }
@@ -477,6 +500,7 @@ public class UserProfileActivity extends BaseActivity {
 
                     isFollowingTarget = true;
                     updateFollowButton(true);
+                    NotificationsFragment.sendFollowNotification(targetUid,myUid);
                     // Refresh danh sách bài viết để cập nhật trạng thái follow trong item
                     loadPosts();
                 });
@@ -1066,13 +1090,14 @@ public class UserProfileActivity extends BaseActivity {
         var postRef = db.collection("bai_viet").document(postId);
         if (liked) {
             likeRef.delete();
-            postRef.update("so_luot_thich", FieldValue.increment(-1));
+            postRef.update("soLike", FieldValue.increment(-1));
         } else {
             Map<String, Object> data = new HashMap<>();
             data.put("nguoi_dung_id", myUid);
             data.put("thoi_gian", FieldValue.serverTimestamp());
             likeRef.set(data);
-            postRef.update("so_luot_thich", FieldValue.increment(1));
+            postRef.update("so_like", FieldValue.increment(1));
+            NotificationsFragment.sendLikeNotification(targetUid,myUid,postId);
         }
     }
 
@@ -1103,6 +1128,7 @@ public class UserProfileActivity extends BaseActivity {
                             .update("so_nguoi_theo_doi", FieldValue.increment(1));
                     post.setFollowing(true);
                     postAdapter.notifyItemChanged(position);
+                    NotificationsFragment.sendFollowNotification(targetUid,myUid);
                 });
     }
 

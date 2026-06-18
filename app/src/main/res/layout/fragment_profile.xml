@@ -16,15 +16,15 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp">
 
-        <ImageView
-            android:id="@+id/btnLanguage"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_alignParentStart="true"
-            android:layout_centerInParent="true"
-            android:contentDescription="Web Icon"
-            android:src="@drawable/ic_language"
-            app:tint="@color/action_icon" />
+<!--        <ImageView-->
+<!--            android:id="@+id/btnLanguage"-->
+<!--            android:layout_width="24dp"-->
+<!--            android:layout_height="24dp"-->
+<!--            android:layout_alignParentStart="true"-->
+<!--            android:layout_centerInParent="true"-->
+<!--            android:contentDescription="Web Icon"-->
+<!--            android:src="@drawable/ic_language"-->
+<!--            app:tint="@color/action_icon" />-->
 
         <ImageView
             android:id="@+id/btnMenu"

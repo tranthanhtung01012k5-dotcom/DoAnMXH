@@ -35,6 +35,7 @@ import com.google.firebase.firestore.Query;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -286,6 +287,7 @@ public class MessageFragment extends Fragment {
                         timeMap.put(cid, doc.getTimestamp("thoi_gian_cuoi"));
                         senderMap.put(cid, doc.getString("nguoi_gui_cuoi_id"));
                         idTinNhanMap.put(cid, doc.getString("id_tin_nhan_cuoi"));
+                        Log.d("LOAD_CHAT_LIST", "LOAD"+targetUid);
                     }
 
                     if (validIds.isEmpty()) {
@@ -294,8 +296,73 @@ public class MessageFragment extends Fragment {
                         return;
                     }
 
-                    Map<String, ChatUser> tempMap = new LinkedHashMap<>();
-                    AtomicInteger loaded = new AtomicInteger(0);
+//                    Map<String, ChatUser> tempMap = new LinkedHashMap<>();
+//                    AtomicInteger loaded = new AtomicInteger(0);
+//
+//                    for (String cid : validIds) {
+//
+//                        String targetUid = targetUidMap.get(cid);
+//                        String lastMsg = lastMsgMap.get(cid);
+//                        Timestamp time = timeMap.get(cid);
+//                        String sender = senderMap.get(cid);
+//                        String msgId = idTinNhanMap.get(cid);
+//
+//                        boolean isPinned = pinnedIds.contains(cid);
+//
+//                        db.collection("nguoi_dung")
+//                                .document(targetUid)
+//                                .addSnapshotListener((userDoc, err) -> {
+//
+//                                    if (err != null || userDoc == null || !userDoc.exists() || !isAdded())
+//                                        return;
+//
+//                                    ChatUser u = new ChatUser();
+//                                    u.setUid(targetUid);
+//                                    u.setUsername(userDoc.getString("ho_va_ten"));
+//                                    u.setAvatarResId(userDoc.getString("anh_dai_dien"));
+//                                    u.setActive(Boolean.TRUE.equals(userDoc.getBoolean("trang_thai_hoat_dong")));
+//                                    u.setLastMessage(getLastMessagePreview(lastMsg));
+//                                    u.setChatTime(time);
+//                                    u.setPinned(isPinned);
+//
+//                                    if (sender != null && sender.equals(uid)) {
+//                                        u.setTenNguoiGui("Bạn: ");
+//                                    }
+//
+//                                    if (msgId != null && sender != null && !sender.equals(uid)) {
+//                                        db.collection("cuoc_tro_chuyen")
+//                                                .document(cid)
+//                                                .collection("tin_nhan")
+//                                                .document(msgId)
+//                                                .get()
+//                                                .addOnSuccessListener(m -> {
+//                                                    u.setChuaDoc(!Boolean.TRUE.equals(m.getBoolean("da_doc")));
+//                                                    tempMap.put(cid, u);
+//                                                    if (loaded.incrementAndGet() == validIds.size()) {
+//                                                        flushToList(tempMap);
+//                                                    }
+//                                                });
+//                                    } else {
+//                                        u.setChuaDoc(false);
+//                                        tempMap.put(cid, u);
+//                                        if (loaded.incrementAndGet() == validIds.size()) {
+//                                            flushToList(tempMap);
+//                                        }
+//                                    }
+//                                });
+//
+//                        chatUserListeners.put(cid,
+//                                db.collection("nguoi_dung")
+//                                        .document(targetUid)
+//                                        .addSnapshotListener((d, error) -> {
+//                                            if (error != null) {
+//                                                Log.e("FIRESTORE", "Listener error", error);
+//                                                return;
+//                                            }
+//                                        })
+//                        );
+//                    }
+                    Map<String, ChatUser> tempMap = new ConcurrentHashMap<>();
 
                     for (String cid : validIds) {
 
@@ -307,58 +374,67 @@ public class MessageFragment extends Fragment {
 
                         boolean isPinned = pinnedIds.contains(cid);
 
-                        db.collection("nguoi_dung")
-                                .document(targetUid)
-                                .addSnapshotListener((userDoc, err) -> {
-
-                                    if (err != null || userDoc == null || !userDoc.exists() || !isAdded())
-                                        return;
-
-                                    ChatUser u = new ChatUser();
-                                    u.setUid(targetUid);
-                                    u.setUsername(userDoc.getString("ho_va_ten"));
-                                    u.setAvatarResId(userDoc.getString("anh_dai_dien"));
-                                    u.setActive(Boolean.TRUE.equals(userDoc.getBoolean("trang_thai_hoat_dong")));
-                                    u.setLastMessage(getLastMessagePreview(lastMsg));
-                                    u.setChatTime(time);
-                                    u.setPinned(isPinned);
-
-                                    if (sender != null && sender.equals(uid)) {
-                                        u.setTenNguoiGui("Bạn: ");
-                                    }
-
-                                    if (msgId != null && sender != null && !sender.equals(uid)) {
-                                        db.collection("cuoc_tro_chuyen")
-                                                .document(cid)
-                                                .collection("tin_nhan")
-                                                .document(msgId)
-                                                .get()
-                                                .addOnSuccessListener(m -> {
-                                                    u.setChuaDoc(!Boolean.TRUE.equals(m.getBoolean("da_doc")));
-                                                    tempMap.put(cid, u);
-                                                    if (loaded.incrementAndGet() == validIds.size()) {
-                                                        flushToList(tempMap);
-                                                    }
-                                                });
-                                    } else {
-                                        u.setChuaDoc(false);
-                                        tempMap.put(cid, u);
-                                        if (loaded.incrementAndGet() == validIds.size()) {
-                                            flushToList(tempMap);
-                                        }
-                                    }
-                                });
-
-                        chatUserListeners.put(cid,
+                        ListenerRegistration reg =
                                 db.collection("nguoi_dung")
                                         .document(targetUid)
-                                        .addSnapshotListener((d, error) -> {
-                                            if (error != null) {
-                                                Log.e("FIRESTORE", "Listener error", error);
+                                        .addSnapshotListener((userDoc, err) -> {
+
+                                            if (err != null
+                                                    || userDoc == null
+                                                    || !userDoc.exists()
+                                                    || !isAdded()) {
                                                 return;
                                             }
-                                        })
-                        );
+
+                                            ChatUser u = new ChatUser();
+
+                                            u.setUid(targetUid);
+                                            u.setUsername(userDoc.getString("ho_va_ten"));
+                                            u.setAvatarResId(userDoc.getString("anh_dai_dien"));
+                                            u.setActive(Boolean.TRUE.equals(
+                                                    userDoc.getBoolean("trang_thai_hoat_dong")));
+
+                                            u.setLastMessage(
+                                                    getLastMessagePreview(lastMsg));
+
+                                            u.setChatTime(time);
+                                            u.setPinned(isPinned);
+
+                                            if (sender != null
+                                                    && sender.equals(uid)) {
+
+                                                u.setTenNguoiGui("Bạn: ");
+                                            }
+
+                                            tempMap.put(cid, u);
+
+                                            requireActivity().runOnUiThread(() -> {
+                                                flushToList(tempMap);
+                                            });
+
+                                            if (msgId != null
+                                                    && sender != null
+                                                    && !sender.equals(uid)) {
+
+                                                db.collection("cuoc_tro_chuyen")
+                                                        .document(cid)
+                                                        .collection("tin_nhan")
+                                                        .document(msgId)
+                                                        .get()
+                                                        .addOnSuccessListener(m -> {
+
+                                                            u.setChuaDoc(
+                                                                    !Boolean.TRUE.equals(
+                                                                            m.getBoolean("da_doc")));
+
+                                                            requireActivity().runOnUiThread(() -> {
+                                                                flushToList(tempMap);
+                                                            });
+                                                        });
+                                            }
+                                        });
+
+                        chatUserListeners.put(cid, reg);
                     }
                 });
     }

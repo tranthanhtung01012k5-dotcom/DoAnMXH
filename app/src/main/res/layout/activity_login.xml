@@ -20,8 +20,7 @@
             android:layout_height="64dp"
             android:layout_gravity="center"
             android:layout_marginTop="64dp"
-            android:src="@drawable/thread_logo_white"
-            app:tint="@color/text_primary"
+            android:src="@drawable/new_logo"
             android:contentDescription="Logo" />
 
         <!-- Tiêu đề -->
