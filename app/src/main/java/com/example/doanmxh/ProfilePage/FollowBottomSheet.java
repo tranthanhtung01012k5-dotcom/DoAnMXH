@@ -79,8 +79,8 @@ public class FollowBottomSheet extends BottomSheetDialogFragment {
         rvFollow.setAdapter(adapter);
 
         // TAB
-        tabLayout.addTab(tabLayout.newTab().setText("Người theo dõi (0)"));
-        tabLayout.addTab(tabLayout.newTab().setText("Đang theo dõi (0)"));
+        tabLayout.addTab(tabLayout.newTab().setText("Người tôi theo dõi (0)"));
+        tabLayout.addTab(tabLayout.newTab().setText("Đang theo dõi tôi (0)"));
 
         loadTabCounts();
 
