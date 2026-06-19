@@ -24,7 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
+import com.google.android.material.color.MaterialColors;
 import com.bumptech.glide.Glide;
 import com.example.doanmxh.BaseActivity;
 import com.example.doanmxh.HomePage.CommentAdapter;

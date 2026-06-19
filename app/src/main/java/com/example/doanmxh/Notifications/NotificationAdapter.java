@@ -87,11 +87,11 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             Glide.with(ctx)
                     .load(item.getAvatar())
                     .transform(new CircleCrop())
-                    .placeholder(R.drawable.ic_placeholder_avatar)
-                    .error(R.drawable.ic_placeholder_avatar)
+                    .placeholder(R.drawable.ic_person_outline_24)
+                    .error(R.drawable.ic_person_outline_24)
                     .into(h.ivAvatar);
         } else {
-            h.ivAvatar.setImageResource(R.drawable.ic_placeholder_avatar);
+            h.ivAvatar.setImageResource(R.drawable.ic_person_outline_24);
         }
 
         // Tên & nội dung & thời gian

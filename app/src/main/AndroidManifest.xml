@@ -45,7 +45,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".MainActivity"
-                  android:windowSoftInputMode="adjustPan"/>
+                  android:screenOrientation="portrait"
+                  android:windowSoftInputMode="adjustPan" />
         <activity android:name=".Log_Res.LoginActivity"/>
         <activity android:name=".Log_Res.RegisterActivity"/>
         <activity android:name=".Log_Res.VerifyRegisterOtpActivity"/>
@@ -54,7 +55,7 @@
         <activity android:name=".ProfilePage.EditProfileActivity" />
         <activity android:name=".ProfilePage.UserProfileActivity" />
         <activity android:name=".HomePage.EditPostActivity" />
-<!--        <activity android:name=".HomePage." />-->
+        <activity android:name=".Message.NoteEditorActivity" />
         <activity android:name=".Message.ChatActivity" />
         <activity android:name=".Message.NewMessageActivity" />
         <activity android:name=".Search.SearchActivity" />

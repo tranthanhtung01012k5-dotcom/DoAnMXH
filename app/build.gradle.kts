@@ -56,7 +56,6 @@ dependencies {
     // UI
     implementation("androidx.recyclerview:recyclerview:1.3.2")
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
-    // ← XÓA DÒNG NÀY: implementation("com.google.android.material:material:1.12.0")
 
     // Navigation
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
@@ -82,7 +81,7 @@ dependencies {
     //ChayNgam
     implementation("androidx.lifecycle:lifecycle-process:2.6.1")
     //
-    implementation("com.google.android.material:material:1.11.0")
+    implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     //
     implementation("com.facebook.shimmer:shimmer:0.5.0")

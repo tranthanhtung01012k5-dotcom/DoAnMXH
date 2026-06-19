@@ -1,44 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    item_friend_story.xml
-    1 ô bạn bè trong hàng ngang — gộp story ring + online dot + tên + preview status
--->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="80dp"
     android:layout_height="wrap_content"
+    android:layout_marginEnd="4dp"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:layout_marginEnd="4dp"
-    android:paddingBottom="4dp"
     android:clickable="true"
     android:focusable="true"
+    android:clipChildren="false"
+    android:clipToPadding="false"
     android:background="?attr/selectableItemBackgroundBorderless">
 
-    <!-- Avatar + ring + chấm online -->
+    <!--
+        KHU VỰC AVATAR + STORY RING + ONLINE DOT + NOTE BUBBLE
+        Giữ nguyên size 60x60dp hoặc 64x64dp để đồng bộ với nút "Tạo tin" của bạn.
+        Bật clipChildren="false" để bong bóng ghi chú trồi lên phía trên.
+    -->
     <FrameLayout
-        android:layout_width="66dp"
-        android:layout_height="66dp"
-        android:layout_marginBottom="5dp">
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="6dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
-        <!-- Ring viền ngoài: gradient = story mới, xám = đã xem, trong suốt = không có story -->
+        <!-- Vòng tròn Story (Story Ring) -->
         <View
             android:id="@+id/viewStoryRing"
-            android:layout_width="66dp"
-            android:layout_height="66dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:background="@drawable/bg_story_ring_gradient" />
 
-        <!-- Avatar tròn, padding 3dp để lộ ring -->
+        <!-- Avatar bạn bè (hơi co lại một chút nếu có vòng story để lộ viền) -->
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/imgFriendAvatar"
-            android:layout_width="58dp"
-            android:layout_height="58dp"
+            android:layout_width="54dp"
+            android:layout_height="54dp"
             android:layout_gravity="center"
             android:scaleType="centerCrop"
             android:src="@drawable/ic_placeholder_avatar"
             app:shapeAppearanceOverlay="@style/CircleImageView" />
 
-        <!-- Chấm xanh online — góc dưới phải, viền tối để nổi trên avatar -->
+        <!-- Chấm xanh Online (Nằm đè góc dưới bên phải) -->
         <View
             android:id="@+id/viewOnlineDot"
             android:layout_width="14dp"
@@ -46,8 +51,55 @@
             android:layout_gravity="bottom|end"
             android:layout_marginEnd="1dp"
             android:layout_marginBottom="1dp"
+            android:elevation="2dp"
             android:background="@drawable/bg_status_online"
-            android:visibility="gone" />
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+        <!--
+            BONG BÓNG GHI CHÚ BẠN BÈ (Messenger Note)
+            Đồng bộ tuyệt đối bằng cách bay lên trên nhờ translationY="-18dp".
+            Đuôi bong bóng nằm phía dưới cùng của FrameLayout này.
+        -->
+        <FrameLayout
+            android:id="@+id/flNoteBubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:translationY="-18dp"
+            android:elevation="4dp"
+            android:layout_marginTop="3dp"
+            android:visibility="visible"
+            tools:visibility="visible">
+
+            <!-- Thân bong bóng chứa nội dung Note -->
+            <TextView
+                android:id="@+id/tvFriendNote"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_note_bubble"
+                android:ellipsize="end"
+                android:gravity="center"
+                android:maxWidth="64dp"
+                android:maxLines="2"
+                android:minWidth="32dp"
+                android:paddingStart="6dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="4dp"
+                android:text="Đang đi cà phê ☕"
+                android:textColor="@color/text_primary"
+                android:textSize="10sp" />
+
+            <!-- Đuôi bong bóng nhỏ -->
+            <View
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginBottom="-3dp"
+                android:background="@drawable/bg_note_bubble_tail"
+                android:rotation="45" />
+        </FrameLayout>
 
     </FrameLayout>
 
@@ -58,24 +110,23 @@
         android:layout_height="wrap_content"
         android:text="Tên bạn"
         android:textColor="@color/text_primary"
-        android:textSize="11sp"
-        android:textStyle="bold"
+        android:textSize="12sp"
         android:maxLines="1"
         android:ellipsize="end"
-        android:gravity="center" />
+        android:gravity="center"
+        android:paddingHorizontal="4dp" />
 
-    <!-- Preview nội dung status (1 dòng, mờ hơn) -->
+    <!-- Trạng thái phụ (Ví dụ: "Vừa xong", "2 phút trước") nếu cần giống Messenger -->
     <TextView
         android:id="@+id/tvStatusPreview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text=""
+        android:layout_marginTop="1dp"
         android:textColor="@color/text_secondary"
         android:textSize="10sp"
         android:maxLines="1"
         android:ellipsize="end"
         android:gravity="center"
-        android:layout_marginTop="1dp"
-        android:visibility="gone" />
-
+        android:visibility="gone"
+        tools:text="Vừa xong" />
 </LinearLayout>

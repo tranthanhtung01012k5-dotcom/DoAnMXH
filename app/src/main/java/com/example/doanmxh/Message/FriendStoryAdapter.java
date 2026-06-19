@@ -1,10 +1,13 @@
 package com.example.doanmxh.Message;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -19,10 +22,12 @@ public class FriendStoryAdapter extends RecyclerView.Adapter<FriendStoryAdapter.
     }
 
     private final List<FriendStoryItem> list;
+    private final FragmentManager fragmentManager; // cần để show DialogFragment
     private OnItemClickListener listener;
 
-    public FriendStoryAdapter(List<FriendStoryItem> list) {
+    public FriendStoryAdapter(List<FriendStoryItem> list, FragmentManager fragmentManager) {
         this.list = list;
+        this.fragmentManager = fragmentManager;
     }
 
     public void setOnItemClickListener(OnItemClickListener l) {
@@ -48,6 +53,14 @@ public class FriendStoryAdapter extends RecyclerView.Adapter<FriendStoryAdapter.
                 .into(h.imgAvatar);
         h.tvName.setText(item.getName());
 
+        // Bong bóng ghi chú (note) phía trên avatar
+        if (!TextUtils.isEmpty(item.getGhiChu())) {
+            h.flNoteBubble.setVisibility(View.VISIBLE);
+            h.tvFriendNote.setText(item.getGhiChu());
+        } else {
+            h.flNoteBubble.setVisibility(View.INVISIBLE);
+        }
+
         // Chấm online
         h.viewOnlineDot.setVisibility(item.isOnline() ? View.VISIBLE : View.GONE);
 
@@ -67,28 +80,41 @@ public class FriendStoryAdapter extends RecyclerView.Adapter<FriendStoryAdapter.
                 break;
         }
 
-        // Preview status
-        String preview = item.getStatusPreview();
-        if (preview != null && !preview.isEmpty()) {
-            h.tvStatusPreview.setText(preview);
-            h.tvStatusPreview.setVisibility(View.VISIBLE);
-        } else {
-            h.tvStatusPreview.setVisibility(View.GONE);
-        }
+//        // Preview status
+//        String preview = item.getStatusPreview();
+//        if (preview != null && !preview.isEmpty()) {
+//            h.tvStatusPreview.setText(preview);
+//            h.tvStatusPreview.setVisibility(View.VISIBLE);
+//        } else {
+//            h.tvStatusPreview.setVisibility(View.GONE);
+//        }
 
+        // ----- Click vào BONG BÓNG NOTE -> mở dialog xem nội dung note đầy đủ -----
+        h.flNoteBubble.setOnClickListener(v -> {
+            StoryViewDialog dialog = StoryViewDialog.newInstance(
+                    item.getName(),
+                    item.getAvatarRes(),
+                    item.getGhiChu(),
+                    "" // TODO: thay bằng item.getTimeAgoText() nếu FriendStoryItem có sẵn field thời gian
+            );
+            dialog.show(fragmentManager, "story_view_dialog");
+        });
+
+        // ----- Click vào CẢ ITEM (avatar/tên...) -> giữ nguyên, vào trang chat -----
         h.itemView.setOnClickListener(v -> {
             if (listener != null) listener.onClick(item);
         });
     }
-    // Trong FriendStoryAdapter.java
+
     @Override
     public int getItemCount() {
-        return list == null ? 0 : list.size(); // ← thêm null check
+        return list == null ? 0 : list.size();
     }
 
     static class VH extends RecyclerView.ViewHolder {
         ShapeableImageView imgAvatar;
-        TextView           tvName, tvStatusPreview;
+        TextView           tvName, tvStatusPreview, tvFriendNote;
+        FrameLayout        flNoteBubble;
         View               viewOnlineDot, viewRing;
 
         VH(@NonNull View itemView) {
@@ -98,6 +124,8 @@ public class FriendStoryAdapter extends RecyclerView.Adapter<FriendStoryAdapter.
             tvStatusPreview = itemView.findViewById(R.id.tvStatusPreview);
             viewOnlineDot   = itemView.findViewById(R.id.viewOnlineDot);
             viewRing        = itemView.findViewById(R.id.viewStoryRing);
+            flNoteBubble    = itemView.findViewById(R.id.flNoteBubble);
+            tvFriendNote    = itemView.findViewById(R.id.tvFriendNote);
         }
     }
 }

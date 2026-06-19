@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -18,16 +19,21 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
 import com.example.doanmxh.Log_Res.LoginActivity;
+import com.example.doanmxh.ProfilePage.SettingsDialog;
 import com.example.doanmxh.ProfilePage.UserProfileActivity;
 import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.zxing.integration.android.IntentIntegrator;
 import com.google.zxing.integration.android.IntentResult;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainActivity extends BaseActivity {
 
@@ -37,7 +43,7 @@ public class MainActivity extends BaseActivity {
     private FirebaseAuth auth;
     private BottomNavigationView bottomNav;
     private ListenerRegistration unreadListener;
-
+    private ListenerRegistration messageBadgeListener;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         applySavedTheme();
@@ -68,7 +74,11 @@ public class MainActivity extends BaseActivity {
 
         bottomNav = findViewById(R.id.bottomNav);
 
-        setupNotificationBadge();
+        if(SettingsDialog.isNotificationsEnabled(this)) {
+            setupNotificationBadge();
+
+        }
+        setupMessageBadge();
 
         NavHostFragment navHostFragment =
                 (NavHostFragment) getSupportFragmentManager()
@@ -110,7 +120,44 @@ public class MainActivity extends BaseActivity {
             });
         }
     }
+    public void refreshNotificationBadge() {
 
+        if (SettingsDialog.isNotificationsEnabled(this)) {
+            setupNotificationBadge();
+        } else {
+
+            if (unreadListener != null) {
+                unreadListener.remove();
+                unreadListener = null;
+            }
+
+            bottomNav.removeBadge(R.id.notificationsFragment);
+        }
+    }
+    private void setupMessageBadge() {
+
+        String uid = FirebaseAuth.getInstance().getUid();
+
+        if (uid == null) return;
+
+        if (messageBadgeListener != null) {
+            messageBadgeListener.remove();
+        }
+
+        messageBadgeListener =
+                FirebaseFirestore.getInstance()
+                        .collection("cuoc_tro_chuyen")
+                        .whereArrayContains("thanh_vien", uid)
+                        .addSnapshotListener((value, error) -> {
+
+                            if (error != null) {
+                                Log.e("BADGE", error.getMessage());
+                                return;
+                            }
+
+                            loadUnreadCount();
+                        });
+    }
     private void setupNotificationBadge() {
 
         String uid = FirebaseAuth.getInstance().getUid();
@@ -118,7 +165,10 @@ public class MainActivity extends BaseActivity {
         if (uid == null || bottomNav == null) {
             return;
         }
-
+        if (unreadListener != null) {
+            unreadListener.remove();
+            unreadListener = null;
+        }
         unreadListener =
                 FirebaseFirestore.getInstance()
                         .collection("notifications")
@@ -163,7 +213,116 @@ public class MainActivity extends BaseActivity {
                             });
                         });
     }
+    private void loadUnreadCount() {
+        String uid = FirebaseAuth.getInstance().getUid();
+        FirebaseFirestore.getInstance()
+                .collection("cuoc_tro_chuyen")
+                .whereArrayContains("thanh_vien", uid)
+                .get()
+                .addOnSuccessListener(chatSnap -> {
 
+                    if (chatSnap == null || chatSnap.isEmpty()) {
+                        updateBadge(0);
+                        return;
+                    }
+
+                    AtomicInteger unreadCount = new AtomicInteger(0);
+                    AtomicInteger completed = new AtomicInteger(0);
+
+                    int totalChats = chatSnap.size();
+
+                    for (DocumentSnapshot chatDoc : chatSnap.getDocuments()) {
+
+                        String nguoiGuiCuoi =
+                                chatDoc.getString("nguoi_gui_cuoi_id");
+
+                        String idTinNhanCuoi =
+                                chatDoc.getString("id_tin_nhan_cuoi");
+                        Log.d("BADGE","nguoi_gui" + nguoiGuiCuoi + " " + idTinNhanCuoi);
+                        if (nguoiGuiCuoi == null
+                                || idTinNhanCuoi == null
+                                || uid.equals(nguoiGuiCuoi)) {
+
+                            if (completed.incrementAndGet() == totalChats) {
+                                updateBadge(unreadCount.get());
+                            }
+                            continue;
+                        }
+                        FirebaseFirestore.getInstance()
+                                .collection("nguoi_dung")
+                                .document(nguoiGuiCuoi)
+                                .get()
+                                .addOnSuccessListener(userDoc -> {
+
+                                    if (!userDoc.exists()) {
+                                        Log.d("BADGE", "User không tồn tại: " + nguoiGuiCuoi);
+
+                                        if (completed.incrementAndGet() == totalChats) {
+                                            updateBadge(unreadCount.get());
+                                        }
+                                        return;
+                                    }
+
+                                    // User còn tồn tại -> đọc tin nhắn cuối
+                                    chatDoc.getReference()
+                                            .collection("tin_nhan")
+                                            .document(idTinNhanCuoi)
+                                            .get()
+                                            .addOnSuccessListener(msgDoc -> {
+
+                                                Boolean daDoc = msgDoc.getBoolean("da_doc");
+
+                                                if (daDoc == null || !daDoc) {
+                                                    unreadCount.incrementAndGet();
+                                                }
+
+                                                if (completed.incrementAndGet() == totalChats) {
+                                                    updateBadge(unreadCount.get());
+                                                }
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                if (completed.incrementAndGet() == totalChats) {
+                                                    updateBadge(unreadCount.get());
+                                                }
+                                            });
+
+                                })
+                                .addOnFailureListener(e -> {
+                                    Log.e("BADGE", "Lỗi kiểm tra user", e);
+
+                                    if (completed.incrementAndGet() == totalChats) {
+                                        updateBadge(unreadCount.get());
+                                    }
+                                });
+                    }
+                    Log.d("BADGE", "loadUnreadCount: " + unreadCount);
+                });
+
+    }
+    private void updateBadge(int unreadCount) {
+
+        runOnUiThread(() -> {
+
+            if (bottomNav == null) return;
+
+            if (unreadCount > 0) {
+
+                BadgeDrawable badge =
+                        bottomNav.getOrCreateBadge(
+                                R.id.messageFragment
+                        );
+
+                badge.setVisible(true);
+                badge.setNumber(unreadCount);
+
+            } else {
+
+                bottomNav.removeBadge(
+                        R.id.messageFragment
+                );
+            }
+        });
+    }
     private void updateOnlineStatus(boolean trangThaiHoatDong) {
 
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();

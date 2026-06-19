@@ -2,11 +2,13 @@ package com.example.doanmxh.Message;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -22,6 +24,7 @@ import com.example.doanmxh.R;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -40,18 +43,20 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class MessageFragment extends Fragment {
+    private static final int REQUEST_NOTE_EDIT = 60;
+    private String currentNoteText;
     private FirebaseFirestore db;
     private ListenerRegistration friendStoryListener;
     private Set<String> pinnedIds = new HashSet<>();
     private FirebaseAuth auth;
+    private FrameLayout btnAddNote,flMyNoteBubble;
     private ImageView btnNewMessage, imgMyAvatar;
-    private TextView  btnUnread,btnInbox;
+    private TextView  btnUnread,btnInbox,tvMyNote,tvMyStory;
     private LinearLayout layoutMyStory;
     private RecyclerView rvFriendStories, rvChatList;
-    private TextView tvMyStory;
     private FriendStoryAdapter friendStoryAdapter;
     private ChatListAdapter    chatListAdapter;
-    private ListenerRegistration chatListListener;
+    private ListenerRegistration chatListListener,noteListener;
     private List<FriendStoryItem> friendStoryList;
     private EditText edtSearch;
     private List<ChatUser>        chatList;       // toàn bộ danh sách gốc
@@ -96,6 +101,11 @@ public class MessageFragment extends Fragment {
             Intent intent = new Intent(requireContext(), NewMessageActivity.class);
             startActivity(intent);
         });
+        btnAddNote.setOnClickListener(v -> {
+            Intent intent = new Intent(getActivity(), NoteEditorActivity.class);
+            intent.putExtra(NoteEditorActivity.EXTRA_CURRENT_NOTE, currentNoteText);
+            startActivityForResult(intent, REQUEST_NOTE_EDIT);
+        });
     }
 
     // ════════════════════════════════════════════════════
@@ -111,6 +121,9 @@ public class MessageFragment extends Fragment {
         tvMyStory       = view.findViewById(R.id.tvMyStory);
         btnInbox        = view.findViewById(R.id.btnInbox);
         edtSearch       = view.findViewById(R.id.edtSearch);
+        btnAddNote      = view.findViewById(R.id.btnAddNote);
+        flMyNoteBubble = view.findViewById(R.id.flMyNoteBubble);
+        tvMyNote        = view.findViewById(R.id.tvMyNote);
 
     }
 
@@ -121,16 +134,25 @@ public class MessageFragment extends Fragment {
         String uid = auth.getCurrentUser().getUid();
 
         // Load avatar + tên mình
-        db.collection("nguoi_dung").document(uid).get()
-                .addOnSuccessListener(doc -> {
+        noteListener = db.collection("nguoi_dung").document(uid)
+                .addSnapshotListener((snapshot,error) -> {
+                    if(snapshot == null || error != null) return;
                     if (!isAdded()) return;
-                    String myAvatar = doc.getString("anh_dai_dien");
+                    String myAvatar = snapshot.getString("anh_dai_dien");
                     if (myAvatar != null) {
                         Glide.with(this).load(myAvatar)
                                 .placeholder(R.drawable.ic_placeholder_avatar)
                                 .into(imgMyAvatar);
                     }
-                    tvMyStory.setText(doc.getString("ho_va_ten"));
+                    tvMyStory.setText(snapshot.getString("ho_va_ten"));
+                    String myNote = snapshot.getString("ghi_chu");
+                    flMyNoteBubble.setVisibility(View.VISIBLE);// lấy từ Firestore field "ghi_chu" trên doc người dùng
+                    if (!TextUtils.isEmpty(myNote)) {
+                        tvMyNote.setText(myNote);
+                    } else {
+                        tvMyNote.setText("Bạn đang nghĩ gì ?");
+                    }
+
                 });
 
         // Load story bạn bè (realtime)
@@ -172,6 +194,7 @@ public class MessageFragment extends Fragment {
                                     item.setStoryState(FriendStoryItem.StoryState.NEW);
                                     item.setStatusPreview(b.getString("ten_dang_nhap"));
                                     item.setLastActive(b.getTimestamp("lan_cuoi_hoat_dong"));
+                                    item.setGhiChu(b.getString("ghi_chu"));
 
                                     if (existingIdx >= 0) {
                                         friendStoryList.set(existingIdx, item);
@@ -491,10 +514,7 @@ public class MessageFragment extends Fragment {
         applyFilter();
     }
 
-    /**
-     * Áp filter dựa vào trạng thái isShowingUnread.
-     * Gọi mỗi khi dữ liệu thay đổi HOẶC user nhấn nút.
-     */
+
     private void applyFilter() {
         if (!isAdded()) return;
 
@@ -517,7 +537,6 @@ public class MessageFragment extends Fragment {
         updateUnreadBadge();
     }
 
-    /** Cập nhật badge số lượng tin chưa đọc trên nút btnUnread */
     private void updateUnreadBadge() {
         if (!isAdded()) return;
 
@@ -578,7 +597,7 @@ public class MessageFragment extends Fragment {
         // Story hàng ngang
         rvFriendStories.setLayoutManager(
                 new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
-        friendStoryAdapter = new FriendStoryAdapter(friendStoryList);
+        friendStoryAdapter = new FriendStoryAdapter(friendStoryList, getChildFragmentManager());
         friendStoryAdapter.setOnItemClickListener(item -> {
             Intent intent = new Intent(requireContext(), ChatActivity.class);
             intent.putExtra("target_uid", item.getUid());
@@ -654,8 +673,13 @@ public class MessageFragment extends Fragment {
             Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
         });
 
-        layoutMyStory.setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Tạo tin mới", Toast.LENGTH_SHORT).show());
+        layoutMyStory.setOnClickListener(v ->{
+                    Intent intent = new Intent(getActivity(), NoteEditorActivity.class);
+                    intent.putExtra(NoteEditorActivity.EXTRA_CURRENT_NOTE, currentNoteText);
+                    startActivityForResult(intent, REQUEST_NOTE_EDIT);
+                }
+//                Toast.makeText(requireContext(), "Tạo tin mới", Toast.LENGTH_SHORT).show());
+        );
     }
 
     // ════════════════════════════════════════════════════

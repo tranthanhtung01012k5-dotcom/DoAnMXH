@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.doanmxh.HomePage.PostDetailActivity;
+import com.example.doanmxh.ProfilePage.SettingsDialog;
 import com.example.doanmxh.R;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -128,7 +129,10 @@ public class NotificationsFragment extends Fragment
         loadNotificationsCache(); // hiện cache ngay
 //        markAsRead();
         selectTab(TAB_ALL);
-        startListening();
+        if(SettingsDialog.isNotificationsEnabled(getContext()))
+        {
+            startListening();
+        }
     }
 
     @Override
@@ -180,7 +184,15 @@ public class NotificationsFragment extends Fragment
 
     private void startListening() {
         if (myUid == null) return;
+        if(!SettingsDialog.isNotificationsEnabled(getContext()))
+        {
+            if (listenerReg != null) {
+                listenerReg.remove();
+                listenerReg = null;
+            }
 
+            return;
+        }
         listenerReg = db.collection("notifications")
                 .whereEqualTo("receiverId", myUid)
                 .orderBy("time", Query.Direction.DESCENDING)

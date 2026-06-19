@@ -23,6 +23,7 @@ import androidx.fragment.app.Fragment;
 import com.example.doanmxh.Log_Res.AccountManager;
 import com.example.doanmxh.Log_Res.AccountSwitcherFragment;
 import com.example.doanmxh.Log_Res.LoginActivity;
+import com.example.doanmxh.MainActivity;
 import com.example.doanmxh.R;
 import com.google.android.material.materialswitch.MaterialSwitch;
 import com.google.firebase.auth.FirebaseAuth;
@@ -225,15 +226,19 @@ public class SettingsDialog {
                 .edit().putBoolean(KEY_DARK_MODE, enabled).apply();
     }
 
-    private static boolean isNotificationsEnabled(Context context) {
+    public static boolean isNotificationsEnabled(Context context) {
         return context.getSharedPreferences(PREF_SETTINGS, Context.MODE_PRIVATE)
                 .getBoolean(KEY_NOTIFICATIONS, true);
     }
 
-    private static void setNotificationsEnabled(Context context, boolean enabled) {
+    public static void setNotificationsEnabled(Context context, boolean enabled) {
         context.getSharedPreferences(PREF_SETTINGS, Context.MODE_PRIVATE)
                 .edit().putBoolean(KEY_NOTIFICATIONS, enabled).apply();
+        if (context instanceof MainActivity) {
+            ((MainActivity) context).refreshNotificationBadge();
+        }
     }
+
 
     // ── Private account ────────────────────────────────────────────────────────
 

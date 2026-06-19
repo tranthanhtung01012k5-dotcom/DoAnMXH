@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_primary">
@@ -78,85 +79,149 @@
                     android:textSize="15sp" />
             </LinearLayout>
 
-            <!-- STORY -->
-            <HorizontalScrollView
+            <!--
+                STORY (ĐÃ SỬA)
+                Bỏ HorizontalScrollView bọc ngoài vì nó xung đột với RecyclerView
+                (RecyclerView tự cuộn ngang được rồi, không cần lồng thêm 1 lớp scroll nữa).
+                "Tin của bạn" (layoutMyStory) giữ width cố định 80dp, đứng yên bên trái.
+                RecyclerView chiếm phần còn lại (layout_weight="1") và tự cuộn ngang nội bộ.
+            -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
+                android:orientation="horizontal"
                 android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:scrollbars="none"
-                android:clipToPadding="false">
+                android:paddingEnd="16dp">
 
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:id="@+id/layoutMyStory"
+                    android:layout_width="80dp"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="top">
+                    android:layout_marginEnd="4dp"
+                    android:gravity="center_horizontal"
+                    android:orientation="vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:clipChildren="false"
+                    android:clipToPadding="false"
+                    android:background="?attr/selectableItemBackgroundBorderless">
 
-                    <LinearLayout
-                        android:id="@+id/layoutMyStory"
-                        android:layout_width="72dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="6dp"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:background="?attr/selectableItemBackgroundBorderless">
+                    <!--
+                        KHU VỰC AVATAR & BONG BÓNG GHI CHÚ
+                        Dùng FrameLayout lớn bao ngoài, bật clipChildren="false"
+                        để bong bóng ghi chú có thể bay lên trên mà không bị cắt mất.
+                    -->
+                    <FrameLayout
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="6dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false">
 
+                        <!-- Avatar của bạn -->
+                        <com.google.android.material.imageview.ShapeableImageView
+                            android:id="@+id/imgMyAvatar"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:src="@drawable/ic_placeholder_avatar"
+                            app:shapeAppearanceOverlay="@style/CircleImageView" />
+
+                        <!-- Nút (+) Thêm tin/Ghi chú - Nằm đè góc dưới bên phải Avatar -->
                         <FrameLayout
-                            android:layout_width="64dp"
-                            android:layout_height="64dp"
-                            android:layout_marginBottom="5dp">
+                            android:id="@+id/btnAddNote"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="bottom|end"
+                            android:background="@drawable/bg_add_story_btn"
+                            android:elevation="2dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:contentDescription="Thay đổi ghi chú">
 
-                            <com.google.android.material.imageview.ShapeableImageView
-                                android:id="@+id/imgMyAvatar"
-                                android:layout_width="64dp"
-                                android:layout_height="64dp"
-                                android:scaleType="centerCrop"
-                                android:src="@drawable/ic_placeholder_avatar"
-                                app:shapeAppearanceOverlay="@style/CircleImageView" />
-
-                            <FrameLayout
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
-                                android:layout_gravity="bottom|end"
-                                android:background="@drawable/bg_add_story_btn">
-
-                                <TextView
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:layout_gravity="center"
-                                    android:text="+"
-                                    android:textColor="@color/button_primary_text"
-                                    android:textSize="14sp"
-                                    android:textStyle="bold" />
-                            </FrameLayout>
+                            <ImageView
+                                android:layout_width="12dp"
+                                android:layout_height="12dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_add_circle"
+                                app:tint="@color/button_primary_text" />
                         </FrameLayout>
 
-                        <TextView
-                            android:id="@+id/tvMyStory"
-                            android:layout_width="match_parent"
+                        <!--
+                            BONG BÓNG GHI CHÚ (Messenger Note)
+                            Vị trí: Bay lên phía trên Avatar (layout_gravity="top|center_horizontal")
+                            Sử dụng translationY âm để đẩy hẳn lên trên mà không làm lệch hàng Layout gốc.
+                            Khi không có note, chỉ cần set visibility của FrameLayout này thành INVISIBLE hoặc GONE.
+                        -->
+                        <FrameLayout
+                            android:id="@+id/flMyNoteBubble"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Tạo tin"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="11sp"
-                            android:maxLines="1"
-                            android:ellipsize="end"
-                            android:gravity="center" />
-                    </LinearLayout>
+                            android:layout_gravity="top|center_horizontal"
+                            android:translationY="-18dp"
+                            android:elevation="4dp"
+                            android:visibility="visible"
+                            android:layout_marginTop="3dp"
+                            tools:visibility="visible">
 
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/rvFriendStories"
-                        android:layout_width="wrap_content"
+                            <!-- Thân bong bóng chứa Text -->
+                            <TextView
+                                android:id="@+id/tvMyNote"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:background="@drawable/bg_note_bubble"
+                                android:ellipsize="end"
+                                android:gravity="center"
+                                android:maxWidth="64dp"
+                                android:maxLines="2"
+                                android:minWidth="32dp"
+                                android:paddingStart="6dp"
+                                android:paddingTop="4dp"
+                                android:paddingEnd="6dp"
+                                android:paddingBottom="4dp"
+                                android:text="Hôm nay thế nào?"
+                                android:textColor="@color/text_primary"
+                                android:textSize="10sp" />
+
+                            <!-- Cái đuôi bong bóng nhỏ ở dưới -->
+                            <View
+                                android:layout_width="8dp"
+                                android:layout_height="8dp"
+                                android:layout_gravity="bottom|center_horizontal"
+                                android:layout_marginBottom="-3dp"
+                                android:background="@drawable/bg_note_bubble_tail"
+                                android:rotation="45" />
+                        </FrameLayout>
+
+                    </FrameLayout>
+
+                    <!-- Tên hiển thị (Tin của bạn / Tạo tin) -->
+                    <TextView
+                        android:id="@+id/tvMyStory"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false"
-                        android:orientation="horizontal"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                        android:text="Tin của bạn"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:paddingHorizontal="4dp" />
 
                 </LinearLayout>
-            </HorizontalScrollView>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvFriendStories"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:clipToPadding="false"
+                    android:paddingStart="4dp"
+                    android:nestedScrollingEnabled="false"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            </LinearLayout>
 
             <!-- Divider -->
             <View

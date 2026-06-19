@@ -1,5 +1,7 @@
 package com.example.doanmxh.Message;
 
+import com.google.firebase.Timestamp;
+
 public class FriendStoryItem {
     public enum StoryState {
         NONE,       // Không có story
@@ -14,6 +16,25 @@ public class FriendStoryItem {
 
     public void setUid(String uid) {
         this.uid = uid;
+    }
+    public String ghiChu;
+
+    public String getGhiChu() {
+        return ghiChu;
+    }
+
+    public Timestamp getTimeaAgoText() {
+        return timeaAgoText;
+    }
+
+    public void setTimeaAgoText(Timestamp timeaAgoText) {
+        this.timeaAgoText = timeaAgoText;
+    }
+
+    private Timestamp timeaAgoText;
+
+    public void setGhiChu(String ghiChu) {
+        this.ghiChu = ghiChu;
     }
 
     private String name;

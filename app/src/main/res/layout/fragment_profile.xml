@@ -14,53 +14,52 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp">
+        android:layout_marginBottom="12dp">
 
-<!--        <ImageView-->
-<!--            android:id="@+id/btnLanguage"-->
-<!--            android:layout_width="24dp"-->
-<!--            android:layout_height="24dp"-->
-<!--            android:layout_alignParentStart="true"-->
-<!--            android:layout_centerInParent="true"-->
-<!--            android:contentDescription="Web Icon"-->
-<!--            android:src="@drawable/ic_language"-->
-<!--            app:tint="@color/action_icon" />-->
-
+        <!-- Menu -->
         <ImageView
             android:id="@+id/btnMenu"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_alignParentEnd="true"
-            android:layout_centerInParent="true"
-            android:contentDescription="Menu Icon"
+            android:layout_alignParentTop="true"
+            android:contentDescription="Menu"
             android:src="@drawable/ic_menu"
             app:tint="@color/action_icon" />
-    </RelativeLayout>
 
-    <!-- Khu vực Thông tin cá nhân (Tên, Username, Avatar) -->
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp">
+        <!-- Avatar -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/imgProfile"
+            android:layout_width="68dp"
+            android:layout_height="68dp"
+            android:layout_below="@id/btnMenu"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="8dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_placeholder_avatar"
+            app:shapeAppearanceOverlay="@style/CircleImageView"
+            app:strokeColor="@color/divider"
+            app:strokeWidth="1dp" />
 
+        <!-- Thông tin -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
+            android:layout_alignTop="@id/imgProfile"
             android:layout_toStartOf="@id/imgProfile"
             android:layout_marginEnd="16dp"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/txtName"
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:text="Keng Nguyễn"
                 android:textColor="@color/text_primary"
                 android:textSize="24sp"
-                android:textStyle="bold"
-                android:letterSpacing="-0.02" />
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -88,19 +87,9 @@
                     android:textColor="#8E8E93"
                     android:textSize="11sp" />
             </LinearLayout>
+
         </LinearLayout>
 
-        <com.google.android.material.imageview.ShapeableImageView
-            android:id="@+id/imgProfile"
-            android:layout_width="68dp"
-            android:layout_height="68dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
-            android:scaleType="centerCrop"
-            android:src="@drawable/ic_placeholder_avatar"
-            app:shapeAppearanceOverlay="@style/CircleImageView"
-            app:strokeColor="@color/divider"
-            app:strokeWidth="1dp" />
     </RelativeLayout>
 
     <!-- Tiểu sử (Bio) -->

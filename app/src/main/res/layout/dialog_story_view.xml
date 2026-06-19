@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_dialog_card"
+    android:paddingTop="20dp"
+    android:paddingBottom="24dp"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp">
+
+    <!-- Nút đóng (X) -->
+    <ImageView
+        android:id="@+id/btnClose"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:layout_marginEnd="0dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        app:tint="@color/text_secondary"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Avatar lớn -->
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/imgAvatar"
+        android:layout_width="84dp"
+        android:layout_height="84dp"
+        android:layout_marginTop="8dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_placeholder_avatar"
+        app:shapeAppearanceOverlay="@style/CircleImageView"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Tên bạn bè -->
+    <TextView
+        android:id="@+id/tvName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        tools:text="Nguyễn Văn A"
+        app:layout_constraintTop_toBottomOf="@id/imgAvatar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        xmlns:tools="http://schemas.android.com/tools" />
+
+    <!-- Thời gian đăng -->
+    <TextView
+        android:id="@+id/tvTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        tools:text="2 giờ trước"
+        app:layout_constraintTop_toBottomOf="@id/tvName"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        xmlns:tools="http://schemas.android.com/tools" />
+
+    <!-- Nội dung note đầy đủ -->
+    <TextView
+        android:id="@+id/tvNoteContent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_note_content_box"
+        android:gravity="center"
+        android:lineSpacingExtra="3dp"
+        android:padding="16dp"
+        android:textColor="@color/text_primary"
+        android:textSize="16sp"
+        tools:text="Hôm nay thế nào? Mọi thứ đều ổn, đang chuẩn bị đi cà phê với bạn bè vào cuối tuần này!"
+        app:layout_constraintTop_toBottomOf="@id/tvTime"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        xmlns:tools="http://schemas.android.com/tools" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
