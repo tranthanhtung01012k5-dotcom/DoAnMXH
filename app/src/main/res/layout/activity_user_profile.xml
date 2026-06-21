@@ -88,7 +88,7 @@
                     android:background="@color/bg_surface"
                     android:paddingHorizontal="10dp"
                     android:paddingVertical="4dp"
-                    android:text="threads.net"
+                    android:text="stapg.net"
                     android:textColor="#8E8E93"
                     android:textSize="11sp" />
 

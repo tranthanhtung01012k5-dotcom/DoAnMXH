@@ -83,7 +83,7 @@
                     android:background="@drawable/bg_badge_threads"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="3dp"
-                    android:text="threads.net"
+                    android:text="stapg.net"
                     android:textColor="#8E8E93"
                     android:textSize="11sp" />
             </LinearLayout>
