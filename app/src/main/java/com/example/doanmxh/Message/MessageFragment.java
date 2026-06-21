@@ -25,6 +25,7 @@ import com.google.android.material.imageview.ShapeableImageView;
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentChange;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.ArrayList;
@@ -146,11 +147,19 @@ public class MessageFragment extends Fragment {
                     }
                     tvMyStory.setText(snapshot.getString("ho_va_ten"));
                     String myNote = snapshot.getString("ghi_chu");
-                    flMyNoteBubble.setVisibility(View.VISIBLE);// lấy từ Firestore field "ghi_chu" trên doc người dùng
-                    if (!TextUtils.isEmpty(myNote)) {
+                    Timestamp thoiGianTao = snapshot.getTimestamp("ngay_tao_ghi_chu");
+
+                    flMyNoteBubble.setVisibility(View.VISIBLE);
+                    Log.d("Time", String.valueOf(isNoteExpired(thoiGianTao)));
+                    if (!TextUtils.isEmpty(myNote) && !isNoteExpired(thoiGianTao)) {
                         tvMyNote.setText(myNote);
                     } else {
                         tvMyNote.setText("Bạn đang nghĩ gì ?");
+
+                        // Nếu note đã quá 24h thì xóa luôn trên Firestore (chỉ xóa khi nó thực sự đang tồn tại và đã hết hạn)
+                        if (!TextUtils.isEmpty(myNote) && isNoteExpired(thoiGianTao)) {
+                            deleteExpiredNote();
+                        }
                     }
 
                 });
@@ -195,6 +204,7 @@ public class MessageFragment extends Fragment {
                                     item.setStatusPreview(b.getString("ten_dang_nhap"));
                                     item.setLastActive(b.getTimestamp("lan_cuoi_hoat_dong"));
                                     item.setGhiChu(b.getString("ghi_chu"));
+                                    item.setThoigianTao(b.getTimestamp("ngay_tao_ghi_chu"));
 
                                     if (existingIdx >= 0) {
                                         friendStoryList.set(existingIdx, item);
@@ -228,6 +238,32 @@ public class MessageFragment extends Fragment {
     // ════════════════════════════════════════════════════
     //  LOAD CHAT LIST (realtime)
     // ════════════════════════════════════════════════════
+    private boolean isNoteExpired(Timestamp thoiGianTao) {
+        if (thoiGianTao == null) return true;
+
+        long thoiGianTaoMillis = thoiGianTao.toDate().getTime();
+        long now = System.currentTimeMillis();
+        long khoangCach = now - thoiGianTaoMillis;
+        long mot24h = 24 * 60 * 60 * 1000L;
+
+        return khoangCach > mot24h;
+    }
+    private void deleteExpiredNote() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        db.collection("users").document(userId)
+                .update(
+                        "ghi_chu", FieldValue.delete(),
+                        "ngay_tao_ghi_chu", FieldValue.delete()
+                )
+                .addOnSuccessListener(unused -> {
+                    // Field đã được xóa khỏi document
+                })
+                .addOnFailureListener(e -> {
+                    e.printStackTrace();
+                });
+    }
     private void loadChatList() {
         String uid = auth.getCurrentUser().getUid();
 

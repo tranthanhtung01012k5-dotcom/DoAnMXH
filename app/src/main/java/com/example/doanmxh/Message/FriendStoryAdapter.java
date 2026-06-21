@@ -13,6 +13,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.google.android.material.imageview.ShapeableImageView;
 import com.example.doanmxh.R;
+import com.google.firebase.Timestamp;
+
 import java.util.List;
 
 public class FriendStoryAdapter extends RecyclerView.Adapter<FriendStoryAdapter.VH> {
@@ -53,8 +55,16 @@ public class FriendStoryAdapter extends RecyclerView.Adapter<FriendStoryAdapter.
                 .into(h.imgAvatar);
         h.tvName.setText(item.getName());
 
+//        // Bong bóng ghi chú (note) phía trên avatar
+//        if (!TextUtils.isEmpty(item.getGhiChu())) {
+//            h.flNoteBubble.setVisibility(View.VISIBLE);
+//            h.tvFriendNote.setText(item.getGhiChu());
+//        } else {
+//            h.flNoteBubble.setVisibility(View.INVISIBLE);
+//        }
         // Bong bóng ghi chú (note) phía trên avatar
-        if (!TextUtils.isEmpty(item.getGhiChu())) {
+        // Bong bóng ghi chú (note) phía trên avatar
+        if (!TextUtils.isEmpty(item.getGhiChu()) && !isNoteExpired(item.getThoigianTao())) {
             h.flNoteBubble.setVisibility(View.VISIBLE);
             h.tvFriendNote.setText(item.getGhiChu());
         } else {
@@ -105,7 +115,16 @@ public class FriendStoryAdapter extends RecyclerView.Adapter<FriendStoryAdapter.
             if (listener != null) listener.onClick(item);
         });
     }
+    private boolean isNoteExpired(Timestamp thoiGianTao) {
+        if (thoiGianTao == null) return true; // không có timestamp -> coi như hết hạn
 
+        long thoiGianTaoMillis = thoiGianTao.toDate().getTime();
+        long now = System.currentTimeMillis();
+        long khoangCach = now - thoiGianTaoMillis;
+        long mot24h = 24 * 60 * 60 * 1000L; // 24h tính bằng millis
+
+        return khoangCach > mot24h;
+    }
     @Override
     public int getItemCount() {
         return list == null ? 0 : list.size();

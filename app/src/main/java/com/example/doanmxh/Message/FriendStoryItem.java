@@ -33,6 +33,16 @@ public class FriendStoryItem {
 
     private Timestamp timeaAgoText;
 
+    public Timestamp getThoigianTao() {
+        return thoigianTao;
+    }
+
+    public void setThoigianTao(Timestamp thoigianTao) {
+        this.thoigianTao = thoigianTao;
+    }
+
+    private Timestamp thoigianTao;
+
     public void setGhiChu(String ghiChu) {
         this.ghiChu = ghiChu;
     }
